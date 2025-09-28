@@ -1,18 +1,194 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, integer, boolean, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Users table
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
+  email: text("email").notNull().unique(),
+  name: text("name").notNull(),
+  avatar: text("avatar"),
+  provider: text("provider").notNull(), // 'email', 'google', 'apple'
+  providerId: text("provider_id").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  journeyStartDate: timestamp("journey_start_date").defaultNow(),
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
+// Journal entries table
+export const journalEntries = pgTable("journal_entries", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  tags: text("tags").array().default([]),
+  mood: integer("mood"), // 1-10 scale
+  isPrivate: boolean("is_private").default(false),
+  aiReflection: text("ai_reflection"), // AI-generated reflection (premium feature)
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-export type InsertUser = z.infer<typeof insertUserSchema>;
+// Daily practices table
+export const practices = pgTable("practices", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  duration: text("duration").notNull(), // e.g., "15 min", "30 min"
+  category: text("category").notNull(), // 'Calming', 'Energizing', 'Grounding', 'Dreamwork'
+  instructor: text("instructor").notNull(),
+  videoUrl: text("video_url"),
+  audioUrl: text("audio_url"),
+  isPremium: boolean("is_premium").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// User practice completions (for tracking)
+export const userPractices = pgTable("user_practices", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  practiceId: varchar("practice_id").notNull().references(() => practices.id),
+  completedAt: timestamp("completed_at").defaultNow(),
+  notes: text("notes"),
+});
+
+// Daily progress tracking
+export const progressEntries = pgTable("progress_entries", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  date: timestamp("date").notNull(),
+  mood: integer("mood"), // 1-10 scale
+  sleep: integer("sleep"), // 1-10 scale  
+  grounding: integer("grounding"), // 1-10 scale
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Community posts
+export const communityPosts = pgTable("community_posts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  content: text("content").notNull(),
+  tags: text("tags").array().default([]),
+  likes: integer("likes").default(0),
+  isAnonymous: boolean("is_anonymous").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Comments on community posts
+export const comments = pgTable("comments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  postId: varchar("post_id").notNull().references(() => communityPosts.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  content: text("content").notNull(),
+  isAnonymous: boolean("is_anonymous").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Post likes tracking
+export const postLikes = pgTable("post_likes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  postId: varchar("post_id").notNull().references(() => communityPosts.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  // Ensure a user can only like a post once
+  uniqueUserPost: sql`UNIQUE(${table.postId}, ${table.userId})`
+}));
+
+// Daily prompts
+export const dailyPrompts = pgTable("daily_prompts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  prompt: text("prompt").notNull(),
+  category: text("category").notNull(), // 'integration', 'reflection', 'gratitude', etc.
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// User responses to daily prompts
+export const promptResponses = pgTable("prompt_responses", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  promptId: varchar("prompt_id").notNull().references(() => dailyPrompts.id),
+  response: text("response").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Insert schemas
+export const insertUserSchema = createInsertSchema(users).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertJournalEntrySchema = createInsertSchema(journalEntries).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  aiReflection: true,
+});
+
+export const insertPracticeSchema = createInsertSchema(practices).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertUserPracticeSchema = createInsertSchema(userPractices).omit({
+  id: true,
+  completedAt: true,
+});
+
+export const insertProgressEntrySchema = createInsertSchema(progressEntries).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertCommunityPostSchema = createInsertSchema(communityPosts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  likes: true,
+});
+
+export const insertCommentSchema = createInsertSchema(comments).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertDailyPromptSchema = createInsertSchema(dailyPrompts).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertPromptResponseSchema = createInsertSchema(promptResponses).omit({
+  id: true,
+  createdAt: true,
+});
+
+// Types
 export type User = typeof users.$inferSelect;
+export type InsertUser = z.infer<typeof insertUserSchema>;
+
+export type JournalEntry = typeof journalEntries.$inferSelect;
+export type InsertJournalEntry = z.infer<typeof insertJournalEntrySchema>;
+
+export type Practice = typeof practices.$inferSelect;
+export type InsertPractice = z.infer<typeof insertPracticeSchema>;
+
+export type UserPractice = typeof userPractices.$inferSelect;
+export type InsertUserPractice = z.infer<typeof insertUserPracticeSchema>;
+
+export type ProgressEntry = typeof progressEntries.$inferSelect;
+export type InsertProgressEntry = z.infer<typeof insertProgressEntrySchema>;
+
+export type CommunityPost = typeof communityPosts.$inferSelect;
+export type InsertCommunityPost = z.infer<typeof insertCommunityPostSchema>;
+
+export type Comment = typeof comments.$inferSelect;
+export type InsertComment = z.infer<typeof insertCommentSchema>;
+
+export type DailyPrompt = typeof dailyPrompts.$inferSelect;
+export type InsertDailyPrompt = z.infer<typeof insertDailyPromptSchema>;
+
+export type PromptResponse = typeof promptResponses.$inferSelect;
+export type InsertPromptResponse = z.infer<typeof insertPromptResponseSchema>;
