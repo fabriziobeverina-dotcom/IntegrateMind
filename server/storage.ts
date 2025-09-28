@@ -4,6 +4,7 @@ import { eq, desc, and, gte, lte, sql } from "drizzle-orm";
 import { 
   type User, 
   type InsertUser,
+  type UpsertUser,
   type JournalEntry,
   type InsertJournalEntry,
   type Practice,
@@ -33,11 +34,12 @@ import {
 } from "@shared/schema";
 
 export interface IStorage {
-  // User management
+  // User management  
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: string, updates: Partial<User>): Promise<User | undefined>;
+  upsertUser(user: UpsertUser): Promise<User>; // Required for Replit Auth
   
   // Journal entries
   getUserJournalEntries(userId: string, limit?: number): Promise<JournalEntry[]>;
@@ -105,6 +107,21 @@ export class DatabaseStorage implements IStorage {
   
   async updateUser(id: string, updates: Partial<User>): Promise<User | undefined> {
     const result = await this.db.update(users).set(updates).where(eq(users.id, id)).returning();
+    return result[0];
+  }
+  
+  async upsertUser(userData: UpsertUser): Promise<User> {
+    const result = await this.db
+      .insert(users)
+      .values(userData)
+      .onConflictDoUpdate({
+        target: users.id,
+        set: {
+          ...userData,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
     return result[0];
   }
   
