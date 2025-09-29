@@ -22,6 +22,7 @@ export const users = pgTable("users", {
   avatar: text("avatar"),
   provider: text("provider").notNull(),
   providerId: text("provider_id").notNull(),
+  isAdmin: boolean("is_admin").default(false), // Admin role for content management
   createdAt: timestamp("created_at").defaultNow(),
   journeyStartDate: timestamp("journey_start_date").defaultNow(),
   firstName: varchar("first_name"),
@@ -44,10 +45,9 @@ export const journalEntries = pgTable("journal_entries", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Daily practices table
+// Daily practices table - admin curated content
 export const practices = pgTable("practices", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull().references(() => users.id), // Add user ownership
   title: text("title").notNull(),
   description: text("description").notNull(),
   duration: text("duration").notNull(), // e.g., "15 min", "30 min"
@@ -56,7 +56,10 @@ export const practices = pgTable("practices", {
   videoUrl: text("video_url"),
   audioUrl: text("audio_url"),
   isPremium: boolean("is_premium").default(false),
+  isFeatured: boolean("is_featured").default(false), // Highlight in user interface
+  tags: text("tags").array().default([]), // For better categorization and search
   createdAt: timestamp("created_at").defaultNow(),
+  createdByAdminId: varchar("created_by_admin_id").references(() => users.id), // Track which admin created it
 });
 
 // User practice completions (for tracking)
@@ -113,6 +116,57 @@ export const postLikes = pgTable("post_likes", {
   uniqueUserPost: sql`UNIQUE(${table.postId}, ${table.userId})`
 }));
 
+// Reading materials - admin curated
+export const readings = pgTable("readings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  content: text("content").notNull(), // Full article/reading content
+  author: text("author"),
+  category: text("category").notNull(), // 'Integration Guide', 'Research', 'Personal Stories'
+  readTime: text("read_time"), // e.g., "5 min read"
+  tags: text("tags").array().default([]),
+  isFeatured: boolean("is_featured").default(false),
+  isPremium: boolean("is_premium").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  createdByAdminId: varchar("created_by_admin_id").references(() => users.id),
+});
+
+// Video library - admin curated  
+export const videos = pgTable("videos", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  videoUrl: text("video_url").notNull(),
+  thumbnailUrl: text("thumbnail_url"),
+  instructor: text("instructor"),
+  duration: text("duration"), // e.g., "20 min"
+  category: text("category").notNull(), // 'Educational', 'Testimonial', 'Workshop'
+  tags: text("tags").array().default([]),
+  isFeatured: boolean("is_featured").default(false),
+  isPremium: boolean("is_premium").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  createdByAdminId: varchar("created_by_admin_id").references(() => users.id),
+});
+
+// User reading completions
+export const userReadings = pgTable("user_readings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  readingId: varchar("reading_id").notNull().references(() => readings.id),
+  completedAt: timestamp("completed_at").defaultNow(),
+  notes: text("notes"),
+});
+
+// User video watch progress
+export const userVideos = pgTable("user_videos", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  videoId: varchar("video_id").notNull().references(() => videos.id),
+  watchedAt: timestamp("watched_at").defaultNow(),
+  notes: text("notes"),
+});
+
 // Daily prompts
 export const dailyPrompts = pgTable("daily_prompts", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -153,6 +207,7 @@ export const insertJournalEntrySchema = createInsertSchema(journalEntries).omit(
 export const insertPracticeSchema = createInsertSchema(practices).omit({
   id: true,
   createdAt: true,
+  createdByAdminId: true, // Set automatically by backend
 });
 
 export const insertUserPracticeSchema = createInsertSchema(userPractices).omit({
@@ -187,6 +242,28 @@ export const insertPromptResponseSchema = createInsertSchema(promptResponses).om
   createdAt: true,
 });
 
+export const insertReadingSchema = createInsertSchema(readings).omit({
+  id: true,
+  createdAt: true,
+  createdByAdminId: true, // Set automatically by backend
+});
+
+export const insertVideoSchema = createInsertSchema(videos).omit({
+  id: true,
+  createdAt: true,
+  createdByAdminId: true, // Set automatically by backend
+});
+
+export const insertUserReadingSchema = createInsertSchema(userReadings).omit({
+  id: true,
+  completedAt: true,
+});
+
+export const insertUserVideoSchema = createInsertSchema(userVideos).omit({
+  id: true,
+  watchedAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -200,6 +277,18 @@ export type InsertPractice = z.infer<typeof insertPracticeSchema>;
 
 export type UserPractice = typeof userPractices.$inferSelect;
 export type InsertUserPractice = z.infer<typeof insertUserPracticeSchema>;
+
+export type Reading = typeof readings.$inferSelect;
+export type InsertReading = z.infer<typeof insertReadingSchema>;
+
+export type Video = typeof videos.$inferSelect;
+export type InsertVideo = z.infer<typeof insertVideoSchema>;
+
+export type UserReading = typeof userReadings.$inferSelect;
+export type InsertUserReading = z.infer<typeof insertUserReadingSchema>;
+
+export type UserVideo = typeof userVideos.$inferSelect;
+export type InsertUserVideo = z.infer<typeof insertUserVideoSchema>;
 
 export type ProgressEntry = typeof progressEntries.$inferSelect;
 export type InsertProgressEntry = z.infer<typeof insertProgressEntrySchema>;
