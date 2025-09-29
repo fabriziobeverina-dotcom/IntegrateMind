@@ -29,6 +29,8 @@ import {
   type InsertDailyPrompt,
   type PromptResponse,
   type InsertPromptResponse,
+  type PushSubscription,
+  type InsertPushSubscription,
   users,
   journalEntries,
   practices,
@@ -42,7 +44,8 @@ import {
   comments,
   postLikes,
   dailyPrompts,
-  promptResponses
+  promptResponses,
+  pushSubscriptions
 } from "@shared/schema";
 
 export interface IStorage {
@@ -114,6 +117,15 @@ export interface IStorage {
   getTodaysPrompt(): Promise<DailyPrompt | undefined>;
   getUserPromptResponse(userId: string, promptId: string): Promise<PromptResponse | undefined>;
   createPromptResponse(response: InsertPromptResponse): Promise<PromptResponse>;
+  
+  // Push notification subscriptions
+  getUserPushSubscriptions(userId: string): Promise<PushSubscription[]>;
+  createPushSubscription(subscription: InsertPushSubscription): Promise<PushSubscription>;
+  deactivateUserPushSubscriptions(userId: string): Promise<boolean>;
+  getActivePushSubscriptions(): Promise<PushSubscription[]>;
+  
+  // Reminder scheduling
+  getUsersWithRemindersAt(time: string): Promise<User[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -587,6 +599,51 @@ export class DatabaseStorage implements IStorage {
   async watchVideo(userVideo: InsertUserVideo): Promise<UserVideo> {
     const result = await this.db.insert(userVideos).values(userVideo).returning();
     return result[0];
+  }
+  
+  // Push notification subscriptions
+  async getUserPushSubscriptions(userId: string): Promise<PushSubscription[]> {
+    return await this.db.select()
+      .from(pushSubscriptions)
+      .where(and(eq(pushSubscriptions.userId, userId), eq(pushSubscriptions.isActive, true)))
+      .orderBy(desc(pushSubscriptions.createdAt));
+  }
+  
+  async createPushSubscription(subscription: InsertPushSubscription): Promise<PushSubscription> {
+    // First deactivate any existing subscriptions for this user
+    await this.db.update(pushSubscriptions)
+      .set({ isActive: false })
+      .where(eq(pushSubscriptions.userId, subscription.userId));
+    
+    // Then create the new subscription
+    const result = await this.db.insert(pushSubscriptions).values(subscription).returning();
+    return result[0];
+  }
+  
+  async deactivateUserPushSubscriptions(userId: string): Promise<boolean> {
+    const result = await this.db.update(pushSubscriptions)
+      .set({ isActive: false })
+      .where(eq(pushSubscriptions.userId, userId));
+    return result.rowCount! > 0;
+  }
+  
+  async getActivePushSubscriptions(): Promise<PushSubscription[]> {
+    return await this.db.select()
+      .from(pushSubscriptions)
+      .where(eq(pushSubscriptions.isActive, true))
+      .orderBy(desc(pushSubscriptions.createdAt));
+  }
+  
+  // Reminder scheduling
+  async getUsersWithRemindersAt(time: string): Promise<User[]> {
+    return await this.db.select()
+      .from(users)
+      .where(
+        and(
+          eq(users.reminderEnabled, true),
+          eq(users.reminderTime, time)
+        )
+      );
   }
 }
 

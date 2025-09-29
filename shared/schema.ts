@@ -29,6 +29,11 @@ export const users = pgTable("users", {
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
   updatedAt: timestamp("updated_at").defaultNow(),
+  // Daily reminder preferences
+  reminderEnabled: boolean("reminder_enabled").default(false),
+  reminderTime: varchar("reminder_time").default("09:00"), // HH:MM format
+  reminderTimezone: varchar("reminder_timezone").default("UTC"),
+  reminderTypes: text("reminder_types").array().default([]), // ['journal', 'progress', 'practice']
 });
 
 // Journal entries table
@@ -185,6 +190,31 @@ export const promptResponses = pgTable("prompt_responses", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Push notification subscriptions
+export const pushSubscriptions = pgTable("push_subscriptions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  endpoint: text("endpoint").notNull(),
+  p256dh: text("p256dh").notNull(),
+  auth: text("auth").notNull(),
+  userAgent: text("user_agent"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  lastUsed: timestamp("last_used").defaultNow(),
+});
+
+// Reminder delivery history
+export const reminderDeliveries = pgTable("reminder_deliveries", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  reminderType: text("reminder_type").notNull(), // 'journal', 'progress', 'practice'
+  scheduledFor: timestamp("scheduled_for").notNull(),
+  deliveredAt: timestamp("delivered_at"),
+  status: text("status").notNull().default("pending"), // 'pending', 'sent', 'failed', 'clicked'
+  errorMessage: text("error_message"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   createdAt: true,
@@ -264,6 +294,18 @@ export const insertUserVideoSchema = createInsertSchema(userVideos).omit({
   watchedAt: true,
 });
 
+export const insertPushSubscriptionSchema = createInsertSchema(pushSubscriptions).omit({
+  id: true,
+  createdAt: true,
+  lastUsed: true,
+});
+
+export const insertReminderDeliverySchema = createInsertSchema(reminderDeliveries).omit({
+  id: true,
+  createdAt: true,
+  deliveredAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -304,3 +346,9 @@ export type InsertDailyPrompt = z.infer<typeof insertDailyPromptSchema>;
 
 export type PromptResponse = typeof promptResponses.$inferSelect;
 export type InsertPromptResponse = z.infer<typeof insertPromptResponseSchema>;
+
+export type PushSubscription = typeof pushSubscriptions.$inferSelect;
+export type InsertPushSubscription = z.infer<typeof insertPushSubscriptionSchema>;
+
+export type ReminderDelivery = typeof reminderDeliveries.$inferSelect;
+export type InsertReminderDelivery = z.infer<typeof insertReminderDeliverySchema>;

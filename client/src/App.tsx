@@ -16,6 +16,7 @@ import CreateReading from "@/pages/CreateReading";
 import CreateVideo from "@/pages/CreateVideo";
 import Journal from "@/pages/Journal";
 import Progress from "@/pages/Progress";
+import Settings from "@/pages/Settings";
 import AdminDashboard from "@/pages/AdminDashboard";
 import AdminPractices from "@/pages/AdminPractices";
 import AdminReadings from "@/pages/AdminReadings";
@@ -41,7 +42,7 @@ function AuthenticatedRouter() {
       <Route path="/community" component={() => <div className="p-8"><h1 className="text-2xl font-bold">Community</h1><p className="text-muted-foreground">Full community features coming soon...</p></div>} />
       <Route path="/progress" component={Progress} />
       <Route path="/profile" component={() => <div className="p-8"><h1 className="text-2xl font-bold">Profile</h1><p className="text-muted-foreground">User profile settings coming soon...</p></div>} />
-      <Route path="/settings" component={() => <div className="p-8"><h1 className="text-2xl font-bold">Settings</h1><p className="text-muted-foreground">App settings coming soon...</p></div>} />
+      <Route path="/settings" component={Settings} />
       <Route component={NotFound} />
     </Switch>
   );

@@ -882,6 +882,122 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // User settings routes (protected)
+  app.put('/api/user/reminder-settings', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { reminderEnabled, reminderTime, reminderTimezone, reminderTypes } = req.body;
+      
+      // Validate reminder types
+      const validTypes = ['journal', 'progress', 'practice'];
+      if (reminderTypes && !Array.isArray(reminderTypes)) {
+        return res.status(400).json({ message: "reminderTypes must be an array" });
+      }
+      
+      if (reminderTypes && reminderTypes.some((type: string) => !validTypes.includes(type))) {
+        return res.status(400).json({ message: "Invalid reminder type" });
+      }
+      
+      // Validate time format (HH:MM)
+      if (reminderTime && !/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(reminderTime)) {
+        return res.status(400).json({ message: "Invalid time format. Use HH:MM" });
+      }
+      
+      // Update user reminder settings
+      const updatedUser = await storage.updateUser(userId, {
+        reminderEnabled: reminderEnabled ?? false,
+        reminderTime: reminderTime || "09:00",
+        reminderTimezone: reminderTimezone || "UTC",
+        reminderTypes: reminderTypes || []
+      });
+      
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      res.json({
+        message: "Reminder settings updated successfully",
+        settings: {
+          reminderEnabled: updatedUser.reminderEnabled,
+          reminderTime: updatedUser.reminderTime,
+          reminderTimezone: updatedUser.reminderTimezone,
+          reminderTypes: updatedUser.reminderTypes
+        }
+      });
+    } catch (error) {
+      console.error("Error updating reminder settings:", error);
+      res.status(500).json({ message: "Failed to update reminder settings" });
+    }
+  });
+
+  // Push notification routes (protected)
+  app.post('/api/push/subscribe', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { endpoint, p256dh, auth, userAgent } = req.body;
+      
+      // Validate required fields
+      if (!endpoint || !p256dh || !auth) {
+        return res.status(400).json({ message: "Missing required subscription data" });
+      }
+      
+      // Create push subscription
+      const subscription = await storage.createPushSubscription({
+        userId,
+        endpoint,
+        p256dh,
+        auth,
+        userAgent: userAgent || 'Unknown'
+      });
+      
+      res.status(201).json({
+        message: "Push subscription saved successfully",
+        subscriptionId: subscription.id
+      });
+    } catch (error) {
+      console.error("Error saving push subscription:", error);
+      res.status(500).json({ message: "Failed to save push subscription" });
+    }
+  });
+  
+  app.post('/api/push/unsubscribe', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      // Deactivate all push subscriptions for this user
+      const success = await storage.deactivateUserPushSubscriptions(userId);
+      
+      if (success) {
+        res.json({ message: "Push subscription removed successfully" });
+      } else {
+        res.status(404).json({ message: "No active subscriptions found" });
+      }
+    } catch (error) {
+      console.error("Error removing push subscription:", error);
+      res.status(500).json({ message: "Failed to remove push subscription" });
+    }
+  });
+  
+  app.post('/api/push/test', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      // Import the reminder scheduler
+      const { reminderScheduler } = await import('./reminderScheduler');
+      
+      // Send test notification using the scheduler
+      await reminderScheduler.sendTestNotification(userId);
+      
+      res.json({ 
+        message: "Test notification sent successfully",
+        note: "Check your device for the notification"
+      });
+    } catch (error: any) {
+      console.error("Error sending test notification:", error);
+      res.status(500).json({ message: error.message || "Failed to send test notification" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
