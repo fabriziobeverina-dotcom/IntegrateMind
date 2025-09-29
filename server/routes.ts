@@ -360,20 +360,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/admin/videos', isAdmin, async (req: any, res) => {
     try {
       const adminId = req.user.claims.sub;
-      const { title, description, presenter, videoUrl, thumbnail, category, duration, isPremium } = req.body;
+      const { title, description, instructor, videoUrl, thumbnailUrl, category, duration, tags, isFeatured, isPremium } = req.body;
       
-      if (!title || !description || !presenter || !videoUrl || !category) {
+      if (!title || !description || !videoUrl || !category) {
         return res.status(400).json({ message: "Missing required fields" });
       }
       
       const videoData = {
         title: title.trim(),
         description: description.trim(),
-        presenter: presenter.trim(),
+        instructor: instructor?.trim() || null,
         videoUrl: videoUrl.trim(),
-        thumbnail: thumbnail?.trim() || null,
+        thumbnailUrl: thumbnailUrl?.trim() || null,
         category: category.trim(),
         duration: duration?.trim() || null,
+        tags: tags || [],
+        isFeatured: Boolean(isFeatured),
         isPremium: Boolean(isPremium)
       };
       
