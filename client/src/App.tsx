@@ -14,6 +14,7 @@ import CreatePractice from "@/pages/CreatePractice";
 import EditPractice from "@/pages/EditPractice";
 import CreateReading from "@/pages/CreateReading";
 import CreateVideo from "@/pages/CreateVideo";
+import Journal from "@/pages/Journal";
 import AdminDashboard from "@/pages/AdminDashboard";
 import AdminPractices from "@/pages/AdminPractices";
 import AdminReadings from "@/pages/AdminReadings";
@@ -24,7 +25,7 @@ function AuthenticatedRouter() {
   return (
     <Switch>
       <Route path="/" component={Dashboard} />
-      <Route path="/journal" component={() => <div className="p-8"><h1 className="text-2xl font-bold">Journal</h1><p className="text-muted-foreground">Full journal interface coming soon...</p></div>} />
+      <Route path="/journal" component={Journal} />
       <Route path="/practices" component={Practices} />
       <Route path="/practices/create" component={CreatePractice} />
       <Route path="/practices/edit/:id" component={EditPractice} />

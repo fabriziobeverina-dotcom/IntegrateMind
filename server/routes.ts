@@ -122,6 +122,150 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post('/api/journal/entries', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { title, content, tags, mood, isPrivate } = req.body;
+      
+      if (!title || !content) {
+        return res.status(400).json({ message: "Title and content are required" });
+      }
+      
+      const entryData = {
+        userId,
+        title: title.trim(),
+        content: content.trim(),
+        tags: tags || [],
+        mood: mood ? parseInt(mood) : null,
+        isPrivate: Boolean(isPrivate)
+      };
+      
+      const entry = await storage.createJournalEntry(entryData);
+      res.status(201).json(entry);
+    } catch (error) {
+      console.error("Error creating journal entry:", error);
+      res.status(500).json({ message: "Failed to create journal entry" });
+    }
+  });
+
+  app.put('/api/journal/entries/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { id } = req.params;
+      const { title, content, tags, mood, isPrivate } = req.body;
+      
+      // Verify entry belongs to user
+      const entry = await storage.getJournalEntry(id);
+      if (!entry || entry.userId !== userId) {
+        return res.status(404).json({ message: "Journal entry not found" });
+      }
+      
+      const updates = {
+        title: title?.trim(),
+        content: content?.trim(),
+        tags,
+        mood: mood ? parseInt(mood) : null,
+        isPrivate: Boolean(isPrivate)
+      };
+      
+      const updatedEntry = await storage.updateJournalEntry(id, updates);
+      res.json(updatedEntry);
+    } catch (error) {
+      console.error("Error updating journal entry:", error);
+      res.status(500).json({ message: "Failed to update journal entry" });
+    }
+  });
+
+  app.delete('/api/journal/entries/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { id } = req.params;
+      
+      // Verify entry belongs to user
+      const entry = await storage.getJournalEntry(id);
+      if (!entry || entry.userId !== userId) {
+        return res.status(404).json({ message: "Journal entry not found" });
+      }
+      
+      const deleted = await storage.deleteJournalEntry(id);
+      if (deleted) {
+        res.json({ message: "Journal entry deleted successfully" });
+      } else {
+        res.status(500).json({ message: "Failed to delete journal entry" });
+      }
+    } catch (error) {
+      console.error("Error deleting journal entry:", error);
+      res.status(500).json({ message: "Failed to delete journal entry" });
+    }
+  });
+
+  app.get('/api/journal/search', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { query, tags } = req.query;
+      
+      const tagArray = tags ? (typeof tags === 'string' ? [tags] : tags) : undefined;
+      const entries = await storage.searchJournalEntries(userId, query as string || '', tagArray);
+      res.json(entries);
+    } catch (error) {
+      console.error("Error searching journal entries:", error);
+      res.status(500).json({ message: "Failed to search journal entries" });
+    }
+  });
+
+  app.get('/api/prompts/today', isAuthenticated, async (req: any, res) => {
+    try {
+      const prompt = await storage.getTodaysPrompt();
+      res.json(prompt);
+    } catch (error) {
+      console.error("Error fetching today's prompt:", error);
+      res.status(500).json({ message: "Failed to fetch today's prompt" });
+    }
+  });
+
+  app.get('/api/prompts/:promptId/response', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { promptId } = req.params;
+      
+      const response = await storage.getUserPromptResponse(userId, promptId);
+      res.json(response);
+    } catch (error) {
+      console.error("Error fetching prompt response:", error);
+      res.status(500).json({ message: "Failed to fetch prompt response" });
+    }
+  });
+
+  app.post('/api/prompts/:promptId/response', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { promptId } = req.params;
+      const { response } = req.body;
+      
+      if (!response) {
+        return res.status(400).json({ message: "Response is required" });
+      }
+      
+      // Check if user already responded to this prompt
+      const existingResponse = await storage.getUserPromptResponse(userId, promptId);
+      if (existingResponse) {
+        return res.status(409).json({ message: "You have already responded to this prompt" });
+      }
+      
+      const responseData = {
+        userId,
+        promptId,
+        response: response.trim()
+      };
+      
+      const newResponse = await storage.createPromptResponse(responseData);
+      res.status(201).json(newResponse);
+    } catch (error) {
+      console.error("Error creating prompt response:", error);
+      res.status(500).json({ message: "Failed to create prompt response" });
+    }
+  });
+
   // User practices routes (protected) - for consumption only
   app.get('/api/practices', isAuthenticated, async (req: any, res) => {
     try {

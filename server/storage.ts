@@ -199,11 +199,21 @@ export class DatabaseStorage implements IStorage {
   async searchJournalEntries(userId: string, query: string, tags?: string[]): Promise<JournalEntry[]> {
     let whereConditions = [eq(journalEntries.userId, userId)];
     
-    if (query) {
-      whereConditions.push(sql`(${journalEntries.title} ILIKE ${`%${query}%`} OR ${journalEntries.content} ILIKE ${`%${query}%`})`);
+    if (query && query.trim()) {
+      const trimmedQuery = query.trim();
+      // Search in title, content, and also check if the query matches any tag
+      whereConditions.push(sql`(
+        ${journalEntries.title} ILIKE ${`%${trimmedQuery}%`} OR 
+        ${journalEntries.content} ILIKE ${`%${trimmedQuery}%`} OR
+        EXISTS (
+          SELECT 1 FROM unnest(${journalEntries.tags}) AS tag 
+          WHERE tag ILIKE ${`%${trimmedQuery}%`}
+        )
+      )`);
     }
     
     if (tags && tags.length > 0) {
+      // Filter by specific tags using array overlap
       whereConditions.push(sql`${journalEntries.tags} && ${tags}`);
     }
     
