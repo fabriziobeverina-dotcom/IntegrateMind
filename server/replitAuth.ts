@@ -54,12 +54,21 @@ function updateUserSession(
 }
 
 async function upsertUser(claims: any) {
+  // Create a full name from first and last name, fallback to email if not available
+  const firstName = claims["first_name"] || "";
+  const lastName = claims["last_name"] || "";
+  const fullName = `${firstName} ${lastName}`.trim() || claims["email"] || "Unknown User";
+  
   await storage.upsertUser({
     id: claims["sub"],
     email: claims["email"],
-    firstName: claims["first_name"],
-    lastName: claims["last_name"],
-    profileImageUrl: claims["profile_image_url"],
+    name: fullName,
+    avatar: claims["profile_image_url"] || null,
+    provider: "replit",
+    providerId: claims["sub"],
+    firstName: firstName || null,
+    lastName: lastName || null,
+    profileImageUrl: claims["profile_image_url"] || null,
   });
 }
 

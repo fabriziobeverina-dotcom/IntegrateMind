@@ -16,14 +16,18 @@ export const sessions = pgTable(
 
 // Users table - updated for Replit Auth compatibility
 export const users = pgTable("users", {
-  id: varchar("id").primaryKey(), // Use Replit's stable user ID from claims.sub
-  email: varchar("email"),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: text("email").notNull(),
+  name: text("name").notNull(),
+  avatar: text("avatar"),
+  provider: text("provider").notNull(),
+  providerId: text("provider_id").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  journeyStartDate: timestamp("journey_start_date").defaultNow(),
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
-  createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-  journeyStartDate: timestamp("journey_start_date").defaultNow(),
 });
 
 // Journal entries table
