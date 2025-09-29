@@ -11,6 +11,14 @@ import {
   type InsertPractice,
   type UserPractice,
   type InsertUserPractice,
+  type Reading,
+  type InsertReading,
+  type Video,
+  type InsertVideo,
+  type UserReading,
+  type InsertUserReading,
+  type UserVideo,
+  type InsertUserVideo,
   type ProgressEntry,
   type InsertProgressEntry,
   type CommunityPost,
@@ -25,6 +33,10 @@ import {
   journalEntries,
   practices,
   userPractices,
+  readings,
+  videos,
+  userReadings,
+  userVideos,
   progressEntries,
   communityPosts,
   comments,
@@ -36,6 +48,7 @@ import {
 export interface IStorage {
   // User management  
   getUser(id: string): Promise<User | undefined>;
+  getUserById(id: string): Promise<User | undefined>; // Alias for getUser
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: string, updates: Partial<User>): Promise<User | undefined>;
@@ -49,15 +62,37 @@ export interface IStorage {
   deleteJournalEntry(id: string): Promise<boolean>;
   searchJournalEntries(userId: string, query: string, tags?: string[]): Promise<JournalEntry[]>;
   
-  // Practices
+  // Practices (admin-curated)
   getPractices(category?: string): Promise<Practice[]>;
   getPractice(id: string): Promise<Practice | undefined>;
-  createPractice(practice: InsertPractice): Promise<Practice>;
+  createPractice(practice: InsertPractice, adminId: string): Promise<Practice>;
+  updatePractice(id: string, updates: Partial<Practice>): Promise<Practice | undefined>;
+  deletePractice(id: string): Promise<boolean>;
   
   // User practice tracking
   getUserPracticeCompletions(userId: string, limit?: number): Promise<UserPractice[]>;
   completePractice(userPractice: InsertUserPractice): Promise<UserPractice>;
   getUserStreaks(userId: string): Promise<{ journalStreak: number; practiceStreak: number; totalDays: number }>;
+  
+  // Readings (admin-curated)
+  getReadings(category?: string): Promise<Reading[]>;
+  getReading(id: string): Promise<Reading | undefined>;
+  createReading(reading: InsertReading, adminId: string): Promise<Reading>;
+  updateReading(id: string, updates: Partial<Reading>): Promise<Reading | undefined>;
+  deleteReading(id: string): Promise<boolean>;
+  
+  // Videos (admin-curated)
+  getVideos(category?: string): Promise<Video[]>;
+  getVideo(id: string): Promise<Video | undefined>;
+  createVideo(video: InsertVideo, adminId: string): Promise<Video>;
+  updateVideo(id: string, updates: Partial<Video>): Promise<Video | undefined>;
+  deleteVideo(id: string): Promise<boolean>;
+  
+  // User content tracking
+  getUserReadingCompletions(userId: string, limit?: number): Promise<UserReading[]>;
+  completeReading(userReading: InsertUserReading): Promise<UserReading>;
+  getUserVideoHistory(userId: string, limit?: number): Promise<UserVideo[]>;
+  watchVideo(userVideo: InsertUserVideo): Promise<UserVideo>;
   
   // Progress tracking
   getUserProgressEntries(userId: string, startDate?: Date, endDate?: Date): Promise<ProgressEntry[]>;
@@ -93,6 +128,10 @@ export class DatabaseStorage implements IStorage {
   async getUser(id: string): Promise<User | undefined> {
     const result = await this.db.select().from(users).where(eq(users.id, id)).limit(1);
     return result[0];
+  }
+  
+  async getUserById(id: string): Promise<User | undefined> {
+    return this.getUser(id); // Alias for getUser
   }
   
   async getUserByEmail(email: string): Promise<User | undefined> {
@@ -174,33 +213,29 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(journalEntries.createdAt));
   }
   
-  // Practices
-  async getPractices(userId: string, category?: string): Promise<Practice[]> {
-    let whereConditions = [eq(practices.userId, userId)];
+  // Practices (admin-curated)
+  async getPractices(category?: string): Promise<Practice[]> {
+    let whereConditions: any[] = [];
     
     if (category) {
       whereConditions.push(eq(practices.category, category));
     }
     
-    return await this.db.select()
-      .from(practices)
-      .where(and(...whereConditions))
-      .orderBy(practices.title);
+    const query = whereConditions.length > 0 
+      ? this.db.select().from(practices).where(and(...whereConditions))
+      : this.db.select().from(practices);
+      
+    return await query.orderBy(practices.title);
   }
   
-  async getPractice(id: string, userId?: string): Promise<Practice | undefined> {
-    let whereConditions = [eq(practices.id, id)];
-    
-    if (userId) {
-      whereConditions.push(eq(practices.userId, userId));
-    }
-    
-    const result = await this.db.select().from(practices).where(and(...whereConditions)).limit(1);
+  async getPractice(id: string): Promise<Practice | undefined> {
+    const result = await this.db.select().from(practices).where(eq(practices.id, id)).limit(1);
     return result[0];
   }
   
-  async createPractice(practice: InsertPractice): Promise<Practice> {
-    const result = await this.db.insert(practices).values(practice).returning();
+  async createPractice(practice: InsertPractice, adminId: string): Promise<Practice> {
+    const practiceWithAdmin = { ...practice, createdByAdminId: adminId };
+    const result = await this.db.insert(practices).values(practiceWithAdmin).returning();
     return result[0];
   }
   
@@ -428,6 +463,119 @@ export class DatabaseStorage implements IStorage {
   
   async createPromptResponse(response: InsertPromptResponse): Promise<PromptResponse> {
     const result = await this.db.insert(promptResponses).values(response).returning();
+    return result[0];
+  }
+  
+  // Readings (admin-curated)
+  async getReadings(category?: string): Promise<Reading[]> {
+    let whereConditions: any[] = [];
+    
+    if (category) {
+      whereConditions.push(eq(readings.category, category));
+    }
+    
+    const query = whereConditions.length > 0 
+      ? this.db.select().from(readings).where(and(...whereConditions))
+      : this.db.select().from(readings);
+      
+    return await query.orderBy(readings.title);
+  }
+  
+  async getReading(id: string): Promise<Reading | undefined> {
+    const result = await this.db.select().from(readings).where(eq(readings.id, id)).limit(1);
+    return result[0];
+  }
+  
+  async createReading(reading: InsertReading, adminId: string): Promise<Reading> {
+    const readingWithAdmin = { ...reading, createdByAdminId: adminId };
+    const result = await this.db.insert(readings).values(readingWithAdmin).returning();
+    return result[0];
+  }
+  
+  async updateReading(id: string, updates: Partial<Reading>): Promise<Reading | undefined> {
+    const result = await this.db.update(readings)
+      .set(updates)
+      .where(eq(readings.id, id))
+      .returning();
+    return result[0];
+  }
+  
+  async deleteReading(id: string): Promise<boolean> {
+    // First delete any user completions for this reading
+    await this.db.delete(userReadings).where(eq(userReadings.readingId, id));
+    
+    // Then delete the reading itself
+    const result = await this.db.delete(readings).where(eq(readings.id, id));
+    return result.rowCount! > 0;
+  }
+  
+  // Videos (admin-curated)
+  async getVideos(category?: string): Promise<Video[]> {
+    let whereConditions: any[] = [];
+    
+    if (category) {
+      whereConditions.push(eq(videos.category, category));
+    }
+    
+    const query = whereConditions.length > 0 
+      ? this.db.select().from(videos).where(and(...whereConditions))
+      : this.db.select().from(videos);
+      
+    return await query.orderBy(videos.title);
+  }
+  
+  async getVideo(id: string): Promise<Video | undefined> {
+    const result = await this.db.select().from(videos).where(eq(videos.id, id)).limit(1);
+    return result[0];
+  }
+  
+  async createVideo(video: InsertVideo, adminId: string): Promise<Video> {
+    const videoWithAdmin = { ...video, createdByAdminId: adminId };
+    const result = await this.db.insert(videos).values(videoWithAdmin).returning();
+    return result[0];
+  }
+  
+  async updateVideo(id: string, updates: Partial<Video>): Promise<Video | undefined> {
+    const result = await this.db.update(videos)
+      .set(updates)
+      .where(eq(videos.id, id))
+      .returning();
+    return result[0];
+  }
+  
+  async deleteVideo(id: string): Promise<boolean> {
+    // First delete any user watch history for this video
+    await this.db.delete(userVideos).where(eq(userVideos.videoId, id));
+    
+    // Then delete the video itself
+    const result = await this.db.delete(videos).where(eq(videos.id, id));
+    return result.rowCount! > 0;
+  }
+  
+  // User content tracking
+  async getUserReadingCompletions(userId: string, limit = 20): Promise<UserReading[]> {
+    return await this.db.select()
+      .from(userReadings)
+      .where(eq(userReadings.userId, userId))
+      .orderBy(desc(userReadings.completedAt))
+      .limit(limit);
+  }
+  
+  async completeReading(userReading: InsertUserReading): Promise<UserReading> {
+    const result = await this.db.insert(userReadings).values(userReading).returning();
+    return result[0];
+  }
+  
+  async getUserVideoHistory(userId: string, limit = 20): Promise<UserVideo[]> {
+    return await this.db.select()
+      .from(userVideos)
+      .where(eq(userVideos.userId, userId))
+      .orderBy(desc(userVideos.watchedAt))
+      .limit(limit);
+  }
+  
+  async watchVideo(userVideo: InsertUserVideo): Promise<UserVideo> {
+    const result = await this.db.insert(userVideos).values(userVideo).returning();
     return result[0];
   }
 }

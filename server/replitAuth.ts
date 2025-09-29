@@ -141,6 +141,14 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
 
   const now = Math.floor(Date.now() / 1000);
   if (now <= user.expires_at) {
+    // Load user data including admin status
+    try {
+      const dbUser = await storage.getUserById(user.claims.sub);
+      user.isAdmin = dbUser?.isAdmin || false;
+    } catch (error) {
+      console.error("Error loading user data:", error);
+      user.isAdmin = false;
+    }
     return next();
   }
 
@@ -154,9 +162,32 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
     const config = await getOidcConfig();
     const tokenResponse = await client.refreshTokenGrant(config, refreshToken);
     updateUserSession(user, tokenResponse);
+    
+    // Load user data including admin status after token refresh
+    try {
+      const dbUser = await storage.getUserById(user.claims.sub);
+      user.isAdmin = dbUser?.isAdmin || false;
+    } catch (error) {
+      console.error("Error loading user data:", error);
+      user.isAdmin = false;
+    }
+    
     return next();
   } catch (error) {
     res.status(401).json({ message: "Unauthorized" });
     return;
   }
+};
+
+// Admin-only middleware for content management
+export const isAdmin: RequestHandler = async (req, res, next) => {
+  // First ensure user is authenticated
+  isAuthenticated(req, res, () => {
+    const user = req.user as any;
+    if (user && user.isAdmin) {
+      next();
+    } else {
+      res.status(403).json({ message: "Admin access required" });
+    }
+  });
 };
