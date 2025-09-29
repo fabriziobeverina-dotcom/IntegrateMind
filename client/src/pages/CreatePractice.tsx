@@ -13,7 +13,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
+import { useAuth } from "@/hooks/useAuth";
 import { ArrowLeft, Upload, Play, X, FileAudio, FileVideo } from "lucide-react";
+import { Link } from "wouter";
 
 const createPracticeSchema = z.object({
   title: z.string().min(1, "Title is required").max(200, "Title must be less than 200 characters"),
@@ -33,6 +35,8 @@ type CreatePracticeForm = z.infer<typeof createPracticeSchema>;
 export default function CreatePractice() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { user } = useAuth();
+  const isAdmin = (user as any)?.isAdmin;
   const [audioPreview, setAudioPreview] = useState<string | null>(null);
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
   const [uploadingAudio, setUploadingAudio] = useState(false);
@@ -54,21 +58,23 @@ export default function CreatePractice() {
 
   const createPracticeMutation = useMutation({
     mutationFn: async (data: CreatePracticeForm) => {
-      const response = await fetch("/api/practices", {
+      const response = await fetch("/api/admin/practices", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
+        credentials: 'include',
       });
       if (!response.ok) throw new Error("Failed to create practice");
       return response.json();
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/practices"] });
       queryClient.invalidateQueries({ queryKey: ["/api/practices"] });
       toast({
         title: "Practice Created!",
         description: "Your meditation practice has been successfully created.",
       });
-      setLocation("/practices");
+      setLocation("/admin/practices");
     },
     onError: (error) => {
       toast({
@@ -188,16 +194,38 @@ export default function CreatePractice() {
     }
   };
 
+  // Check if user is admin
+  if (!isAdmin) {
+    return (
+      <div className="p-8">
+        <div className="max-w-md mx-auto text-center">
+          <h1 className="text-2xl font-bold text-destructive mb-4">Admin Access Required</h1>
+          <p className="text-muted-foreground mb-4">
+            You need admin privileges to create new practices. Only admin users can add content to the platform.
+          </p>
+          <div className="space-y-2">
+            <Link href="/practices">
+              <Button className="w-full">Browse Practices</Button>
+            </Link>
+            <Link href="/">
+              <Button variant="outline" className="w-full">Return to Dashboard</Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container max-w-4xl mx-auto p-6 space-y-6">
       <div className="flex items-center gap-4">
         <Button 
           variant="ghost" 
-          onClick={() => setLocation("/practices")}
+          onClick={() => setLocation("/admin/practices")}
           data-testid="button-back-to-practices"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Practices
+          Back to Manage Practices
         </Button>
       </div>
 
@@ -205,7 +233,7 @@ export default function CreatePractice() {
         <CardHeader>
           <CardTitle className="text-2xl">Create New Practice</CardTitle>
           <CardDescription>
-            Add your own meditation practice, guided exercise, or wellness content to share with the community.
+            Add a new meditation practice, guided exercise, or wellness content to the platform library.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -528,7 +556,7 @@ export default function CreatePractice() {
                 <Button 
                   type="button" 
                   variant="outline" 
-                  onClick={() => setLocation("/practices")}
+                  onClick={() => setLocation("/admin/practices")}
                   data-testid="button-cancel-create"
                 >
                   Cancel

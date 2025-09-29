@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { setupAuth, isAuthenticated, isAdmin } from "./replitAuth";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
 
@@ -122,12 +122,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Practices routes (protected)
+  // User practices routes (protected) - for consumption only
   app.get('/api/practices', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const category = req.query.category as string;
-      const practices = await storage.getPractices(userId, category);
+      const practices = await storage.getPractices(category);
       
       // Get user completions to mark completed practices
       const completions = await storage.getUserPracticeCompletions(userId);
@@ -150,10 +150,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/practices/:id', isAuthenticated, async (req: any, res) => {
     try {
       const { id } = req.params;
-      const userId = req.user.claims.sub;
-      const practice = await storage.getPractice(id, userId);
+      const practice = await storage.getPractice(id);
       if (!practice) {
-        return res.status(404).json({ message: "Practice not found or access denied" });
+        return res.status(404).json({ message: "Practice not found" });
       }
       res.json(practice);
     } catch (error) {
@@ -162,9 +161,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/practices', isAuthenticated, async (req: any, res) => {
+  // Admin practices routes (admin-only) - for content management
+  app.get('/api/admin/practices', isAdmin, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const category = req.query.category as string;
+      const practices = await storage.getPractices(category);
+      res.json(practices);
+    } catch (error) {
+      console.error("Error fetching admin practices:", error);
+      res.status(500).json({ message: "Failed to fetch practices" });
+    }
+  });
+
+  app.post('/api/admin/practices', isAdmin, async (req: any, res) => {
+    try {
+      const adminId = req.user.claims.sub;
       const { title, description, duration, category, instructor, videoUrl, audioUrl, isPremium } = req.body;
       
       if (!title || !description || !duration || !category || !instructor) {
@@ -172,7 +183,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const practiceData = {
-        userId,
         title: title.trim(),
         description: description.trim(),
         duration: duration.trim(),
@@ -183,7 +193,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isPremium: Boolean(isPremium)
       };
       
-      const practice = await storage.createPractice(practiceData);
+      const practice = await storage.createPractice(practiceData, adminId);
       res.status(201).json(practice);
     } catch (error) {
       console.error("Error creating practice:", error);
@@ -191,16 +201,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/practices/:id', isAuthenticated, async (req: any, res) => {
+  app.put('/api/admin/practices/:id', isAdmin, async (req: any, res) => {
     try {
       const { id } = req.params;
-      const userId = req.user.claims.sub;
       const { title, description, duration, category, instructor, videoUrl, audioUrl, isPremium } = req.body;
       
-      // Check if practice exists and user owns it
-      const existingPractice = await storage.getPractice(id, userId);
+      // Check if practice exists
+      const existingPractice = await storage.getPractice(id);
       if (!existingPractice) {
-        return res.status(404).json({ message: "Practice not found or access denied" });
+        return res.status(404).json({ message: "Practice not found" });
       }
       
       const updates = {
@@ -226,15 +235,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/practices/:id', isAuthenticated, async (req: any, res) => {
+  app.delete('/api/admin/practices/:id', isAdmin, async (req: any, res) => {
     try {
       const { id } = req.params;
-      const userId = req.user.claims.sub;
       
-      // Check if practice exists and user owns it
-      const existingPractice = await storage.getPractice(id, userId);
+      // Check if practice exists
+      const existingPractice = await storage.getPractice(id);
       if (!existingPractice) {
-        return res.status(404).json({ message: "Practice not found or access denied" });
+        return res.status(404).json({ message: "Practice not found" });
       }
       
       const success = await storage.deletePractice(id);
@@ -246,6 +254,281 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting practice:", error);
       res.status(500).json({ message: "Failed to delete practice" });
+    }
+  });
+
+  // Admin readings routes (admin-only) - for content management  
+  app.get('/api/admin/readings', isAdmin, async (req: any, res) => {
+    try {
+      const category = req.query.category as string;
+      const readings = await storage.getReadings(category);
+      res.json(readings);
+    } catch (error) {
+      console.error("Error fetching admin readings:", error);
+      res.status(500).json({ message: "Failed to fetch readings" });
+    }
+  });
+
+  app.post('/api/admin/readings', isAdmin, async (req: any, res) => {
+    try {
+      const adminId = req.user.claims.sub;
+      const { title, description, content, author, category, readTime, isPremium } = req.body;
+      
+      if (!title || !description || !content || !category) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+      
+      const readingData = {
+        title: title.trim(),
+        description: description.trim(),
+        content: content.trim(),
+        author: author?.trim() || null,
+        category: category.trim(),
+        readTime: readTime?.trim() || null,
+        isPremium: Boolean(isPremium)
+      };
+      
+      const reading = await storage.createReading(readingData, adminId);
+      res.status(201).json(reading);
+    } catch (error) {
+      console.error("Error creating reading:", error);
+      res.status(500).json({ message: "Failed to create reading" });
+    }
+  });
+
+  app.put('/api/admin/readings/:id', isAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { title, description, content, author, category, readTime, isPremium } = req.body;
+      
+      const existingReading = await storage.getReading(id);
+      if (!existingReading) {
+        return res.status(404).json({ message: "Reading not found" });
+      }
+      
+      const updates = {
+        ...(title && { title: title.trim() }),
+        ...(description && { description: description.trim() }),
+        ...(content && { content: content.trim() }),
+        ...(author && { author: author.trim() }),
+        ...(category && { category: category.trim() }),
+        readTime: readTime?.trim() || null,
+        ...(isPremium !== undefined && { isPremium: Boolean(isPremium) })
+      };
+      
+      const reading = await storage.updateReading(id, updates);
+      res.json(reading);
+    } catch (error) {
+      console.error("Error updating reading:", error);
+      res.status(500).json({ message: "Failed to update reading" });
+    }
+  });
+
+  app.delete('/api/admin/readings/:id', isAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      
+      const existingReading = await storage.getReading(id);
+      if (!existingReading) {
+        return res.status(404).json({ message: "Reading not found" });
+      }
+      
+      const success = await storage.deleteReading(id);
+      if (!success) {
+        return res.status(404).json({ message: "Reading not found" });
+      }
+      
+      res.json({ message: "Reading deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting reading:", error);
+      res.status(500).json({ message: "Failed to delete reading" });
+    }
+  });
+
+  // Admin videos routes (admin-only) - for content management
+  app.get('/api/admin/videos', isAdmin, async (req: any, res) => {
+    try {
+      const category = req.query.category as string;
+      const videos = await storage.getVideos(category);
+      res.json(videos);
+    } catch (error) {
+      console.error("Error fetching admin videos:", error);
+      res.status(500).json({ message: "Failed to fetch videos" });
+    }
+  });
+
+  app.post('/api/admin/videos', isAdmin, async (req: any, res) => {
+    try {
+      const adminId = req.user.claims.sub;
+      const { title, description, presenter, videoUrl, thumbnail, category, duration, isPremium } = req.body;
+      
+      if (!title || !description || !presenter || !videoUrl || !category) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+      
+      const videoData = {
+        title: title.trim(),
+        description: description.trim(),
+        presenter: presenter.trim(),
+        videoUrl: videoUrl.trim(),
+        thumbnail: thumbnail?.trim() || null,
+        category: category.trim(),
+        duration: duration?.trim() || null,
+        isPremium: Boolean(isPremium)
+      };
+      
+      const video = await storage.createVideo(videoData, adminId);
+      res.status(201).json(video);
+    } catch (error) {
+      console.error("Error creating video:", error);
+      res.status(500).json({ message: "Failed to create video" });
+    }
+  });
+
+  app.put('/api/admin/videos/:id', isAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { title, description, presenter, videoUrl, thumbnail, category, duration, isPremium } = req.body;
+      
+      const existingVideo = await storage.getVideo(id);
+      if (!existingVideo) {
+        return res.status(404).json({ message: "Video not found" });
+      }
+      
+      const updates = {
+        ...(title && { title: title.trim() }),
+        ...(description && { description: description.trim() }),
+        ...(presenter && { presenter: presenter.trim() }),
+        ...(videoUrl && { videoUrl: videoUrl.trim() }),
+        thumbnail: thumbnail?.trim() || null,
+        ...(category && { category: category.trim() }),
+        duration: duration?.trim() || null,
+        ...(isPremium !== undefined && { isPremium: Boolean(isPremium) })
+      };
+      
+      const video = await storage.updateVideo(id, updates);
+      res.json(video);
+    } catch (error) {
+      console.error("Error updating video:", error);
+      res.status(500).json({ message: "Failed to update video" });
+    }
+  });
+
+  app.delete('/api/admin/videos/:id', isAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      
+      const existingVideo = await storage.getVideo(id);
+      if (!existingVideo) {
+        return res.status(404).json({ message: "Video not found" });
+      }
+      
+      const success = await storage.deleteVideo(id);
+      if (!success) {
+        return res.status(404).json({ message: "Video not found" });
+      }
+      
+      res.json({ message: "Video deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting video:", error);
+      res.status(500).json({ message: "Failed to delete video" });
+    }
+  });
+
+  // User content consumption routes
+  app.get('/api/readings', isAuthenticated, async (req: any, res) => {
+    try {
+      const category = req.query.category as string;
+      const readings = await storage.getReadings(category);
+      res.json(readings);
+    } catch (error) {
+      console.error("Error fetching readings:", error);
+      res.status(500).json({ message: "Failed to fetch readings" });
+    }
+  });
+
+  app.get('/api/readings/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const reading = await storage.getReading(id);
+      if (!reading) {
+        return res.status(404).json({ message: "Reading not found" });
+      }
+      res.json(reading);
+    } catch (error) {
+      console.error("Error fetching reading:", error);
+      res.status(500).json({ message: "Failed to fetch reading" });
+    }
+  });
+
+  app.post('/api/readings/:id/complete', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user.claims.sub;
+      
+      const reading = await storage.getReading(id);
+      if (!reading) {
+        return res.status(404).json({ message: "Reading not found" });
+      }
+      
+      const completion = await storage.completeReading({
+        userId,
+        readingId: id,
+        notes: req.body.notes || null
+      });
+      
+      res.status(201).json(completion);
+    } catch (error) {
+      console.error("Error completing reading:", error);
+      res.status(500).json({ message: "Failed to complete reading" });
+    }
+  });
+
+  app.get('/api/videos', isAuthenticated, async (req: any, res) => {
+    try {
+      const category = req.query.category as string;
+      const videos = await storage.getVideos(category);
+      res.json(videos);
+    } catch (error) {
+      console.error("Error fetching videos:", error);
+      res.status(500).json({ message: "Failed to fetch videos" });
+    }
+  });
+
+  app.get('/api/videos/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const video = await storage.getVideo(id);
+      if (!video) {
+        return res.status(404).json({ message: "Video not found" });
+      }
+      res.json(video);
+    } catch (error) {
+      console.error("Error fetching video:", error);
+      res.status(500).json({ message: "Failed to fetch video" });
+    }
+  });
+
+  app.post('/api/videos/:id/watch', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user.claims.sub;
+      
+      const video = await storage.getVideo(id);
+      if (!video) {
+        return res.status(404).json({ message: "Video not found" });
+      }
+      
+      const watchRecord = await storage.watchVideo({
+        userId,
+        videoId: id,
+        notes: req.body.notes || null
+      });
+      
+      res.status(201).json(watchRecord);
+    } catch (error) {
+      console.error("Error recording video watch:", error);
+      res.status(500).json({ message: "Failed to record video watch" });
     }
   });
 

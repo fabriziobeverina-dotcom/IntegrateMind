@@ -12,6 +12,8 @@ import Landing from "@/pages/Landing";
 import Practices from "@/pages/Practices";
 import CreatePractice from "@/pages/CreatePractice";
 import EditPractice from "@/pages/EditPractice";
+import AdminDashboard from "@/pages/AdminDashboard";
+import AdminPractices from "@/pages/AdminPractices";
 import NotFound from "@/pages/not-found";
 
 function AuthenticatedRouter() {
@@ -22,6 +24,12 @@ function AuthenticatedRouter() {
       <Route path="/practices" component={Practices} />
       <Route path="/practices/create" component={CreatePractice} />
       <Route path="/practices/edit/:id" component={EditPractice} />
+      <Route path="/readings" component={() => <div className="p-8"><h1 className="text-2xl font-bold">Reading Library</h1><p className="text-muted-foreground">Reading library coming soon...</p></div>} />
+      <Route path="/videos" component={() => <div className="p-8"><h1 className="text-2xl font-bold">Video Library</h1><p className="text-muted-foreground">Video library coming soon...</p></div>} />
+      <Route path="/admin" component={AdminDashboard} />
+      <Route path="/admin/practices" component={AdminPractices} />
+      <Route path="/admin/readings" component={() => <div className="p-8"><h1 className="text-2xl font-bold">Manage Readings</h1><p className="text-muted-foreground">Reading management interface coming soon...</p></div>} />
+      <Route path="/admin/videos" component={() => <div className="p-8"><h1 className="text-2xl font-bold">Manage Videos</h1><p className="text-muted-foreground">Video management interface coming soon...</p></div>} />
       <Route path="/community" component={() => <div className="p-8"><h1 className="text-2xl font-bold">Community</h1><p className="text-muted-foreground">Full community features coming soon...</p></div>} />
       <Route path="/progress" component={() => <div className="p-8"><h1 className="text-2xl font-bold">Progress</h1><p className="text-muted-foreground">Detailed progress tracking coming soon...</p></div>} />
       <Route path="/profile" component={() => <div className="p-8"><h1 className="text-2xl font-bold">Profile</h1><p className="text-muted-foreground">User profile settings coming soon...</p></div>} />
