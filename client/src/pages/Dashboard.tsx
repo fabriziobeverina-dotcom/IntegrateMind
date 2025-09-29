@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { JournalEntry } from "@/components/JournalEntry";
 import { DailyPrompt } from "@/components/DailyPrompt";
 import { PracticeCard } from "@/components/PracticeCard";
@@ -11,6 +12,7 @@ import { Plus, Filter } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 export default function Dashboard() {
+  const [, setLocation] = useLocation();
   const [selectedMetric, setSelectedMetric] = useState<'mood' | 'sleep' | 'grounding'>('mood');
   const [activeFilter, setActiveFilter] = useState('all');
 
@@ -112,7 +114,12 @@ export default function Dashboard() {
           />
         </div>
         <Card className="p-6 flex flex-col justify-center items-center space-y-3">
-          <Button size="lg" className="w-full" data-testid="button-quick-journal">
+          <Button 
+            size="lg" 
+            className="w-full" 
+            onClick={() => setLocation('/journal')}
+            data-testid="button-quick-journal"
+          >
             <Plus className="h-4 w-4 mr-2" />
             Quick Journal Entry
           </Button>
