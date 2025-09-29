@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -116,10 +116,10 @@ export default function Settings() {
   const { toast } = useToast();
 
   // Check notification support on component mount
-  useState(() => {
+  useEffect(() => {
     setNotificationSupported(notificationManager.isNotificationSupported());
     setNotificationPermission(notificationManager.getPermissionStatus());
-  });
+  }, []);
 
   // Fetch current user settings
   const { data: user, isLoading } = useQuery({
