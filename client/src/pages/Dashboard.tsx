@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { JournalEntry } from "@/components/JournalEntry";
 import { DailyPrompt } from "@/components/DailyPrompt";
 import { PracticeCard } from "@/components/PracticeCard";
@@ -16,16 +17,15 @@ export default function Dashboard() {
   const [selectedMetric, setSelectedMetric] = useState<'mood' | 'sleep' | 'grounding'>('mood');
   const [activeFilter, setActiveFilter] = useState('all');
 
-  // todo: remove mock data when implementing real functionality
-  const mockProgressData = [
-    { date: 'Mon', mood: 7, sleep: 6, grounding: 8 },
-    { date: 'Tue', mood: 8, sleep: 7, grounding: 7 },
-    { date: 'Wed', mood: 6, sleep: 5, grounding: 6 },
-    { date: 'Thu', mood: 9, sleep: 8, grounding: 9 },
-    { date: 'Fri', mood: 7, sleep: 6, grounding: 8 },
-    { date: 'Sat', mood: 8, sleep: 9, grounding: 9 },
-    { date: 'Sun', mood: 9, sleep: 8, grounding: 8 }
-  ];
+  // Fetch real progress data
+  const { data: progressData = [], isLoading: progressLoading } = useQuery({
+    queryKey: ['/api/progress/aggregated', { days: 7 }],
+    queryFn: async () => {
+      const response = await fetch('/api/progress/aggregated?days=7');
+      if (!response.ok) throw new Error('Failed to fetch progress data');
+      return response.json();
+    }
+  });
 
   const mockPractices = [
     {
@@ -173,9 +173,10 @@ export default function Dashboard() {
       <div className="space-y-4">
         <h2 className="text-xl font-semibold">Your Progress</h2>
         <ProgressChart
-          data={mockProgressData}
+          data={progressData}
           selectedMetric={selectedMetric}
           onMetricSelect={setSelectedMetric}
+          isLoading={progressLoading}
         />
       </div>
 

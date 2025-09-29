@@ -15,6 +15,7 @@ interface ProgressChartProps {
   data: ProgressData[];
   selectedMetric: 'mood' | 'sleep' | 'grounding';
   onMetricSelect: (metric: 'mood' | 'sleep' | 'grounding') => void;
+  isLoading?: boolean;
 }
 
 const metricConfig = {
@@ -38,7 +39,7 @@ const metricConfig = {
   }
 };
 
-export function ProgressChart({ data, selectedMetric, onMetricSelect }: ProgressChartProps) {
+export function ProgressChart({ data, selectedMetric, onMetricSelect, isLoading = false }: ProgressChartProps) {
   const currentConfig = metricConfig[selectedMetric];
   const IconComponent = currentConfig.icon;
   
@@ -112,38 +113,54 @@ export function ProgressChart({ data, selectedMetric, onMetricSelect }: Progress
         </div>
 
         <div className="h-[200px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis 
-                dataKey="date" 
-                stroke="hsl(var(--muted-foreground))"
-                fontSize={12}
-              />
-              <YAxis 
-                domain={[0, 10]} 
-                stroke="hsl(var(--muted-foreground))"
-                fontSize={12}
-              />
-              <Tooltip 
-                formatter={formatTooltip}
-                labelStyle={{ color: 'hsl(var(--foreground))' }}
-                contentStyle={{ 
-                  backgroundColor: 'hsl(var(--card))', 
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '6px'
-                }}
-              />
-              <Line 
-                type="monotone" 
-                dataKey={selectedMetric}
-                stroke={currentConfig.color}
-                strokeWidth={3}
-                dot={{ fill: currentConfig.color, strokeWidth: 2, r: 4 }}
-                activeDot={{ r: 6, stroke: currentConfig.color, strokeWidth: 2 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+          {isLoading ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center space-y-2">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                <p className="text-sm text-muted-foreground">Loading progress data...</p>
+              </div>
+            </div>
+          ) : data.length === 0 ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center space-y-2">
+                <p className="text-muted-foreground">No progress data available</p>
+                <p className="text-sm text-muted-foreground">Start tracking your mood in journal entries or daily progress</p>
+              </div>
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={data}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis 
+                  dataKey="date" 
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={12}
+                />
+                <YAxis 
+                  domain={[0, 10]} 
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={12}
+                />
+                <Tooltip 
+                  formatter={formatTooltip}
+                  labelStyle={{ color: 'hsl(var(--foreground))' }}
+                  contentStyle={{ 
+                    backgroundColor: 'hsl(var(--card))', 
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '6px'
+                  }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey={selectedMetric}
+                  stroke={currentConfig.color}
+                  strokeWidth={3}
+                  dot={{ fill: currentConfig.color, strokeWidth: 2, r: 4 }}
+                  activeDot={{ r: 6, stroke: currentConfig.color, strokeWidth: 2 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
         </div>
       </div>
     </Card>

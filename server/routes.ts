@@ -266,6 +266,133 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Progress tracking routes (protected)
+  app.get('/api/progress/entries', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { startDate, endDate } = req.query;
+      
+      const start = startDate ? new Date(startDate as string) : undefined;
+      const end = endDate ? new Date(endDate as string) : undefined;
+      
+      const entries = await storage.getUserProgressEntries(userId, start, end);
+      res.json(entries);
+    } catch (error) {
+      console.error("Error fetching progress entries:", error);
+      res.status(500).json({ message: "Failed to fetch progress entries" });
+    }
+  });
+
+  app.post('/api/progress/entries', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { date, mood, sleep, grounding, notes } = req.body;
+      
+      if (!date) {
+        return res.status(400).json({ message: "Date is required" });
+      }
+      
+      const entryData = {
+        userId,
+        date: new Date(date),
+        mood: mood ? parseInt(mood) : null,
+        sleep: sleep ? parseInt(sleep) : null,
+        grounding: grounding ? parseInt(grounding) : null,
+        notes: notes?.trim() || null
+      };
+      
+      const entry = await storage.createProgressEntry(entryData);
+      res.status(201).json(entry);
+    } catch (error) {
+      console.error("Error creating progress entry:", error);
+      res.status(500).json({ message: "Failed to create progress entry" });
+    }
+  });
+
+  app.put('/api/progress/entries/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { mood, sleep, grounding, notes } = req.body;
+      
+      const updates = {
+        mood: mood ? parseInt(mood) : null,
+        sleep: sleep ? parseInt(sleep) : null,
+        grounding: grounding ? parseInt(grounding) : null,
+        notes: notes?.trim() || null
+      };
+      
+      const updatedEntry = await storage.updateProgressEntry(id, updates);
+      if (!updatedEntry) {
+        return res.status(404).json({ message: "Progress entry not found" });
+      }
+      
+      res.json(updatedEntry);
+    } catch (error) {
+      console.error("Error updating progress entry:", error);
+      res.status(500).json({ message: "Failed to update progress entry" });
+    }
+  });
+
+  app.get('/api/progress/aggregated', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { days = 7 } = req.query;
+      const numDays = parseInt(days as string);
+      
+      // Get date range
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(endDate.getDate() - numDays + 1);
+      
+      // Get progress entries for the date range
+      const progressEntries = await storage.getUserProgressEntries(userId, startDate, endDate);
+      
+      // Get journal entries with mood data for the same period
+      const journalEntries = await storage.getUserJournalEntries(userId, 50); // Get recent entries
+      
+      // Create aggregated data for each day
+      const aggregatedData = [];
+      for (let i = 0; i < numDays; i++) {
+        const date = new Date(startDate);
+        date.setDate(startDate.getDate() + i);
+        const dateStr = date.toISOString().split('T')[0];
+        
+        // Find progress entry for this date
+        const progressEntry = progressEntries.find(entry => 
+          entry.date && entry.date.toISOString().split('T')[0] === dateStr
+        );
+        
+        // Calculate average mood from journal entries for this date
+        const dayJournalEntries = journalEntries.filter(entry => {
+          const entryDate = new Date(entry.createdAt).toISOString().split('T')[0];
+          return entryDate === dateStr && entry.mood !== null;
+        });
+        
+        const avgJournalMood = dayJournalEntries.length > 0
+          ? Math.round(dayJournalEntries.reduce((sum, entry) => sum + (entry.mood || 0), 0) / dayJournalEntries.length)
+          : null;
+        
+        // Use progress entry mood if available, otherwise use journal average
+        const mood = progressEntry?.mood || avgJournalMood;
+        
+        aggregatedData.push({
+          date: date.toLocaleDateString('en-US', { weekday: 'short' }),
+          fullDate: dateStr,
+          mood: mood,
+          sleep: progressEntry?.sleep || null,
+          grounding: progressEntry?.grounding || null,
+          hasProgressEntry: !!progressEntry,
+          journalEntryCount: dayJournalEntries.length
+        });
+      }
+      
+      res.json(aggregatedData);
+    } catch (error) {
+      console.error("Error fetching aggregated progress:", error);
+      res.status(500).json({ message: "Failed to fetch aggregated progress" });
+    }
+  });
+
   // User practices routes (protected) - for consumption only
   app.get('/api/practices', isAuthenticated, async (req: any, res) => {
     try {
