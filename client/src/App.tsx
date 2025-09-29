@@ -9,6 +9,9 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { useAuth } from "@/hooks/useAuth";
 import Dashboard from "@/pages/Dashboard";
 import Landing from "@/pages/Landing";
+import Practices from "@/pages/Practices";
+import CreatePractice from "@/pages/CreatePractice";
+import EditPractice from "@/pages/EditPractice";
 import NotFound from "@/pages/not-found";
 
 function AuthenticatedRouter() {
@@ -16,7 +19,9 @@ function AuthenticatedRouter() {
     <Switch>
       <Route path="/" component={Dashboard} />
       <Route path="/journal" component={() => <div className="p-8"><h1 className="text-2xl font-bold">Journal</h1><p className="text-muted-foreground">Full journal interface coming soon...</p></div>} />
-      <Route path="/practices" component={() => <div className="p-8"><h1 className="text-2xl font-bold">Practices</h1><p className="text-muted-foreground">Practice library coming soon...</p></div>} />
+      <Route path="/practices" component={Practices} />
+      <Route path="/practices/create" component={CreatePractice} />
+      <Route path="/practices/edit/:id" component={EditPractice} />
       <Route path="/community" component={() => <div className="p-8"><h1 className="text-2xl font-bold">Community</h1><p className="text-muted-foreground">Full community features coming soon...</p></div>} />
       <Route path="/progress" component={() => <div className="p-8"><h1 className="text-2xl font-bold">Progress</h1><p className="text-muted-foreground">Detailed progress tracking coming soon...</p></div>} />
       <Route path="/profile" component={() => <div className="p-8"><h1 className="text-2xl font-bold">Profile</h1><p className="text-muted-foreground">User profile settings coming soon...</p></div>} />

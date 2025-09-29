@@ -47,6 +47,7 @@ export const journalEntries = pgTable("journal_entries", {
 // Daily practices table
 export const practices = pgTable("practices", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id), // Add user ownership
   title: text("title").notNull(),
   description: text("description").notNull(),
   duration: text("duration").notNull(), // e.g., "15 min", "30 min"

@@ -175,27 +175,50 @@ export class DatabaseStorage implements IStorage {
   }
   
   // Practices
-  async getPractices(category?: string): Promise<Practice[]> {
+  async getPractices(userId: string, category?: string): Promise<Practice[]> {
+    let whereConditions = [eq(practices.userId, userId)];
+    
     if (category) {
-      return await this.db.select()
-        .from(practices)
-        .where(eq(practices.category, category))
-        .orderBy(practices.title);
+      whereConditions.push(eq(practices.category, category));
     }
     
     return await this.db.select()
       .from(practices)
+      .where(and(...whereConditions))
       .orderBy(practices.title);
   }
   
-  async getPractice(id: string): Promise<Practice | undefined> {
-    const result = await this.db.select().from(practices).where(eq(practices.id, id)).limit(1);
+  async getPractice(id: string, userId?: string): Promise<Practice | undefined> {
+    let whereConditions = [eq(practices.id, id)];
+    
+    if (userId) {
+      whereConditions.push(eq(practices.userId, userId));
+    }
+    
+    const result = await this.db.select().from(practices).where(and(...whereConditions)).limit(1);
     return result[0];
   }
   
   async createPractice(practice: InsertPractice): Promise<Practice> {
     const result = await this.db.insert(practices).values(practice).returning();
     return result[0];
+  }
+  
+  async updatePractice(id: string, updates: Partial<Practice>): Promise<Practice | undefined> {
+    const result = await this.db.update(practices)
+      .set(updates)
+      .where(eq(practices.id, id))
+      .returning();
+    return result[0];
+  }
+  
+  async deletePractice(id: string): Promise<boolean> {
+    // First delete any user completions for this practice
+    await this.db.delete(userPractices).where(eq(userPractices.practiceId, id));
+    
+    // Then delete the practice itself
+    const result = await this.db.delete(practices).where(eq(practices.id, id));
+    return result.rowCount! > 0;
   }
   
   // User practice tracking
