@@ -143,7 +143,7 @@ export default function Settings() {
   });
 
   // Update form when user data loads
-  useState(() => {
+  useEffect(() => {
     if (user) {
       form.reset({
         reminderEnabled: user.reminderEnabled || false,
@@ -152,7 +152,7 @@ export default function Settings() {
         reminderTypes: user.reminderTypes || []
       });
     }
-  });
+  }, [user, form]);
 
   // Save reminder settings mutation
   const saveSettingsMutation = useMutation({
