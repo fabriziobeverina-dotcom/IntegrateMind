@@ -100,6 +100,13 @@ export default function Community() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/community/posts'] });
     },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to like post. Please try again.",
+        variant: "destructive",
+      });
+    },
   });
 
   // Unlike post mutation
@@ -109,6 +116,13 @@ export default function Community() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/community/posts'] });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to unlike post. Please try again.",
+        variant: "destructive",
+      });
     },
   });
 
