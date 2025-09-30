@@ -868,6 +868,100 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post('/api/community/posts', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { content, tags, isAnonymous } = req.body;
+      
+      if (!content || content.trim().length === 0) {
+        return res.status(400).json({ message: "Content is required" });
+      }
+      
+      const post = await storage.createCommunityPost({
+        userId,
+        content,
+        tags: tags || [],
+        isAnonymous: isAnonymous || false
+      });
+      
+      res.status(201).json(post);
+    } catch (error) {
+      console.error("Error creating community post:", error);
+      res.status(500).json({ message: "Failed to create post" });
+    }
+  });
+
+  app.post('/api/community/posts/:id/like', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const postId = req.params.id;
+      
+      const success = await storage.likeCommunityPost(postId, userId);
+      
+      if (success) {
+        res.json({ message: "Post liked successfully" });
+      } else {
+        res.status(500).json({ message: "Failed to like post" });
+      }
+    } catch (error) {
+      console.error("Error liking post:", error);
+      res.status(500).json({ message: "Failed to like post" });
+    }
+  });
+
+  app.delete('/api/community/posts/:id/like', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const postId = req.params.id;
+      
+      const success = await storage.unlikeCommunityPost(postId, userId);
+      
+      if (success) {
+        res.json({ message: "Post unliked successfully" });
+      } else {
+        res.status(500).json({ message: "Failed to unlike post" });
+      }
+    } catch (error) {
+      console.error("Error unliking post:", error);
+      res.status(500).json({ message: "Failed to unlike post" });
+    }
+  });
+
+  app.get('/api/community/posts/:id/comments', isAuthenticated, async (req: any, res) => {
+    try {
+      const postId = req.params.id;
+      const comments = await storage.getPostComments(postId);
+      res.json(comments);
+    } catch (error) {
+      console.error("Error fetching comments:", error);
+      res.status(500).json({ message: "Failed to fetch comments" });
+    }
+  });
+
+  app.post('/api/community/posts/:id/comments', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const postId = req.params.id;
+      const { content, isAnonymous } = req.body;
+      
+      if (!content || content.trim().length === 0) {
+        return res.status(400).json({ message: "Comment content is required" });
+      }
+      
+      const comment = await storage.createComment({
+        postId,
+        userId,
+        content,
+        isAnonymous: isAnonymous || false
+      });
+      
+      res.status(201).json(comment);
+    } catch (error) {
+      console.error("Error creating comment:", error);
+      res.status(500).json({ message: "Failed to create comment" });
+    }
+  });
+
   // Daily prompt route (protected)
   app.get('/api/prompt/today', isAuthenticated, async (req: any, res) => {
     try {
