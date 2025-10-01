@@ -91,15 +91,15 @@ function AppContent() {
         <div className="flex h-screen w-full">
           <AppSidebar />
           <div className="flex flex-col flex-1">
-            <header className="flex items-center justify-between p-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <header className="flex items-center justify-between p-2 sm:p-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
               <SidebarTrigger data-testid="button-sidebar-toggle" />
-              <div className="flex items-center gap-4">
-                <div className="text-sm text-muted-foreground">
+              <div className="flex items-center gap-2 sm:gap-4">
+                <div className="hidden sm:block text-sm text-muted-foreground">
                   Welcome back, {(user as any)?.firstName || (user as any)?.email || 'User'}
                 </div>
                 <button
                   onClick={() => window.location.href = '/api/logout'}
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  className="text-xs sm:text-sm text-muted-foreground hover:text-foreground transition-colors"
                   data-testid="button-logout"
                 >
                   Logout
@@ -107,7 +107,7 @@ function AppContent() {
               </div>
             </header>
             <main className="flex-1 overflow-auto">
-              <div className="container mx-auto p-6 max-w-7xl">
+              <div className="container mx-auto p-3 sm:p-6 max-w-7xl">
                 <AuthenticatedRouter />
               </div>
             </main>

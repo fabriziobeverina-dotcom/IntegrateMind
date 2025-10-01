@@ -225,15 +225,15 @@ export default function Community() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="p-3 rounded-lg bg-primary/10">
-          <Users className="h-6 w-6 text-primary" />
+      <div className="flex items-center gap-2 sm:gap-3">
+        <div className="p-2 sm:p-3 rounded-lg bg-primary/10">
+          <Users className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
         </div>
         <div>
-          <h1 className="text-3xl font-bold" data-testid="text-community-title">Community</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold" data-testid="text-community-title">Community</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
             Share your journey and connect with others
           </p>
         </div>
@@ -252,7 +252,7 @@ export default function Community() {
             rows={4}
             data-testid="input-post-content"
           />
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div className="flex items-center space-x-2">
               <Switch
                 id="post-anonymous"
@@ -260,7 +260,7 @@ export default function Community() {
                 onCheckedChange={setIsAnonymous}
                 data-testid="switch-post-anonymous"
               />
-              <Label htmlFor="post-anonymous" className="text-sm text-muted-foreground">
+              <Label htmlFor="post-anonymous" className="text-xs sm:text-sm text-muted-foreground">
                 Post anonymously
               </Label>
             </div>
@@ -268,6 +268,7 @@ export default function Community() {
               onClick={handleCreatePost}
               disabled={createPostMutation.isPending || !newPostContent.trim()}
               data-testid="button-create-post"
+              className="w-full sm:w-auto"
             >
               {createPostMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -360,7 +361,7 @@ export default function Community() {
                         rows={2}
                         data-testid={`input-comment-${post.id}`}
                       />
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-3">
                         <div className="flex items-center space-x-2">
                           <Switch
                             id={`comment-anonymous-${post.id}`}
@@ -368,7 +369,7 @@ export default function Community() {
                             onCheckedChange={setCommentAnonymous}
                             data-testid={`switch-comment-anonymous-${post.id}`}
                           />
-                          <Label htmlFor={`comment-anonymous-${post.id}`} className="text-sm text-muted-foreground">
+                          <Label htmlFor={`comment-anonymous-${post.id}`} className="text-xs sm:text-sm text-muted-foreground">
                             Comment anonymously
                           </Label>
                         </div>
@@ -377,6 +378,7 @@ export default function Community() {
                           onClick={() => handleCreateComment(post.id)}
                           disabled={createCommentMutation.isPending || !commentContent.trim()}
                           data-testid={`button-add-comment-${post.id}`}
+                          className="w-full sm:w-auto"
                         >
                           {createCommentMutation.isPending ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
