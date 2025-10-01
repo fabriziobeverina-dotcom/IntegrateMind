@@ -24,11 +24,26 @@ const getOidcConfig = memoize(
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
   const pgStore = connectPg(session);
+  
+  // Add connection timeout to handle Neon scale-to-zero wake-up
+  const connectionString = process.env.DATABASE_URL?.includes('connect_timeout')
+    ? process.env.DATABASE_URL
+    : `${process.env.DATABASE_URL}${process.env.DATABASE_URL?.includes('?') ? '&' : '?'}connect_timeout=20`;
+  
   const sessionStore = new pgStore({
-    conString: process.env.DATABASE_URL,
+    conString: connectionString,
     createTableIfMissing: false,
     ttl: sessionTtl,
     tableName: "sessions",
+    // Disable automatic pruning to avoid errors during Neon scale-to-zero wake-up
+    pruneSessionInterval: false,
+    // Suppress non-critical session pruning errors (Neon scale-to-zero wake-up)
+    errorLog: (error: any) => {
+      // Only log critical errors, ignore connection timeouts during pruning
+      if (error.code !== 'XX000' && !error.message?.includes('endpoint has been disabled')) {
+        console.error('Session store error:', error);
+      }
+    },
   });
   return session({
     secret: process.env.SESSION_SECRET!,
