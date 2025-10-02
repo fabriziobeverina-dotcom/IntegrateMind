@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
 import { JournalEntry } from "@/components/JournalEntry";
 import { DailyPrompt } from "@/components/DailyPrompt";
 import { PracticeCard } from "@/components/PracticeCard";
@@ -16,6 +17,7 @@ export default function Dashboard() {
   const [, setLocation] = useLocation();
   const [selectedMetric, setSelectedMetric] = useState<'mood' | 'sleep' | 'grounding'>('mood');
   const [activeFilter, setActiveFilter] = useState('all');
+  const { user } = useAuth();
 
   // Fetch real progress data
   const { data: progressData = [], isLoading: progressLoading } = useQuery({
@@ -47,7 +49,9 @@ export default function Dashboard() {
     <div className="space-y-6 sm:space-y-8">
       {/* Welcome Section */}
       <div className="space-y-2">
-        <h1 className="text-2xl sm:text-3xl font-bold">Welcome back, John</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold">
+          Welcome back, {(user as any)?.firstName || (user as any)?.username || (user as any)?.email?.split('@')[0] || 'there'}
+        </h1>
         <p className="text-sm sm:text-base text-muted-foreground">
           Continue your integration journey with today's practice and reflection.
         </p>
