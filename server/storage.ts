@@ -1,5 +1,5 @@
-import { drizzle } from "drizzle-orm/neon-http";
-import { neon } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { Pool } from "pg";
 import { eq, desc, and, gte, lte, sql } from "drizzle-orm";
 import { 
   type User, 
@@ -130,10 +130,19 @@ export interface IStorage {
 
 export class DatabaseStorage implements IStorage {
   private db;
+  private pool: Pool;
   
   constructor() {
-    const connection = neon(process.env.DATABASE_URL!);
-    this.db = drizzle(connection);
+    // Use Replit PostgreSQL instead of Neon
+    this.pool = new Pool({
+      host: process.env.PGHOST!,
+      port: parseInt(process.env.PGPORT!),
+      user: process.env.PGUSER!,
+      password: process.env.PGPASSWORD!,
+      database: process.env.PGDATABASE!,
+      ssl: { rejectUnauthorized: false },
+    });
+    this.db = drizzle(this.pool);
   }
   
   // User management
