@@ -80,14 +80,14 @@ function AppContent() {
     );
   }
 
-  const style = {
+  const style: any = {
     "--sidebar-width": "16rem",
     "--sidebar-width-icon": "3rem",
   };
 
   return (
     <ThemeProvider>
-      <SidebarProvider style={style as React.CSSProperties}>
+      <SidebarProvider style={style}>
         <div className="flex h-screen w-full">
           <AppSidebar />
           <div className="flex flex-col flex-1">
