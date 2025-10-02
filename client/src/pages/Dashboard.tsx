@@ -95,11 +95,11 @@ export default function Dashboard() {
     : mockPractices.filter(practice => practice.category === activeFilter);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       {/* Welcome Section */}
       <div className="space-y-2">
-        <h1 className="text-3xl font-bold">Welcome back, John</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-2xl sm:text-3xl font-bold">Welcome back, John</h1>
+        <p className="text-sm sm:text-base text-muted-foreground">
           Continue your integration journey with today's practice and reflection.
         </p>
       </div>
@@ -131,17 +131,17 @@ export default function Dashboard() {
 
       {/* Daily Prompt Section */}
       <div className="space-y-4">
-        <h2 className="text-xl font-semibold">Today's Reflection</h2>
+        <h2 className="text-lg sm:text-xl font-semibold">Today's Reflection</h2>
         <DailyPrompt onRespond={(response) => console.log('Daily reflection:', response)} />
       </div>
 
       {/* Practices Section */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Recommended Practices</h2>
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-muted-foreground" />
-            <div className="flex gap-1">
+        <div className="space-y-3">
+          <h2 className="text-lg sm:text-xl font-semibold">Recommended Practices</h2>
+          <div className="flex items-center gap-2 overflow-x-auto pb-2">
+            <Filter className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+            <div className="flex gap-2 flex-nowrap">
               {practiceFilters.map((filter) => (
                 <Button
                   key={filter}
@@ -149,6 +149,7 @@ export default function Dashboard() {
                   size="sm"
                   onClick={() => setActiveFilter(filter)}
                   data-testid={`filter-${filter}`}
+                  className="whitespace-nowrap flex-shrink-0"
                 >
                   {filter}
                 </Button>
@@ -171,7 +172,7 @@ export default function Dashboard() {
 
       {/* Progress Tracking */}
       <div className="space-y-4">
-        <h2 className="text-xl font-semibold">Your Progress</h2>
+        <h2 className="text-lg sm:text-xl font-semibold">Your Progress</h2>
         <ProgressChart
           data={progressData}
           selectedMetric={selectedMetric}
@@ -182,9 +183,9 @@ export default function Dashboard() {
 
       {/* Community Highlights */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Community Highlights</h2>
-          <Button variant="outline" data-testid="button-view-all-posts">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <h2 className="text-lg sm:text-xl font-semibold">Community Highlights</h2>
+          <Button variant="outline" size="sm" data-testid="button-view-all-posts" className="w-full sm:w-auto">
             View All Posts
           </Button>
         </div>

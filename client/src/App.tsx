@@ -107,7 +107,7 @@ function AppContent() {
               </div>
             </header>
             <main className="flex-1 overflow-auto">
-              <div className="container mx-auto p-3 sm:p-6 max-w-7xl">
+              <div className="w-full max-w-7xl mx-auto px-3 py-3 sm:px-6 sm:py-6">
                 <AuthenticatedRouter />
               </div>
             </main>
