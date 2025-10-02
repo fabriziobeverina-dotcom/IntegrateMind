@@ -27,72 +27,21 @@ export default function Dashboard() {
     }
   });
 
-  const mockPractices = [
-    {
-      id: '1',
-      title: 'Morning Grounding Meditation',
-      description: 'A gentle 15-minute practice to connect with your body and breath, perfect for starting your day with intention.',
-      duration: '15 min',
-      category: 'Grounding' as const,
-      instructor: 'Sarah Chen',
-      completed: false
-    },
-    {
-      id: '2',
-      title: 'Breathwork for Anxiety',
-      description: 'Powerful breathing techniques to calm the nervous system and release stored tension.',
-      duration: '20 min',
-      category: 'Calming' as const,
-      instructor: 'Marcus Thompson',
-      completed: true
-    },
-    {
-      id: '3',
-      title: 'Dream Integration Ceremony',
-      description: 'A guided journey to explore and integrate messages from your dreams and visions.',
-      duration: '45 min',
-      category: 'Dreamwork' as const,
-      instructor: 'Luna Martinez',
-      completed: false
-    }
-  ];
+  // Fetch real practices from admin
+  const { data: practices = [], isLoading: practicesLoading } = useQuery<any[]>({
+    queryKey: ['/api/practices'],
+  });
 
-  const mockPosts = [
-    {
-      id: '1',
-      author: {
-        name: 'Maya Rodriguez',
-        initials: 'MR',
-        avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=32&h=32&fit=crop&crop=face'
-      },
-      content: 'Had a powerful breakthrough during my meditation practice today. The anxiety I\'ve been carrying finally felt like it was releasing from my chest. Anyone else experiencing shifts in how they hold emotions in their body?',
-      tags: ['breakthrough', 'meditation', 'anxiety', 'bodywork'],
-      likes: 12,
-      comments: 5,
-      timeAgo: '2h ago',
-      isLiked: false
-    },
-    {
-      id: '2',
-      author: {
-        name: 'David Kim',
-        initials: 'DK',
-        avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=32&h=32&fit=crop&crop=face'
-      },
-      content: 'Three weeks post-ceremony and I\'m still integrating so much. The plant medicine showed me patterns I didn\'t even know I had. Grateful for this community and all the wisdom being shared here.',
-      tags: ['integration', 'ceremony', 'patterns', 'gratitude'],
-      likes: 18,
-      comments: 8,
-      timeAgo: '4h ago',
-      isLiked: true
-    }
-  ];
+  // Fetch real community posts
+  const { data: posts = [], isLoading: postsLoading } = useQuery<any[]>({
+    queryKey: ['/api/posts'],
+  });
 
   const practiceFilters = ['all', 'Calming', 'Energizing', 'Grounding', 'Dreamwork'];
 
   const filteredPractices = activeFilter === 'all' 
-    ? mockPractices 
-    : mockPractices.filter(practice => practice.category === activeFilter);
+    ? practices.slice(0, 3)
+    : practices.filter((practice: any) => practice.category === activeFilter).slice(0, 3);
 
   return (
     <div className="space-y-6 sm:space-y-8">
@@ -158,16 +107,25 @@ export default function Dashboard() {
           </div>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredPractices.map((practice) => (
-            <PracticeCard
-              key={practice.id}
-              practice={practice}
-              onPlay={(id) => console.log('Playing practice:', id)}
-              onComplete={(id) => console.log('Completed practice:', id)}
-            />
-          ))}
-        </div>
+        {practicesLoading ? (
+          <div className="text-center py-8 text-muted-foreground">Loading practices...</div>
+        ) : filteredPractices.length === 0 ? (
+          <Card className="p-8 text-center">
+            <p className="text-muted-foreground">No practices available yet.</p>
+            <p className="text-sm text-muted-foreground mt-2">Check back soon for new content from your administrator.</p>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredPractices.map((practice: any) => (
+              <PracticeCard
+                key={practice.id}
+                practice={practice}
+                onPlay={(id) => console.log('Playing practice:', id)}
+                onComplete={(id) => console.log('Completed practice:', id)}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Progress Tracking */}
@@ -190,17 +148,33 @@ export default function Dashboard() {
           </Button>
         </div>
         
-        <div className="space-y-4">
-          {mockPosts.map((post) => (
-            <CommunityPost
-              key={post.id}
-              post={post}
-              onLike={(id) => console.log('Liked post:', id)}
-              onComment={(id, comment) => console.log('Comment on', id, ':', comment)}
-              onShare={(id) => console.log('Shared post:', id)}
-            />
-          ))}
-        </div>
+        {postsLoading ? (
+          <div className="text-center py-8 text-muted-foreground">Loading posts...</div>
+        ) : posts.length === 0 ? (
+          <Card className="p-8 text-center">
+            <p className="text-muted-foreground">No community posts yet.</p>
+            <p className="text-sm text-muted-foreground mt-2">Be the first to share your journey!</p>
+            <Button 
+              className="mt-4" 
+              onClick={() => setLocation('/community')}
+              data-testid="button-create-first-post"
+            >
+              Create First Post
+            </Button>
+          </Card>
+        ) : (
+          <div className="space-y-4">
+            {posts.slice(0, 2).map((post: any) => (
+              <CommunityPost
+                key={post.id}
+                post={post}
+                onLike={(id) => console.log('Liked post:', id)}
+                onComment={(id, comment) => console.log('Comment on', id, ':', comment)}
+                onShare={(id) => console.log('Shared post:', id)}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
