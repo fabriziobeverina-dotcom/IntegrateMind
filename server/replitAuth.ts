@@ -4,7 +4,7 @@ import passport from "passport";
 import session from "express-session";
 import type { Express, RequestHandler } from "express";
 import memoize from "memoizee";
-import connectPg from "connect-pg-simple";
+import MemoryStore from "memorystore";
 import { storage } from "./storage";
 
 if (!process.env.REPLIT_DOMAINS) {
@@ -23,28 +23,14 @@ const getOidcConfig = memoize(
 
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
-  const pgStore = connectPg(session);
   
-  // Add connection timeout to handle Neon scale-to-zero wake-up
-  const connectionString = process.env.DATABASE_URL?.includes('connect_timeout')
-    ? process.env.DATABASE_URL
-    : `${process.env.DATABASE_URL}${process.env.DATABASE_URL?.includes('?') ? '&' : '?'}connect_timeout=20`;
-  
-  const sessionStore = new pgStore({
-    conString: connectionString,
-    createTableIfMissing: false,
-    ttl: sessionTtl,
-    tableName: "sessions",
-    // Disable automatic pruning to avoid errors during Neon scale-to-zero wake-up
-    pruneSessionInterval: false,
-    // Suppress non-critical session pruning errors (Neon scale-to-zero wake-up)
-    errorLog: (error: any) => {
-      // Only log critical errors, ignore connection timeouts during pruning
-      if (error.code !== 'XX000' && !error.message?.includes('endpoint has been disabled')) {
-        console.error('Session store error:', error);
-      }
-    },
+  // Use in-memory session store to avoid Neon database wake-up errors
+  // Sessions persist in memory and are automatically cleaned up
+  const MemStore = MemoryStore(session);
+  const sessionStore = new MemStore({
+    checkPeriod: sessionTtl, // Prune expired entries every week
   });
+  
   return session({
     secret: process.env.SESSION_SECRET!,
     store: sessionStore,
