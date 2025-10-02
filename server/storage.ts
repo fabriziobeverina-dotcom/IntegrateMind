@@ -133,14 +133,12 @@ export class DatabaseStorage implements IStorage {
   private pool: Pool;
   
   constructor() {
-    // Use Replit PostgreSQL instead of Neon
+    // Use the new working Neon database connection
+    // Hardcoded to avoid using the disabled DATABASE_URL env var
+    const connectionString = 'postgresql://neondb_owner:npg_d0UVQ9EIYyLf@ep-billowing-frost-addj6hc3-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require';
+    
     this.pool = new Pool({
-      host: process.env.PGHOST!,
-      port: parseInt(process.env.PGPORT!),
-      user: process.env.PGUSER!,
-      password: process.env.PGPASSWORD!,
-      database: process.env.PGDATABASE!,
-      ssl: { rejectUnauthorized: false },
+      connectionString,
     });
     this.db = drizzle(this.pool);
   }
