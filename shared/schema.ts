@@ -215,6 +215,30 @@ export const reminderDeliveries = pgTable("reminder_deliveries", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Integration prompts - 65 prompts for the 60-day integration journey
+export const integrationPrompts = pgTable("integration_prompts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  sequence: integer("sequence").notNull().unique(), // 1-65
+  category: text("category").notNull(), // 'Body', 'Emotion', 'Social', 'Environment', 'Spirit', 'Milestone'
+  prompt: text("prompt").notNull(),
+  practice: text("practice").notNull(), // The micro-practice activity
+  pointsValue: integer("points_value").notNull().default(10), // Points earned for completing
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// User progress through integration prompts
+export const userPromptProgress = pgTable("user_prompt_progress", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  promptId: varchar("prompt_id").notNull().references(() => integrationPrompts.id),
+  response: text("response").notNull(),
+  completedAt: timestamp("completed_at").defaultNow(),
+  pointsEarned: integer("points_earned").notNull().default(10),
+}, (table) => ({
+  // Ensure a user can only complete each prompt once
+  uniqueUserPrompt: sql`UNIQUE(${table.userId}, ${table.promptId})`
+}));
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   createdAt: true,
@@ -306,6 +330,16 @@ export const insertReminderDeliverySchema = createInsertSchema(reminderDeliverie
   deliveredAt: true,
 });
 
+export const insertIntegrationPromptSchema = createInsertSchema(integrationPrompts).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertUserPromptProgressSchema = createInsertSchema(userPromptProgress).omit({
+  id: true,
+  completedAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -352,3 +386,9 @@ export type InsertPushSubscription = z.infer<typeof insertPushSubscriptionSchema
 
 export type ReminderDelivery = typeof reminderDeliveries.$inferSelect;
 export type InsertReminderDelivery = z.infer<typeof insertReminderDeliverySchema>;
+
+export type IntegrationPrompt = typeof integrationPrompts.$inferSelect;
+export type InsertIntegrationPrompt = z.infer<typeof insertIntegrationPromptSchema>;
+
+export type UserPromptProgress = typeof userPromptProgress.$inferSelect;
+export type InsertUserPromptProgress = z.infer<typeof insertUserPromptProgressSchema>;
