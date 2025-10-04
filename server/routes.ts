@@ -976,6 +976,132 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Integration prompt routes (protected)
+  app.post('/api/integration-prompts/init', async (req: any, res) => {
+    try {
+      await (storage as any).initIntegrationPromptTables();
+      res.json({ message: "Integration prompt tables initialized successfully" });
+    } catch (error) {
+      console.error("Error initializing integration prompt tables:", error);
+      res.status(500).json({ message: "Failed to initialize tables" });
+    }
+  });
+
+  app.post('/api/integration-prompts/seed', async (req: any, res) => {
+    try {
+      const { prompts } = req.body;
+      
+      if (!Array.isArray(prompts)) {
+        return res.status(400).json({ message: "Prompts must be an array" });
+      }
+      
+      await storage.seedIntegrationPrompts(prompts);
+      res.json({ message: "Integration prompts seeded successfully", count: prompts.length });
+    } catch (error) {
+      console.error("Error seeding integration prompts:", error);
+      res.status(500).json({ message: "Failed to seed integration prompts" });
+    }
+  });
+
+  app.get('/api/integration-prompts/today', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user || !user.journeyStartDate) {
+        return res.status(400).json({ message: "Journey start date not set" });
+      }
+      
+      // Calculate days since journey started
+      const daysSinceStart = Math.floor((Date.now() - user.journeyStartDate.getTime()) / (1000 * 60 * 60 * 24));
+      
+      // Calculate sequence number (1-65)
+      // Days 0-59 cycle through categories, days 60-64 are milestones
+      let sequence: number;
+      if (daysSinceStart < 60) {
+        sequence = (daysSinceStart % 60) + 1;
+      } else if (daysSinceStart < 65) {
+        sequence = daysSinceStart + 1;
+      } else {
+        // After day 65, cycle back to day 1
+        sequence = ((daysSinceStart - 65) % 65) + 1;
+      }
+      
+      const prompt = await storage.getIntegrationPromptBySequence(sequence);
+      
+      if (!prompt) {
+        return res.status(404).json({ message: "No prompt available for today" });
+      }
+      
+      // Check if user has already completed this prompt
+      const progress = await storage.getUserPromptProgressByPrompt(userId, prompt.id);
+      
+      res.json({ 
+        ...prompt, 
+        isCompleted: !!progress,
+        dayNumber: daysSinceStart + 1
+      });
+    } catch (error) {
+      console.error("Error fetching today's integration prompt:", error);
+      res.status(500).json({ message: "Failed to fetch today's prompt" });
+    }
+  });
+
+  app.get('/api/integration-prompts/progress', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const progress = await storage.getUserPromptProgress(userId);
+      res.json(progress);
+    } catch (error) {
+      console.error("Error fetching user prompt progress:", error);
+      res.status(500).json({ message: "Failed to fetch prompt progress" });
+    }
+  });
+
+  app.post('/api/integration-prompts/complete', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { promptId, response } = req.body;
+      
+      if (!promptId || !response) {
+        return res.status(400).json({ message: "Prompt ID and response are required" });
+      }
+      
+      // Check if already completed
+      const existing = await storage.getUserPromptProgressByPrompt(userId, promptId);
+      if (existing) {
+        return res.status(400).json({ message: "Prompt already completed" });
+      }
+      
+      // Get prompt to determine points
+      const prompt = await storage.getIntegrationPromptBySequence(parseInt(promptId));
+      const pointsEarned = prompt?.pointsValue || 10;
+      
+      const progress = await storage.createUserPromptProgress({
+        userId,
+        promptId,
+        response,
+        pointsEarned
+      });
+      
+      res.status(201).json(progress);
+    } catch (error) {
+      console.error("Error completing prompt:", error);
+      res.status(500).json({ message: "Failed to complete prompt" });
+    }
+  });
+
+  app.get('/api/integration-prompts/points', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const totalPoints = await storage.getUserTotalPoints(userId);
+      res.json({ totalPoints });
+    } catch (error) {
+      console.error("Error fetching user points:", error);
+      res.status(500).json({ message: "Failed to fetch points" });
+    }
+  });
+
   // User settings routes (protected)
   app.put('/api/user/reminder-settings', isAuthenticated, async (req: any, res) => {
     try {

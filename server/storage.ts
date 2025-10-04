@@ -160,6 +160,41 @@ export class DatabaseStorage implements IStorage {
     this.db = drizzle(this.pool);
   }
   
+  async initIntegrationPromptTables(): Promise<void> {
+    const client = await this.pool.connect();
+    try {
+      // Create integration_prompts table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS integration_prompts (
+          id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+          sequence INTEGER NOT NULL UNIQUE,
+          category TEXT NOT NULL,
+          prompt TEXT NOT NULL,
+          practice TEXT NOT NULL,
+          points_value INTEGER NOT NULL DEFAULT 10,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+      
+      // Create user_prompt_progress table
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS user_prompt_progress (
+          id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+          user_id VARCHAR NOT NULL REFERENCES users(id),
+          prompt_id VARCHAR NOT NULL REFERENCES integration_prompts(id),
+          response TEXT NOT NULL,
+          completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          points_earned INTEGER NOT NULL DEFAULT 10,
+          UNIQUE(user_id, prompt_id)
+        );
+      `);
+      
+      console.log('Integration prompt tables initialized successfully');
+    } finally {
+      client.release();
+    }
+  }
+  
   // User management
   async getUser(id: string): Promise<User | undefined> {
     const result = await this.db.select().from(users).where(eq(users.id, id)).limit(1);
