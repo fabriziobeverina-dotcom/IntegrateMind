@@ -31,6 +31,10 @@ import {
   type InsertPromptResponse,
   type PushSubscription,
   type InsertPushSubscription,
+  type IntegrationPrompt,
+  type InsertIntegrationPrompt,
+  type UserPromptProgress,
+  type InsertUserPromptProgress,
   users,
   journalEntries,
   practices,
@@ -45,7 +49,9 @@ import {
   postLikes,
   dailyPrompts,
   promptResponses,
-  pushSubscriptions
+  pushSubscriptions,
+  integrationPrompts,
+  userPromptProgress
 } from "@shared/schema";
 
 export interface IStorage {
@@ -126,6 +132,17 @@ export interface IStorage {
   
   // Reminder scheduling
   getUsersWithRemindersAt(time: string): Promise<User[]>;
+  
+  // Integration prompts
+  getIntegrationPrompts(): Promise<IntegrationPrompt[]>;
+  getIntegrationPromptBySequence(sequence: number): Promise<IntegrationPrompt | undefined>;
+  seedIntegrationPrompts(prompts: InsertIntegrationPrompt[]): Promise<void>;
+  
+  // User prompt progress
+  getUserPromptProgress(userId: string): Promise<UserPromptProgress[]>;
+  getUserPromptProgressByPrompt(userId: string, promptId: string): Promise<UserPromptProgress | undefined>;
+  createUserPromptProgress(progress: InsertUserPromptProgress): Promise<UserPromptProgress>;
+  getUserTotalPoints(userId: string): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -651,6 +668,64 @@ export class DatabaseStorage implements IStorage {
           eq(users.reminderTime, time)
         )
       );
+  }
+  
+  // Integration prompts
+  async getIntegrationPrompts(): Promise<IntegrationPrompt[]> {
+    return await this.db.select()
+      .from(integrationPrompts)
+      .orderBy(integrationPrompts.sequence);
+  }
+  
+  async getIntegrationPromptBySequence(sequence: number): Promise<IntegrationPrompt | undefined> {
+    const result = await this.db.select()
+      .from(integrationPrompts)
+      .where(eq(integrationPrompts.sequence, sequence))
+      .limit(1);
+    return result[0];
+  }
+  
+  async seedIntegrationPrompts(prompts: InsertIntegrationPrompt[]): Promise<void> {
+    // Delete existing prompts first
+    await this.db.delete(integrationPrompts);
+    
+    // Insert all prompts
+    if (prompts.length > 0) {
+      await this.db.insert(integrationPrompts).values(prompts);
+    }
+  }
+  
+  // User prompt progress
+  async getUserPromptProgress(userId: string): Promise<UserPromptProgress[]> {
+    return await this.db.select()
+      .from(userPromptProgress)
+      .where(eq(userPromptProgress.userId, userId))
+      .orderBy(desc(userPromptProgress.completedAt));
+  }
+  
+  async getUserPromptProgressByPrompt(userId: string, promptId: string): Promise<UserPromptProgress | undefined> {
+    const result = await this.db.select()
+      .from(userPromptProgress)
+      .where(
+        and(
+          eq(userPromptProgress.userId, userId),
+          eq(userPromptProgress.promptId, promptId)
+        )
+      )
+      .limit(1);
+    return result[0];
+  }
+  
+  async createUserPromptProgress(progress: InsertUserPromptProgress): Promise<UserPromptProgress> {
+    const result = await this.db.insert(userPromptProgress).values(progress).returning();
+    return result[0];
+  }
+  
+  async getUserTotalPoints(userId: string): Promise<number> {
+    const result = await this.db.select({ total: sql<number>`COALESCE(SUM(${userPromptProgress.pointsEarned}), 0)` })
+      .from(userPromptProgress)
+      .where(eq(userPromptProgress.userId, userId));
+    return result[0]?.total || 0;
   }
 }
 
