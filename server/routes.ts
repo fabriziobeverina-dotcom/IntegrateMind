@@ -364,6 +364,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Calculate average mood from journal entries for this date
         const dayJournalEntries = journalEntries.filter(entry => {
+          if (!entry.createdAt) return false;
           const entryDate = new Date(entry.createdAt).toISOString().split('T')[0];
           return entryDate === dateStr && entry.mood !== null;
         });
@@ -1073,8 +1074,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Prompt already completed" });
       }
       
-      // Get prompt to determine points
-      const prompt = await storage.getIntegrationPromptBySequence(parseInt(promptId));
+      // Get prompt to determine points (use ID, not sequence)
+      const prompt = await storage.getIntegrationPrompt(promptId);
       const pointsEarned = prompt?.pointsValue || 10;
       
       const progress = await storage.createUserPromptProgress({

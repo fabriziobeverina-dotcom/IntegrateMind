@@ -135,6 +135,7 @@ export interface IStorage {
   
   // Integration prompts
   getIntegrationPrompts(): Promise<IntegrationPrompt[]>;
+  getIntegrationPrompt(id: string): Promise<IntegrationPrompt | undefined>;
   getIntegrationPromptBySequence(sequence: number): Promise<IntegrationPrompt | undefined>;
   seedIntegrationPrompts(prompts: InsertIntegrationPrompt[]): Promise<void>;
   
@@ -710,6 +711,14 @@ export class DatabaseStorage implements IStorage {
     return await this.db.select()
       .from(integrationPrompts)
       .orderBy(integrationPrompts.sequence);
+  }
+  
+  async getIntegrationPrompt(id: string): Promise<IntegrationPrompt | undefined> {
+    const result = await this.db.select()
+      .from(integrationPrompts)
+      .where(eq(integrationPrompts.id, id))
+      .limit(1);
+    return result[0];
   }
   
   async getIntegrationPromptBySequence(sequence: number): Promise<IntegrationPrompt | undefined> {
