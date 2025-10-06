@@ -23,7 +23,7 @@ export function DailyPrompt() {
   const [response, setResponse] = useState("");
   const { toast } = useToast();
 
-  const { data: prompt, isLoading } = useQuery<IntegrationPrompt>({
+  const { data: prompt, isLoading, error } = useQuery<IntegrationPrompt>({
     queryKey: ['/api/integration-prompts/today'],
   });
 
@@ -68,6 +68,19 @@ export function DailyPrompt() {
       <Card className="p-6">
         <div className="flex items-center justify-center py-8">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="p-6">
+        <div className="text-center py-8 space-y-3">
+          <p className="text-destructive font-medium">Database Connection Error</p>
+          <p className="text-sm text-muted-foreground">
+            The integration prompts are temporarily unavailable. Please contact your administrator to enable the database endpoint.
+          </p>
         </div>
       </Card>
     );
