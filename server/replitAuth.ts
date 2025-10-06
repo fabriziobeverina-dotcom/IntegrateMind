@@ -87,7 +87,13 @@ export async function setupAuth(app: Express) {
   ) => {
     const user = {};
     updateUserSession(user, tokens);
-    await upsertUser(tokens.claims());
+    try {
+      await upsertUser(tokens.claims());
+    } catch (error) {
+      console.error("Database error during user upsert:", error);
+      // Continue authentication even if database upsert fails
+      // User can still access the app, but features requiring database will show errors
+    }
     verified(null, user);
   };
 
