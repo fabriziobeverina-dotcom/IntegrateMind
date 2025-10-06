@@ -25,7 +25,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(user);
     } catch (error) {
       console.error("Error fetching user:", error);
-      res.status(500).json({ message: "Failed to fetch user" });
+      // If database is unavailable, return user from session claims
+      const claims = req.user.claims;
+      const fallbackUser = {
+        id: claims.sub,
+        email: claims.email,
+        name: `${claims.first_name || ''} ${claims.last_name || ''}`.trim() || claims.email || 'User',
+        firstName: claims.first_name || null,
+        lastName: claims.last_name || null,
+        avatar: claims.profile_image_url || null,
+        profileImageUrl: claims.profile_image_url || null,
+        provider: 'replit',
+        providerId: claims.sub,
+        isAdmin: false,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      res.json(fallbackUser);
     }
   });
 
