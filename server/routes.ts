@@ -544,16 +544,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/admin/readings', isAdmin, async (req: any, res) => {
     try {
       const adminId = req.user.claims.sub;
-      const { title, description, content, author, category, readTime, isPremium } = req.body;
+      const { title, description, content, link, author, category, readTime, isPremium } = req.body;
       
-      if (!title || !description || !content || !category) {
+      if (!title || !description || !category) {
         return res.status(400).json({ message: "Missing required fields" });
+      }
+      
+      if (!content && !link) {
+        return res.status(400).json({ message: "Either content or link must be provided" });
       }
       
       const readingData = {
         title: title.trim(),
         description: description.trim(),
-        content: content.trim(),
+        content: content?.trim() || null,
+        link: link?.trim() || null,
         author: author?.trim() || null,
         category: category.trim(),
         readTime: readTime?.trim() || null,
@@ -571,7 +576,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put('/api/admin/readings/:id', isAdmin, async (req: any, res) => {
     try {
       const { id } = req.params;
-      const { title, description, content, author, category, readTime, isPremium } = req.body;
+      const { title, description, content, link, author, category, readTime, isPremium } = req.body;
       
       const existingReading = await storage.getReading(id);
       if (!existingReading) {
@@ -581,10 +586,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updates = {
         ...(title && { title: title.trim() }),
         ...(description && { description: description.trim() }),
-        ...(content && { content: content.trim() }),
-        ...(author && { author: author.trim() }),
+        ...(content !== undefined && { content: content?.trim() || null }),
+        ...(link !== undefined && { link: link?.trim() || null }),
+        ...(author !== undefined && { author: author?.trim() || null }),
         ...(category && { category: category.trim() }),
-        readTime: readTime?.trim() || null,
+        ...(readTime !== undefined && { readTime: readTime?.trim() || null }),
         ...(isPremium !== undefined && { isPremium: Boolean(isPremium) })
       };
       
@@ -1016,19 +1022,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Calculate days since journey started
       const daysSinceStart = Math.floor((Date.now() - user.journeyStartDate.getTime()) / (1000 * 60 * 60 * 24));
       
-      // Calculate sequence number (1-65)
-      // Days 0-59 cycle through categories, days 60-64 are milestones
-      let sequence: number;
-      if (daysSinceStart < 60) {
-        sequence = (daysSinceStart % 60) + 1;
-      } else if (daysSinceStart < 65) {
-        sequence = daysSinceStart + 1;
-      } else {
-        // After day 65, cycle back to day 1
-        sequence = ((daysSinceStart - 65) % 65) + 1;
-      }
+      // Cycle through 65 days (60 category prompts + 5 milestones), then restart
+      const cycleDay = daysSinceStart % 65;
       
-      const prompt = await storage.getIntegrationPromptBySequence(sequence);
+      let prompt: any;
+      
+      if (cycleDay < 60) {
+        // Days 0-59: Rotate through categories (one per category until all 60 are done)
+        // Categories: Body, Emotion, Social, Environment, Spirit (5 categories)
+        // Each category has 12 prompts (12 x 5 = 60)
+        const categories = ['Body', 'Emotion', 'Social', 'Environment', 'Spirit'];
+        const categoryIndex = cycleDay % 5;
+        const promptIndexInCategory = Math.floor(cycleDay / 5);
+        
+        const category = categories[categoryIndex];
+        const categoryPrompts = await storage.getIntegrationPromptsByCategory(category);
+        
+        if (categoryPrompts.length > promptIndexInCategory) {
+          prompt = categoryPrompts[promptIndexInCategory];
+        } else {
+          return res.status(404).json({ message: "No prompt available for today" });
+        }
+      } else {
+        // Days 60-64: Show milestone prompts (sequences 61-65)
+        const milestoneSequence = (cycleDay - 60) + 61;
+        prompt = await storage.getIntegrationPromptBySequence(milestoneSequence);
+      }
       
       if (!prompt) {
         return res.status(404).json({ message: "No prompt available for today" });

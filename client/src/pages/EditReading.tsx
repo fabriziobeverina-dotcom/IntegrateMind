@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useMutation } from "@tanstack/react-query";
-import { useLocation } from "wouter";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { useLocation, useParams } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -14,10 +14,10 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
-import { ArrowLeft, BookOpen, Clock } from "lucide-react";
+import { ArrowLeft, BookOpen, Loader2 } from "lucide-react";
 import { Link } from "wouter";
 
-const createReadingSchema = z.object({
+const editReadingSchema = z.object({
   title: z.string().min(1, "Title is required").max(200, "Title must be less than 200 characters"),
   description: z.string().min(10, "Description must be at least 10 characters").max(500, "Description must be less than 500 characters"),
   content: z.string().optional().or(z.literal("")),
@@ -42,16 +42,30 @@ const createReadingSchema = z.object({
   path: ["content"],
 });
 
-type CreateReadingForm = z.infer<typeof createReadingSchema>;
+type EditReadingForm = z.infer<typeof editReadingSchema>;
 
-export default function CreateReading() {
+export default function EditReading() {
   const [, setLocation] = useLocation();
+  const { id } = useParams();
   const { toast } = useToast();
   const { user } = useAuth();
   const isAdmin = (user as any)?.isAdmin;
 
-  const form = useForm<CreateReadingForm>({
-    resolver: zodResolver(createReadingSchema),
+  const { data: reading, isLoading } = useQuery({
+    queryKey: ['/api/admin/readings', id],
+    queryFn: async () => {
+      const response = await fetch(`/api/admin/readings?id=${id}`, {
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error("Failed to fetch reading");
+      const data = await response.json();
+      return Array.isArray(data) ? data.find((r: any) => r.id === id) : data;
+    },
+    enabled: isAdmin && !!id,
+  });
+
+  const form = useForm<EditReadingForm>({
+    resolver: zodResolver(editReadingSchema),
     defaultValues: {
       title: "",
       description: "",
@@ -69,9 +83,26 @@ export default function CreateReading() {
 
   const contentType = form.watch("contentType");
 
-  const createReadingMutation = useMutation({
-    mutationFn: async (data: CreateReadingForm) => {
-      // Convert tags string to array and clean up based on content type
+  useEffect(() => {
+    if (reading) {
+      form.reset({
+        title: reading.title || "",
+        description: reading.description || "",
+        content: reading.content || "",
+        link: reading.link || "",
+        author: reading.author || "",
+        category: reading.category || "Integration Guide",
+        readTime: reading.readTime || "",
+        tags: reading.tags?.join(", ") || "",
+        isFeatured: reading.isFeatured || false,
+        isPremium: reading.isPremium || false,
+        contentType: reading.link ? "link" : "content",
+      });
+    }
+  }, [reading, form]);
+
+  const updateReadingMutation = useMutation({
+    mutationFn: async (data: EditReadingForm) => {
       const processedData = {
         title: data.title,
         description: data.description,
@@ -81,48 +112,47 @@ export default function CreateReading() {
         readTime: data.readTime || undefined,
         isFeatured: data.isFeatured,
         isPremium: data.isPremium,
-        ...(data.contentType === "content" ? { content: data.content } : { link: data.link }),
+        ...(data.contentType === "content" ? { content: data.content, link: null } : { link: data.link, content: null }),
       };
 
-      const response = await fetch("/api/admin/readings", {
-        method: "POST",
+      const response = await fetch(`/api/admin/readings/${id}`, {
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(processedData),
         credentials: 'include',
       });
-      if (!response.ok) throw new Error("Failed to create reading");
+      if (!response.ok) throw new Error("Failed to update reading");
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/readings"] });
       queryClient.invalidateQueries({ queryKey: ["/api/readings"] });
       toast({
-        title: "Reading Created!",
-        description: "Your reading has been successfully created.",
+        title: "Reading Updated!",
+        description: "Your reading has been successfully updated.",
       });
       setLocation("/admin/readings");
     },
     onError: (error) => {
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to create reading",
+        description: error instanceof Error ? error.message : "Failed to update reading",
         variant: "destructive",
       });
     },
   });
 
-  const onSubmit = (data: CreateReadingForm) => {
-    createReadingMutation.mutate(data);
+  const onSubmit = (data: EditReadingForm) => {
+    updateReadingMutation.mutate(data);
   };
 
-  // Check if user is admin
   if (!isAdmin) {
     return (
       <div className="p-8">
         <div className="max-w-md mx-auto text-center">
           <h1 className="text-2xl font-bold text-destructive mb-4">Admin Access Required</h1>
           <p className="text-muted-foreground mb-4">
-            You need admin privileges to create new readings. Only admin users can add content to the platform.
+            You need admin privileges to edit readings. Only admin users can modify content on the platform.
           </p>
           <div className="space-y-2">
             <Link href="/readings">
@@ -132,6 +162,33 @@ export default function CreateReading() {
               <Button variant="outline" className="w-full">Return to Dashboard</Button>
             </Link>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center space-y-4">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+          <p className="text-muted-foreground">Loading reading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!reading) {
+    return (
+      <div className="p-8">
+        <div className="max-w-md mx-auto text-center">
+          <h1 className="text-2xl font-bold text-destructive mb-4">Reading Not Found</h1>
+          <p className="text-muted-foreground mb-4">
+            The reading you're trying to edit could not be found.
+          </p>
+          <Link href="/admin/readings">
+            <Button>Return to Manage Readings</Button>
+          </Link>
         </div>
       </div>
     );
@@ -154,10 +211,10 @@ export default function CreateReading() {
         <CardHeader>
           <CardTitle className="text-2xl flex items-center gap-2">
             <BookOpen className="h-6 w-6" />
-            Create New Reading
+            Edit Reading
           </CardTitle>
           <CardDescription>
-            Add a new educational article, guide, or reading material to the platform library.
+            Update the reading information and content.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -228,7 +285,7 @@ export default function CreateReading() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Content Type</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
                       <FormControl>
                         <SelectTrigger data-testid="select-content-type">
                           <SelectValue placeholder="Select content type" />
@@ -293,7 +350,7 @@ export default function CreateReading() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Category</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
                         <FormControl>
                           <SelectTrigger data-testid="select-reading-category">
                             <SelectValue placeholder="Select a category" />
@@ -406,16 +463,16 @@ export default function CreateReading() {
                   type="button" 
                   variant="outline" 
                   onClick={() => setLocation("/admin/readings")}
-                  data-testid="button-cancel-create"
+                  data-testid="button-cancel-edit"
                 >
                   Cancel
                 </Button>
                 <Button 
                   type="submit" 
-                  disabled={createReadingMutation.isPending}
-                  data-testid="button-create-reading"
+                  disabled={updateReadingMutation.isPending}
+                  data-testid="button-update-reading"
                 >
-                  {createReadingMutation.isPending ? "Creating..." : "Create Reading"}
+                  {updateReadingMutation.isPending ? "Updating..." : "Update Reading"}
                 </Button>
               </div>
             </form>

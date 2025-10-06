@@ -26,7 +26,8 @@ interface Reading {
   id: string;
   title: string;
   description: string;
-  content: string;
+  content?: string;
+  link?: string;
   author?: string;
   category: string;
   readTime?: string;

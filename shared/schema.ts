@@ -126,9 +126,10 @@ export const readings = pgTable("readings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   title: text("title").notNull(),
   description: text("description").notNull(),
-  content: text("content").notNull(), // Full article/reading content
+  content: text("content"), // Full article/reading content (optional if link is provided)
+  link: text("link"), // External link to reading material (optional if content is provided)
   author: text("author"),
-  category: text("category").notNull(), // 'Integration Guide', 'Research', 'Personal Stories'
+  category: text("category").notNull(), // 'Integration Guide', 'Research', 'Personal Stories', 'Medicines', 'Stories', 'Science'
   readTime: text("read_time"), // e.g., "5 min read"
   tags: text("tags").array().default([]),
   isFeatured: boolean("is_featured").default(false),
@@ -300,7 +301,13 @@ export const insertReadingSchema = createInsertSchema(readings).omit({
   id: true,
   createdAt: true,
   createdByAdminId: true, // Set automatically by backend
-});
+}).refine(
+  (data) => data.content || data.link,
+  {
+    message: "Either content or link must be provided",
+    path: ["content"],
+  }
+);
 
 export const insertVideoSchema = createInsertSchema(videos).omit({
   id: true,

@@ -137,6 +137,7 @@ export interface IStorage {
   getIntegrationPrompts(): Promise<IntegrationPrompt[]>;
   getIntegrationPrompt(id: string): Promise<IntegrationPrompt | undefined>;
   getIntegrationPromptBySequence(sequence: number): Promise<IntegrationPrompt | undefined>;
+  getIntegrationPromptsByCategory(category: string): Promise<IntegrationPrompt[]>;
   seedIntegrationPrompts(prompts: InsertIntegrationPrompt[]): Promise<void>;
   
   // User prompt progress
@@ -151,9 +152,11 @@ export class DatabaseStorage implements IStorage {
   private pool: Pool;
   
   constructor() {
-    // Use the new working Neon database connection
-    // Hardcoded to avoid using the disabled DATABASE_URL env var
-    const connectionString = 'postgresql://neondb_owner:npg_d0UVQ9EIYyLf@ep-billowing-frost-addj6hc3-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require';
+    const connectionString = process.env.DATABASE_URL;
+    
+    if (!connectionString) {
+      throw new Error("DATABASE_URL environment variable is not set");
+    }
     
     this.pool = new Pool({
       connectionString,
@@ -727,6 +730,13 @@ export class DatabaseStorage implements IStorage {
       .where(eq(integrationPrompts.sequence, sequence))
       .limit(1);
     return result[0];
+  }
+  
+  async getIntegrationPromptsByCategory(category: string): Promise<IntegrationPrompt[]> {
+    return await this.db.select()
+      .from(integrationPrompts)
+      .where(eq(integrationPrompts.category, category))
+      .orderBy(integrationPrompts.sequence);
   }
   
   async seedIntegrationPrompts(prompts: InsertIntegrationPrompt[]): Promise<void> {

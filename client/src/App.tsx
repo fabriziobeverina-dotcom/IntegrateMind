@@ -13,6 +13,7 @@ import Practices from "@/pages/Practices";
 import CreatePractice from "@/pages/CreatePractice";
 import EditPractice from "@/pages/EditPractice";
 import CreateReading from "@/pages/CreateReading";
+import EditReading from "@/pages/EditReading";
 import CreateVideo from "@/pages/CreateVideo";
 import Journal from "@/pages/Journal";
 import Progress from "@/pages/Progress";
@@ -34,6 +35,7 @@ function AuthenticatedRouter() {
       <Route path="/practices/edit/:id" component={EditPractice} />
       <Route path="/readings" component={() => <div className="p-8"><h1 className="text-2xl font-bold">Reading Library</h1><p className="text-muted-foreground">Reading library coming soon...</p></div>} />
       <Route path="/readings/create" component={CreateReading} />
+      <Route path="/readings/edit/:id" component={EditReading} />
       <Route path="/videos" component={() => <div className="p-8"><h1 className="text-2xl font-bold">Video Library</h1><p className="text-muted-foreground">Video library coming soon...</p></div>} />
       <Route path="/videos/create" component={CreateVideo} />
       <Route path="/admin" component={AdminDashboard} />
