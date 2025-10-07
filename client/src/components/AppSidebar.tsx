@@ -192,12 +192,20 @@ export function AppSidebar() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Avatar className="h-8 w-8">
-              <AvatarImage src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face" />
-              <AvatarFallback>JD</AvatarFallback>
+              <AvatarImage src={(user as any)?.profileImageUrl} />
+              <AvatarFallback>
+                {(user as any)?.firstName?.[0]}{(user as any)?.lastName?.[0] || (user as any)?.email?.[0]?.toUpperCase()}
+              </AvatarFallback>
             </Avatar>
             <div className="flex flex-col">
-              <span className="text-sm font-medium" data-testid="text-user-name">John Doe</span>
-              <span className="text-xs text-muted-foreground">Day 42 of journey</span>
+              <span className="text-sm font-medium" data-testid="text-user-name">
+                {(user as any)?.firstName && (user as any)?.lastName 
+                  ? `${(user as any).firstName} ${(user as any).lastName}`
+                  : (user as any)?.username || (user as any)?.email?.split('@')[0] || 'User'}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {(user as any)?.email}
+              </span>
             </div>
           </div>
           <ThemeToggle />
