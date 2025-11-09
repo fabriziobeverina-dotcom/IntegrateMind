@@ -240,6 +240,27 @@ export const userPromptProgress = pgTable("user_prompt_progress", {
   uniqueUserPrompt: sql`UNIQUE(${table.userId}, ${table.promptId})`
 }));
 
+// Daily wellbeing check-ins with mood tracking
+export const wellbeingCheckins = pgTable("wellbeing_checkins", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  wellbeingLevel: integer("wellbeing_level").notNull(), // 1-5 scale (1=sad, 2=low, 3=neutral, 4=good, 5=euphoric)
+  notes: text("notes"), // Optional notes about the mood
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  // Index for faster queries by user and date
+  userDateIndex: index("wellbeing_user_date_idx").on(table.userId, table.createdAt)
+}));
+
+// Practice completions tracking (for the daily micro-practice button)
+export const practiceCompletions = pgTable("practice_completions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  promptId: varchar("prompt_id").notNull().references(() => integrationPrompts.id),
+  completedAt: timestamp("completed_at").defaultNow(),
+  notes: text("notes"),
+});
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   createdAt: true,
@@ -347,6 +368,16 @@ export const insertUserPromptProgressSchema = createInsertSchema(userPromptProgr
   completedAt: true,
 });
 
+export const insertWellbeingCheckinSchema = createInsertSchema(wellbeingCheckins).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertPracticeCompletionSchema = createInsertSchema(practiceCompletions).omit({
+  id: true,
+  completedAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -399,3 +430,9 @@ export type InsertIntegrationPrompt = z.infer<typeof insertIntegrationPromptSche
 
 export type UserPromptProgress = typeof userPromptProgress.$inferSelect;
 export type InsertUserPromptProgress = z.infer<typeof insertUserPromptProgressSchema>;
+
+export type WellbeingCheckin = typeof wellbeingCheckins.$inferSelect;
+export type InsertWellbeingCheckin = z.infer<typeof insertWellbeingCheckinSchema>;
+
+export type PracticeCompletion = typeof practiceCompletions.$inferSelect;
+export type InsertPracticeCompletion = z.infer<typeof insertPracticeCompletionSchema>;

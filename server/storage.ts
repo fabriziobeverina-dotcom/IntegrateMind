@@ -35,6 +35,10 @@ import {
   type InsertIntegrationPrompt,
   type UserPromptProgress,
   type InsertUserPromptProgress,
+  type WellbeingCheckin,
+  type InsertWellbeingCheckin,
+  type PracticeCompletion,
+  type InsertPracticeCompletion,
   users,
   journalEntries,
   practices,
@@ -51,7 +55,9 @@ import {
   promptResponses,
   pushSubscriptions,
   integrationPrompts,
-  userPromptProgress
+  userPromptProgress,
+  wellbeingCheckins,
+  practiceCompletions
 } from "@shared/schema";
 
 export interface IStorage {
@@ -146,6 +152,24 @@ export interface IStorage {
   createUserPromptProgress(progress: InsertUserPromptProgress): Promise<UserPromptProgress>;
   getUserTotalPoints(userId: string): Promise<number>;
   
+  // Wellbeing check-ins
+  getUserWellbeingCheckins(userId: string, limit?: number): Promise<WellbeingCheckin[]>;
+  getTodaysWellbeingCheckin(userId: string): Promise<WellbeingCheckin | undefined>;
+  createWellbeingCheckin(checkin: InsertWellbeingCheckin): Promise<WellbeingCheckin>;
+  
+  // Practice completions (for daily micro-practice)
+  getUserPracticeCompletionsByPrompt(userId: string, promptId: string): Promise<PracticeCompletion | undefined>;
+  getTodaysPracticeCompletion(userId: string, promptId: string): Promise<PracticeCompletion | undefined>;
+  createPracticeCompletion(completion: InsertPracticeCompletion): Promise<PracticeCompletion>;
+  
+  // User settings (reminder preferences)
+  updateUserReminderSettings(userId: string, settings: {
+    reminderEnabled?: boolean;
+    reminderTime?: string;
+    reminderTimezone?: string;
+    reminderTypes?: string[];
+  }): Promise<User | undefined>;
+  
   // Admin analytics
   getAllUsers(): Promise<User[]>;
   getUserAnalytics(userId: string): Promise<{
@@ -157,6 +181,8 @@ export interface IStorage {
       totalPoints: number;
       journalStreak: number;
       practiceStreak: number;
+      wellbeingCheckins: number;
+      avgWellbeing: number;
     };
   }>;
   getPlatformStats(): Promise<{
@@ -810,6 +836,93 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(users.createdAt));
   }
   
+  async getUserWellbeingCheckins(userId: string, limit = 30): Promise<WellbeingCheckin[]> {
+    return await this.db.select()
+      .from(wellbeingCheckins)
+      .where(eq(wellbeingCheckins.userId, userId))
+      .orderBy(desc(wellbeingCheckins.createdAt))
+      .limit(limit);
+  }
+  
+  async getTodaysWellbeingCheckin(userId: string): Promise<WellbeingCheckin | undefined> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    const results = await this.db.select()
+      .from(wellbeingCheckins)
+      .where(
+        and(
+          eq(wellbeingCheckins.userId, userId),
+          gte(wellbeingCheckins.createdAt, today),
+          lte(wellbeingCheckins.createdAt, tomorrow)
+        )
+      )
+      .limit(1);
+    
+    return results[0];
+  }
+  
+  async createWellbeingCheckin(checkin: InsertWellbeingCheckin): Promise<WellbeingCheckin> {
+    const results = await this.db.insert(wellbeingCheckins).values(checkin).returning();
+    return results[0]!;
+  }
+  
+  async getUserPracticeCompletionsByPrompt(userId: string, promptId: string): Promise<PracticeCompletion | undefined> {
+    const results = await this.db.select()
+      .from(practiceCompletions)
+      .where(
+        and(
+          eq(practiceCompletions.userId, userId),
+          eq(practiceCompletions.promptId, promptId)
+        )
+      )
+      .limit(1);
+    
+    return results[0];
+  }
+  
+  async getTodaysPracticeCompletion(userId: string, promptId: string): Promise<PracticeCompletion | undefined> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    const results = await this.db.select()
+      .from(practiceCompletions)
+      .where(
+        and(
+          eq(practiceCompletions.userId, userId),
+          eq(practiceCompletions.promptId, promptId),
+          gte(practiceCompletions.completedAt, today),
+          lte(practiceCompletions.completedAt, tomorrow)
+        )
+      )
+      .limit(1);
+    
+    return results[0];
+  }
+  
+  async createPracticeCompletion(completion: InsertPracticeCompletion): Promise<PracticeCompletion> {
+    const results = await this.db.insert(practiceCompletions).values(completion).returning();
+    return results[0]!;
+  }
+  
+  async updateUserReminderSettings(userId: string, settings: {
+    reminderEnabled?: boolean;
+    reminderTime?: string;
+    reminderTimezone?: string;
+    reminderTypes?: string[];
+  }): Promise<User | undefined> {
+    const results = await this.db.update(users)
+      .set(settings)
+      .where(eq(users.id, userId))
+      .returning();
+    
+    return results[0];
+  }
+
   async getUserAnalytics(userId: string): Promise<{
     user: User;
     stats: {
@@ -819,6 +932,8 @@ export class DatabaseStorage implements IStorage {
       totalPoints: number;
       journalStreak: number;
       practiceStreak: number;
+      wellbeingCheckins: number;
+      avgWellbeing: number;
     };
   }> {
     const user = await this.getUser(userId);
@@ -850,6 +965,18 @@ export class DatabaseStorage implements IStorage {
     // Get streaks
     const streaks = await this.getUserStreaks(userId);
     
+    // Get wellbeing check-ins
+    const wellbeingResult = await this.db.select({ count: sql<number>`COUNT(*)` })
+      .from(wellbeingCheckins)
+      .where(eq(wellbeingCheckins.userId, userId));
+    const wellbeingCheckinsCount = Number(wellbeingResult[0]?.count || 0);
+    
+    // Get average wellbeing
+    const avgWellbeingResult = await this.db.select({ avg: sql<number>`AVG(${wellbeingCheckins.wellbeingLevel})` })
+      .from(wellbeingCheckins)
+      .where(eq(wellbeingCheckins.userId, userId));
+    const avgWellbeing = Number(avgWellbeingResult[0]?.avg || 0);
+    
     return {
       user,
       stats: {
@@ -859,6 +986,8 @@ export class DatabaseStorage implements IStorage {
         totalPoints,
         journalStreak: streaks.journalStreak,
         practiceStreak: streaks.practiceStreak,
+        wellbeingCheckins: wellbeingCheckinsCount,
+        avgWellbeing: Math.round(avgWellbeing * 10) / 10,
       }
     };
   }
