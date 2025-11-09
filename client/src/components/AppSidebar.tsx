@@ -1,4 +1,4 @@
-import { BookOpen, Compass, Users, TrendingUp, User, Settings, Home, Shield, Activity, BookIcon, VideoIcon } from "lucide-react";
+import { BookOpen, Compass, Users, TrendingUp, User, Settings, Home, Shield, Activity, BookIcon, VideoIcon, BarChart3 } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -59,6 +59,11 @@ const adminNavItems = [
     title: "Admin Dashboard",
     url: "/admin",
     icon: Shield,
+  },
+  {
+    title: "User Analytics",
+    url: "/admin/analytics",
+    icon: BarChart3,
   },
   {
     title: "Manage Practices",
