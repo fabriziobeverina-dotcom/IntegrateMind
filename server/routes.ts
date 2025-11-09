@@ -1286,6 +1286,151 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Wellbeing check-ins
+  app.get('/api/wellbeing/today', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const checkin = await storage.getTodaysWellbeingCheckin(userId);
+      res.json(checkin || null);
+    } catch (error) {
+      console.error("Error fetching today's wellbeing checkin:", error);
+      res.status(500).json({ message: "Failed to fetch wellbeing checkin" });
+    }
+  });
+
+  app.get('/api/wellbeing', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 30;
+      const checkins = await storage.getUserWellbeingCheckins(userId, limit);
+      res.json(checkins);
+    } catch (error) {
+      console.error("Error fetching wellbeing checkins:", error);
+      res.status(500).json({ message: "Failed to fetch wellbeing checkins" });
+    }
+  });
+
+  app.post('/api/wellbeing', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { wellbeingLevel, notes } = req.body;
+
+      if (!wellbeingLevel || wellbeingLevel < 1 || wellbeingLevel > 5) {
+        return res.status(400).json({ message: "Wellbeing level must be between 1 and 5" });
+      }
+
+      const checkin = await storage.createWellbeingCheckin({
+        userId,
+        wellbeingLevel,
+        notes: notes || null,
+      });
+
+      res.json(checkin);
+    } catch (error) {
+      console.error("Error creating wellbeing checkin:", error);
+      res.status(500).json({ message: "Failed to create wellbeing checkin" });
+    }
+  });
+
+  // Practice completions (for daily micro-practice)
+  app.get('/api/practice-completions/:promptId', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { promptId } = req.params;
+      
+      const completion = await storage.getUserPracticeCompletionsByPrompt(userId, promptId);
+      res.json(completion || null);
+    } catch (error) {
+      console.error("Error fetching practice completion:", error);
+      res.status(500).json({ message: "Failed to fetch practice completion" });
+    }
+  });
+
+  app.get('/api/practice-completions/:promptId/today', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { promptId } = req.params;
+      
+      const completion = await storage.getTodaysPracticeCompletion(userId, promptId);
+      res.json(completion || null);
+    } catch (error) {
+      console.error("Error fetching today's practice completion:", error);
+      res.status(500).json({ message: "Failed to fetch practice completion" });
+    }
+  });
+
+  app.post('/api/practice-completions', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { promptId, notes } = req.body;
+
+      if (!promptId) {
+        return res.status(400).json({ message: "Prompt ID is required" });
+      }
+
+      const completion = await storage.createPracticeCompletion({
+        userId,
+        promptId,
+        notes: notes || null,
+      });
+
+      res.json(completion);
+    } catch (error) {
+      console.error("Error creating practice completion:", error);
+      res.status(500).json({ message: "Failed to create practice completion" });
+    }
+  });
+
+  // User reminder settings
+  app.get('/api/settings/reminders', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      res.json({
+        reminderEnabled: user.reminderEnabled,
+        reminderTime: user.reminderTime,
+        reminderTimezone: user.reminderTimezone,
+        reminderTypes: user.reminderTypes,
+      });
+    } catch (error) {
+      console.error("Error fetching reminder settings:", error);
+      res.status(500).json({ message: "Failed to fetch reminder settings" });
+    }
+  });
+
+  app.put('/api/settings/reminders', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { reminderEnabled, reminderTime, reminderTimezone, reminderTypes } = req.body;
+
+      const updatedUser = await storage.updateUserReminderSettings(userId, {
+        reminderEnabled,
+        reminderTime,
+        reminderTimezone,
+        reminderTypes,
+      });
+
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      res.json({
+        reminderEnabled: updatedUser.reminderEnabled,
+        reminderTime: updatedUser.reminderTime,
+        reminderTimezone: updatedUser.reminderTimezone,
+        reminderTypes: updatedUser.reminderTypes,
+      });
+    } catch (error) {
+      console.error("Error updating reminder settings:", error);
+      res.status(500).json({ message: "Failed to update reminder settings" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
