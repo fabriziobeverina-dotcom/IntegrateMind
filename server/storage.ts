@@ -145,6 +145,27 @@ export interface IStorage {
   getUserPromptProgressByPrompt(userId: string, promptId: string): Promise<UserPromptProgress | undefined>;
   createUserPromptProgress(progress: InsertUserPromptProgress): Promise<UserPromptProgress>;
   getUserTotalPoints(userId: string): Promise<number>;
+  
+  // Admin analytics
+  getAllUsers(): Promise<User[]>;
+  getUserAnalytics(userId: string): Promise<{
+    user: User;
+    stats: {
+      journalCount: number;
+      practiceCompletions: number;
+      promptCompletions: number;
+      totalPoints: number;
+      journalStreak: number;
+      practiceStreak: number;
+    };
+  }>;
+  getPlatformStats(): Promise<{
+    totalUsers: number;
+    activeUsers: number;
+    totalJournalEntries: number;
+    totalPracticeCompletions: number;
+    totalPromptCompletions: number;
+  }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -780,6 +801,110 @@ export class DatabaseStorage implements IStorage {
       .from(userPromptProgress)
       .where(eq(userPromptProgress.userId, userId));
     return result[0]?.total || 0;
+  }
+  
+  // Admin analytics
+  async getAllUsers(): Promise<User[]> {
+    return await this.db.select()
+      .from(users)
+      .orderBy(desc(users.createdAt));
+  }
+  
+  async getUserAnalytics(userId: string): Promise<{
+    user: User;
+    stats: {
+      journalCount: number;
+      practiceCompletions: number;
+      promptCompletions: number;
+      totalPoints: number;
+      journalStreak: number;
+      practiceStreak: number;
+    };
+  }> {
+    const user = await this.getUser(userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+    
+    // Get journal count
+    const journalResult = await this.db.select({ count: sql<number>`COUNT(*)` })
+      .from(journalEntries)
+      .where(eq(journalEntries.userId, userId));
+    const journalCount = Number(journalResult[0]?.count || 0);
+    
+    // Get practice completions
+    const practiceResult = await this.db.select({ count: sql<number>`COUNT(*)` })
+      .from(userPractices)
+      .where(eq(userPractices.userId, userId));
+    const practiceCompletions = Number(practiceResult[0]?.count || 0);
+    
+    // Get prompt completions
+    const promptResult = await this.db.select({ count: sql<number>`COUNT(*)` })
+      .from(userPromptProgress)
+      .where(eq(userPromptProgress.userId, userId));
+    const promptCompletions = Number(promptResult[0]?.count || 0);
+    
+    // Get total points
+    const totalPoints = await this.getUserTotalPoints(userId);
+    
+    // Get streaks
+    const streaks = await this.getUserStreaks(userId);
+    
+    return {
+      user,
+      stats: {
+        journalCount,
+        practiceCompletions,
+        promptCompletions,
+        totalPoints,
+        journalStreak: streaks.journalStreak,
+        practiceStreak: streaks.practiceStreak,
+      }
+    };
+  }
+  
+  async getPlatformStats(): Promise<{
+    totalUsers: number;
+    activeUsers: number;
+    totalJournalEntries: number;
+    totalPracticeCompletions: number;
+    totalPromptCompletions: number;
+  }> {
+    // Get total users
+    const usersResult = await this.db.select({ count: sql<number>`COUNT(*)` })
+      .from(users);
+    const totalUsers = Number(usersResult[0]?.count || 0);
+    
+    // Get active users (users who have logged in within last 30 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const activeUsersResult = await this.db.select({ count: sql<number>`COUNT(DISTINCT user_id)` })
+      .from(journalEntries)
+      .where(gte(journalEntries.createdAt, thirtyDaysAgo));
+    const activeUsers = Number(activeUsersResult[0]?.count || 0);
+    
+    // Get total journal entries
+    const journalResult = await this.db.select({ count: sql<number>`COUNT(*)` })
+      .from(journalEntries);
+    const totalJournalEntries = Number(journalResult[0]?.count || 0);
+    
+    // Get total practice completions
+    const practiceResult = await this.db.select({ count: sql<number>`COUNT(*)` })
+      .from(userPractices);
+    const totalPracticeCompletions = Number(practiceResult[0]?.count || 0);
+    
+    // Get total prompt completions
+    const promptResult = await this.db.select({ count: sql<number>`COUNT(*)` })
+      .from(userPromptProgress);
+    const totalPromptCompletions = Number(promptResult[0]?.count || 0);
+    
+    return {
+      totalUsers,
+      activeUsers,
+      totalJournalEntries,
+      totalPracticeCompletions,
+      totalPromptCompletions,
+    };
   }
 }
 
