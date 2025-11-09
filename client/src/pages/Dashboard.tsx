@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { JournalEntry } from "@/components/JournalEntry";
 import { DailyPrompt } from "@/components/DailyPrompt";
+import { WellbeingScale } from "@/components/WellbeingScale";
 import { PracticeCard } from "@/components/PracticeCard";
 import { StreakTracker } from "@/components/StreakTracker";
 import { ProgressChart } from "@/components/ProgressChart";
@@ -82,10 +83,16 @@ export default function Dashboard() {
         </Card>
       </div>
 
+      {/* Wellbeing Check-in */}
+      <div className="space-y-4">
+        <h2 className="text-lg sm:text-xl font-semibold">Wellbeing Check-In</h2>
+        <WellbeingScale />
+      </div>
+
       {/* Daily Prompt Section */}
       <div className="space-y-4">
         <h2 className="text-lg sm:text-xl font-semibold">Today's Reflection</h2>
-        <DailyPrompt onRespond={(response) => console.log('Daily reflection:', response)} />
+        <DailyPrompt />
       </div>
 
       {/* Practices Section */}

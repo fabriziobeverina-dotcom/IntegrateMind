@@ -157,7 +157,7 @@ export default function Settings() {
   // Save reminder settings mutation
   const saveSettingsMutation = useMutation({
     mutationFn: async (data: ReminderSettingsFormData) => {
-      const response = await fetch('/api/user/reminder-settings', {
+      const response = await fetch('/api/settings/reminders', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)

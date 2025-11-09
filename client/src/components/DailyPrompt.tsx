@@ -31,6 +31,38 @@ export function DailyPrompt() {
     queryKey: ['/api/integration-prompts/points'],
   });
 
+  const { data: practiceCompletion } = useQuery({
+    queryKey: ['/api/practice-completions', prompt?.id, 'today'],
+    queryFn: async () => {
+      if (!prompt?.id) return null;
+      const response = await fetch(`/api/practice-completions/${prompt.id}/today`);
+      if (!response.ok) return null;
+      return response.json();
+    },
+    enabled: !!prompt?.id,
+  });
+
+  const completePracticeMutation = useMutation({
+    mutationFn: async (promptId: string) => {
+      return await apiRequest('POST', '/api/practice-completions', { promptId });
+    },
+    onSuccess: (_data, promptId) => {
+      toast({
+        title: "Practice completed!",
+        description: "Great job completing today's micro-practice!",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/practice-completions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/practice-completions', promptId, 'today'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to mark practice as complete",
+        variant: "destructive",
+      });
+    },
+  });
+
   const completeMutation = useMutation({
     mutationFn: async (data: { promptId: string; response: string }) => {
       return await apiRequest('POST', '/api/integration-prompts/complete', data);
@@ -144,8 +176,37 @@ export function DailyPrompt() {
           </p>
         </div>
 
-        <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
-          <p className="text-sm font-medium mb-1 text-primary">Micro-Practice</p>
+        <div className="p-4 rounded-lg bg-primary/5 border border-primary/20 space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium text-primary">Micro-Practice</p>
+            {practiceCompletion ? (
+              <div className="flex items-center gap-1.5 text-green-600">
+                <CheckCircle2 className="h-4 w-4" />
+                <span className="text-xs font-medium">Completed</span>
+              </div>
+            ) : (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7"
+                onClick={() => prompt && completePracticeMutation.mutate(prompt.id)}
+                disabled={completePracticeMutation.isPending}
+                data-testid="button-complete-practice"
+              >
+                {completePracticeMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-3 w-3 mr-1.5 animate-spin" />
+                    Completing...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="h-3 w-3 mr-1.5" />
+                    Mark Complete
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
           <p className="text-sm leading-relaxed" data-testid="text-practice">
             {prompt.practice}
           </p>

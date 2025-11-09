@@ -47,6 +47,8 @@ interface UserAnalytics {
     totalPoints: number;
     journalStreak: number;
     practiceStreak: number;
+    wellbeingCheckins: number;
+    avgWellbeing: number;
   };
 }
 
@@ -288,6 +290,20 @@ export default function AdminAnalytics() {
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
                       Completed
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm font-medium">Wellbeing Check-Ins</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold" data-testid="text-user-wellbeing-count">
+                      {userAnalytics.stats.wellbeingCheckins}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Avg: {userAnalytics.stats.avgWellbeing > 0 ? userAnalytics.stats.avgWellbeing.toFixed(1) : 'N/A'} / 5
                     </p>
                   </CardContent>
                 </Card>
