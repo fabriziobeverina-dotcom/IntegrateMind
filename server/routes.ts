@@ -1070,18 +1070,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Calculate days since journey started
       const daysSinceStart = Math.floor((Date.now() - user.journeyStartDate.getTime()) / (1000 * 60 * 60 * 24));
       
-      // Cycle through 65 days (60 category prompts + 5 milestones), then restart
-      const cycleDay = daysSinceStart % 65;
+      // Cycle through 77 days (72 category prompts + 5 milestones), then restart
+      const cycleDay = daysSinceStart % 77;
       
       let prompt: any;
       
-      if (cycleDay < 60) {
-        // Days 0-59: Rotate through categories (one per category until all 60 are done)
-        // Categories: Body, Emotion, Social, Environment, Spirit (5 categories)
-        // Each category has 12 prompts (12 x 5 = 60)
-        const categories = ['Body', 'Emotion', 'Social', 'Environment', 'Spirit'];
-        const categoryIndex = cycleDay % 5;
-        const promptIndexInCategory = Math.floor(cycleDay / 5);
+      if (cycleDay < 72) {
+        // Days 0-71: Rotate through categories (one per category until all 72 are done)
+        // Categories: Body, Emotion, Social, Environment, Spirit, Mental (6 categories)
+        // Each category has 12 prompts (12 x 6 = 72)
+        const categories = ['Body', 'Emotion', 'Social', 'Environment', 'Spirit', 'Mental'];
+        const categoryIndex = cycleDay % 6;
+        const promptIndexInCategory = Math.floor(cycleDay / 6);
         
         const category = categories[categoryIndex];
         const categoryPrompts = await storage.getIntegrationPromptsByCategory(category);
@@ -1092,8 +1092,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(404).json({ message: "No prompt available for today" });
         }
       } else {
-        // Days 60-64: Show milestone prompts (sequences 61-65)
-        const milestoneSequence = (cycleDay - 60) + 61;
+        // Days 72-76: Show milestone prompts (sequences 73-77)
+        const milestoneSequence = (cycleDay - 72) + 73;
         prompt = await storage.getIntegrationPromptBySequence(milestoneSequence);
       }
       
