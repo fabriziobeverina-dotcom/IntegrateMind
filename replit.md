@@ -4,6 +4,26 @@
 
 Integration Compass is a comprehensive wellness application designed to support individuals on their ayahuasca and psychedelic integration journey. The platform combines personal journaling, guided practices, community support, and progress tracking to create a holistic healing environment. The application draws inspiration from mindfulness apps like Calm and Headspace while incorporating social features similar to Circle or Discord.
 
+### Integration Prompt System
+
+The platform features a 77-day integration prompt cycle designed to guide users through a comprehensive healing journey:
+
+**Daily Prompt Rotation (Days 1-72):**
+- 6 categories rotate daily: Body, Emotion, Social, Environment, Spirit, Mental
+- Each category contains 12 prompts (72 total category prompts)
+- Rotation pattern: Day 1 (Body), Day 2 (Emotion), Day 3 (Social), Day 4 (Environment), Day 5 (Spirit), Day 6 (Mental), Day 7 (Body #2), etc.
+- Each prompt includes a reflection question and micro-practice exercise
+
+**Milestone Prompts (Days 73-77):**
+- 5 milestone prompts for deeper integration work
+- Appear after completing all 72 category prompts
+- Focus on synthesizing insights from the full journey
+
+**Cycle Completion:**
+- After day 77, the cycle automatically restarts from day 1
+- Users can repeat the journey as many times as needed
+- Progress tracking maintains history across multiple cycles
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.

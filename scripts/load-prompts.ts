@@ -4,9 +4,22 @@ import { db } from '../server/db';
 import { integrationPrompts, practiceCompletions, userPromptProgress } from '../shared/schema';
 import { sql } from 'drizzle-orm';
 
+/**
+ * WARNING: This script is destructive and should ONLY be run in development!
+ * 
+ * It will DELETE:
+ * - All practice completions
+ * - All user prompt progress
+ * - All existing integration prompts
+ * 
+ * For production migrations, use a proper migration strategy that preserves
+ * user data or creates a backup first.
+ */
+
 async function loadPrompts() {
   try {
-    console.log('Loading prompts from CSV...');
+    console.log('⚠️  WARNING: This script will delete all prompt-related data!');
+    console.log('Loading prompts from CSV...\n');
     
     // Read the CSV file
     const csvContent = readFileSync('attached_assets/pao_integration_prompts_v3_1762700828870.csv', 'utf-8');
@@ -20,8 +33,8 @@ async function loadPrompts() {
     
     console.log(`Found ${records.length} prompts to load`);
     
-    // Clear existing data that references prompts
-    console.log('Clearing practice completions and user progress...');
+    // Clear existing data that references prompts (DESTRUCTIVE!)
+    console.log('⚠️  Clearing practice completions and user progress...');
     await db.delete(practiceCompletions);
     await db.delete(userPromptProgress);
     
