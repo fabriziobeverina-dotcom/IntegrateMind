@@ -22,7 +22,7 @@ async function loadPrompts() {
     console.log('Loading prompts from CSV...\n');
     
     // Read the CSV file
-    const csvContent = readFileSync('attached_assets/pao_integration_prompts_v3_1762700828870.csv', 'utf-8');
+    const csvContent = readFileSync('attached_assets/integration_prompts.csv', 'utf-8');
     
     // Parse CSV
     const records = parse(csvContent, {
