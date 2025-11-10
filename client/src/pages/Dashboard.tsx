@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
-import { JournalEntry } from "@/components/JournalEntry";
 import { DailyPrompt } from "@/components/DailyPrompt";
 import { WellbeingScale } from "@/components/WellbeingScale";
 import { PracticeCard } from "@/components/PracticeCard";
@@ -11,8 +10,8 @@ import { ProgressChart } from "@/components/ProgressChart";
 import { CommunityPost } from "@/components/CommunityPost";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Plus, Filter } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Plus, Filter, Compass } from "lucide-react";
+import logoImage from "@assets/ChatGPT Image Nov 10, 2025, 05_44_07 PM_1762767858454.png";
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
@@ -40,6 +39,13 @@ export default function Dashboard() {
     queryKey: ['/api/posts'],
   });
 
+  // Check if user just started journey
+  const { data: promptData } = useQuery({
+    queryKey: ['/api/integration-prompts/today'],
+  });
+  
+  const isJourneyStart = !user?.journeyStartDate;
+
   const practiceFilters = ['all', 'Calming', 'Energizing', 'Grounding', 'Dreamwork'];
 
   const filteredPractices = activeFilter === 'all' 
@@ -48,15 +54,42 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6 sm:space-y-8">
-      {/* Welcome Section */}
-      <div className="space-y-2">
-        <h1 className="text-2xl sm:text-3xl font-bold">
-          Welcome back, {(user as any)?.firstName || (user as any)?.username || (user as any)?.email?.split('@')[0] || 'there'}
-        </h1>
-        <p className="text-sm sm:text-base text-muted-foreground">
-          Continue your integration journey with today's practice and reflection.
-        </p>
-      </div>
+      {/* Welcome Section with Logo for Journey Start */}
+      {isJourneyStart ? (
+        <Card className="p-8 sm:p-12 bg-gradient-to-br from-primary/5 via-accent/5 to-primary/5 border-primary/20">
+          <div className="text-center space-y-6">
+            <div className="flex justify-center">
+              <img 
+                src={logoImage} 
+                alt="Integration Compass" 
+                className="h-32 w-32 sm:h-40 sm:w-40 rounded-2xl shadow-xl"
+                data-testid="img-journey-logo"
+              />
+            </div>
+            <div className="space-y-3">
+              <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                Welcome to Your Journey
+              </h1>
+              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                Begin your 77-day integration journey with daily prompts, practices, and community support.
+              </p>
+            </div>
+            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+              <Compass className="h-4 w-4" />
+              <span>Your compass for integration and healing</span>
+            </div>
+          </div>
+        </Card>
+      ) : (
+        <div className="space-y-2">
+          <h1 className="text-2xl sm:text-3xl font-bold">
+            Welcome back, {(user as any)?.firstName || (user as any)?.username || (user as any)?.email?.split('@')[0] || 'there'}
+          </h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
+            Continue your integration journey with today's practice and reflection.
+          </p>
+        </div>
+      )}
 
       {/* Top Row - Streaks and Quick Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

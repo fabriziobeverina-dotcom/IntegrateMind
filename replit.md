@@ -39,7 +39,7 @@ The application uses a modern React-based frontend built with TypeScript and sty
 - **Styling**: Tailwind CSS with custom design tokens supporting light/dark themes
 - **Build Tool**: Vite for fast development and optimized production builds
 
-The color scheme centers around calming earth tones (Deep Forest Green, Sage Green, Warm Earth) with accent colors (Soft Amber, Muted Purple) to create a grounding, wellness-focused aesthetic.
+The color scheme features light blue as the primary color combined with a warm palette including amber, coral, and beige tones. This creates a calming, healing-focused aesthetic that balances cool blues with warm earth tones. The Paojilhuasca compass logo is prominently displayed on the landing page and journey start screen.
 
 ### Backend Architecture
 The backend is built with Express.js and follows a REST API pattern:
