@@ -80,9 +80,7 @@ function AppContent() {
   if (!isAuthenticated) {
     return (
       <ThemeProvider>
-        <TooltipProvider>
-          <PublicRouter />
-        </TooltipProvider>
+        <PublicRouter />
       </ThemeProvider>
     );
   }
@@ -129,8 +127,10 @@ function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <AppContent />
-        <Toaster />
+        <TooltipProvider skipDelayDuration={0} delayDuration={0}>
+          <AppContent />
+          <Toaster />
+        </TooltipProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );
