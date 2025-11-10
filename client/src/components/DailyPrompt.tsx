@@ -97,7 +97,7 @@ export function DailyPrompt() {
 
   if (isLoading) {
     return (
-      <Card className="p-6">
+      <Card className="p-4 sm:p-6">
         <div className="flex items-center justify-center py-8">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
@@ -107,10 +107,10 @@ export function DailyPrompt() {
 
   if (error) {
     return (
-      <Card className="p-6">
+      <Card className="p-4 sm:p-6">
         <div className="text-center py-8 space-y-3">
-          <p className="text-destructive font-medium">Database Connection Error</p>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-destructive font-medium text-sm sm:text-base">Database Connection Error</p>
+          <p className="text-xs sm:text-sm text-muted-foreground">
             The integration prompts are temporarily unavailable. Please contact your administrator to enable the database endpoint.
           </p>
         </div>
@@ -120,8 +120,8 @@ export function DailyPrompt() {
 
   if (!prompt) {
     return (
-      <Card className="p-6">
-        <div className="text-center py-8 text-muted-foreground">
+      <Card className="p-4 sm:p-6">
+        <div className="text-center py-8 text-muted-foreground text-xs sm:text-sm">
           <p>No prompt available. Please set your journey start date in your profile.</p>
         </div>
       </Card>
@@ -138,30 +138,30 @@ export function DailyPrompt() {
   };
 
   return (
-    <Card className="p-6 space-y-4 bg-gradient-to-br from-card to-accent/10">
-      <div className="flex items-start justify-between">
-        <div className="flex items-start gap-3">
-          <div className="p-2 rounded-lg bg-primary/10">
-            <Lightbulb className="h-5 w-5 text-primary" />
+    <Card className="p-4 sm:p-6 space-y-4 bg-gradient-to-br from-card to-accent/10">
+      <div className="space-y-3">
+        <div className="flex items-start gap-2 sm:gap-3">
+          <div className="p-1.5 sm:p-2 rounded-lg bg-primary/10 flex-shrink-0">
+            <Lightbulb className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
           </div>
-          <div>
+          <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <h3 className="font-semibold text-lg">Daily Integration Prompt</h3>
+              <h3 className="font-semibold text-base sm:text-lg">Daily Integration Prompt</h3>
               {prompt.isCompleted && (
-                <CheckCircle2 className="h-5 w-5 text-green-600" data-testid="icon-completed" />
+                <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 flex-shrink-0" data-testid="icon-completed" />
               )}
             </div>
-            <p className="text-sm text-muted-foreground">
-              Day {prompt.dayNumber} • {prompt.sequence}/65
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              Day {prompt.dayNumber} • {prompt.sequence}/77
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Badge className={categoryColors[prompt.category] || ""} data-testid="badge-category">
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+          <Badge className={`${categoryColors[prompt.category] || ""} text-xs`} data-testid="badge-category">
             {prompt.category}
           </Badge>
           {pointsData && (
-            <Badge variant="outline" className="gap-1" data-testid="badge-points">
+            <Badge variant="outline" className="gap-1 text-xs" data-testid="badge-points">
               <Target className="h-3 w-3" />
               {pointsData.totalPoints} pts
             </Badge>
@@ -169,83 +169,86 @@ export function DailyPrompt() {
         </div>
       </div>
 
-      <div className="space-y-4">
-        <div className="p-4 rounded-lg bg-background/50 border border-border">
-          <p className="font-serif text-base leading-relaxed" data-testid="text-prompt">
+      <div className="space-y-3 sm:space-y-4">
+        <div className="p-3 sm:p-4 rounded-lg bg-background/50 border border-border">
+          <p className="font-serif text-sm sm:text-base leading-relaxed" data-testid="text-prompt">
             {prompt.prompt}
           </p>
         </div>
 
-        <div className="p-4 rounded-lg bg-primary/5 border border-primary/20 space-y-3">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-primary">Micro-Practice</p>
+        <div className="p-3 sm:p-4 rounded-lg bg-primary/5 border border-primary/20 space-y-2 sm:space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs sm:text-sm font-medium text-primary">Micro-Practice</p>
             {practiceCompletion ? (
-              <div className="flex items-center gap-1.5 text-green-600">
-                <CheckCircle2 className="h-4 w-4" />
-                <span className="text-xs font-medium">Completed</span>
+              <div className="flex items-center gap-1 sm:gap-1.5 text-green-600">
+                <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span className="text-[10px] sm:text-xs font-medium">Completed</span>
               </div>
             ) : (
               <Button
                 size="sm"
                 variant="outline"
-                className="h-7"
+                className="h-6 sm:h-7 text-xs"
                 onClick={() => prompt && completePracticeMutation.mutate(prompt.id)}
                 disabled={completePracticeMutation.isPending}
                 data-testid="button-complete-practice"
               >
                 {completePracticeMutation.isPending ? (
                   <>
-                    <Loader2 className="h-3 w-3 mr-1.5 animate-spin" />
-                    Completing...
+                    <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                    <span className="hidden sm:inline">Completing...</span>
+                    <span className="sm:hidden">...</span>
                   </>
                 ) : (
                   <>
-                    <CheckCircle2 className="h-3 w-3 mr-1.5" />
-                    Mark Complete
+                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                    <span className="hidden sm:inline">Mark Complete</span>
+                    <span className="sm:hidden">Done</span>
                   </>
                 )}
               </Button>
             )}
           </div>
-          <p className="text-sm leading-relaxed" data-testid="text-practice">
+          <p className="text-xs sm:text-sm leading-relaxed" data-testid="text-practice">
             {prompt.practice}
           </p>
         </div>
 
         {prompt.isCompleted ? (
-          <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/20 text-center">
-            <CheckCircle2 className="h-8 w-8 text-green-600 mx-auto mb-2" />
-            <p className="font-medium text-green-700 dark:text-green-400">
+          <div className="p-3 sm:p-4 rounded-lg bg-green-500/10 border border-green-500/20 text-center">
+            <CheckCircle2 className="h-6 w-6 sm:h-8 sm:w-8 text-green-600 mx-auto mb-2" />
+            <p className="font-medium text-green-700 dark:text-green-400 text-sm sm:text-base">
               You've completed today's prompt!
             </p>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
               Come back tomorrow for your next integration practice
             </p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2 sm:space-y-3">
             <Textarea
               placeholder="After completing the micro-practice, reflect and respond..."
               value={response}
               onChange={(e) => setResponse(e.target.value)}
-              className="min-h-[120px] font-serif resize-none"
+              className="min-h-[100px] sm:min-h-[120px] font-serif resize-none text-sm sm:text-base"
               data-testid="input-prompt-response"
             />
             <Button
               onClick={handleSubmit}
               disabled={!response.trim() || completeMutation.isPending}
-              className="w-full"
+              className="w-full text-sm sm:text-base"
               data-testid="button-submit-response"
             >
               {completeMutation.isPending ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-2 animate-spin" />
                   Submitting...
                 </>
               ) : (
                 <>
-                  Complete & Earn {prompt.pointsValue} Points
-                  <ArrowRight className="h-4 w-4 ml-2" />
+                  <span className="hidden sm:inline">Complete & Earn {prompt.pointsValue} Points</span>
+                  <span className="sm:hidden">Earn {prompt.pointsValue} Points</span>
+                  <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 ml-2" />
                 </>
               )}
             </Button>

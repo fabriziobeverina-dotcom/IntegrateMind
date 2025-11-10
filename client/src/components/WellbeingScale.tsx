@@ -103,7 +103,7 @@ export function WellbeingScale() {
 
   if (isLoading) {
     return (
-      <Card className="p-6">
+      <Card className="p-4 sm:p-6">
         <div className="flex items-center justify-center py-4">
           <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
         </div>
@@ -114,14 +114,14 @@ export function WellbeingScale() {
   const currentMood = todaysCheckin?.wellbeingLevel || selectedLevel;
 
   return (
-    <Card className="p-6 space-y-4">
-      <div className="flex items-start gap-3">
-        <div className="p-2 rounded-lg bg-pink-500/10">
-          <Heart className="h-5 w-5 text-pink-600" />
+    <Card className="p-4 sm:p-6 space-y-4">
+      <div className="flex items-start gap-2 sm:gap-3">
+        <div className="p-1.5 sm:p-2 rounded-lg bg-pink-500/10 flex-shrink-0">
+          <Heart className="h-4 w-4 sm:h-5 sm:w-5 text-pink-600" />
         </div>
-        <div className="flex-1">
-          <h3 className="font-semibold text-lg">Daily Wellbeing Check-In</h3>
-          <p className="text-sm text-muted-foreground">
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-base sm:text-lg">Daily Wellbeing Check-In</h3>
+          <p className="text-xs sm:text-sm text-muted-foreground">
             {todaysCheckin 
               ? "You've checked in today!"
               : "How are you feeling right now?"}
@@ -129,7 +129,7 @@ export function WellbeingScale() {
         </div>
       </div>
 
-      <div className="grid grid-cols-5 gap-2">
+      <div className="grid grid-cols-5 gap-1.5 sm:gap-2">
         {moodLevels.map((mood) => {
           const isSelected = currentMood === mood.level;
           const isDisabled = !!todaysCheckin || saveMutation.isPending;
@@ -142,15 +142,15 @@ export function WellbeingScale() {
               disabled={isDisabled}
               variant="outline"
               className={`
-                flex flex-col items-center gap-2 p-3 h-auto rounded-lg border-2 transition-all
+                flex flex-col items-center gap-1 sm:gap-2 p-2 sm:p-3 h-auto rounded-lg border-2 transition-all
                 ${isSelected ? mood.selectedColor : mood.color}
                 ${!isDisabled && !isSelected ? 'hover-elevate active-elevate-2' : ''}
                 ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}
               `}
               data-testid={`button-mood-${mood.level}`}
             >
-              <MoodIcon className="h-8 w-8" aria-label={mood.label} />
-              <span className="text-xs font-medium text-center">
+              <MoodIcon className="h-5 w-5 sm:h-8 sm:w-8" aria-label={mood.label} />
+              <span className="text-[10px] sm:text-xs font-medium text-center leading-tight">
                 {mood.label}
               </span>
             </Button>
@@ -160,15 +160,15 @@ export function WellbeingScale() {
 
       {todaysCheckin && (
         <div className="text-center py-2">
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs sm:text-sm text-muted-foreground">
             Come back tomorrow to check in again
           </p>
         </div>
       )}
 
       {saveMutation.isPending && (
-        <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" />
+        <div className="flex items-center justify-center gap-2 text-xs sm:text-sm text-muted-foreground">
+          <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />
           <span>Saving your check-in...</span>
         </div>
       )}
