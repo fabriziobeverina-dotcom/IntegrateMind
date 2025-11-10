@@ -24,13 +24,6 @@ The platform features a 77-day integration prompt cycle designed to guide users 
 - Users can repeat the journey as many times as needed
 - Progress tracking maintains history across multiple cycles
 
-**Day Override for Testing:**
-- Development/testing feature to simulate different days
-- UI controls in the DailyPrompt component allow setting day (0-76)
-- Stored in user.dayOverride field in database
-- When active, displays amber warning banner with clear option
-- API endpoints: POST /api/user/day-override and DELETE /api/user/day-override
-
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.

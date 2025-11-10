@@ -1068,12 +1068,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Calculate days since journey started
-      let daysSinceStart = Math.floor((Date.now() - user.journeyStartDate.getTime()) / (1000 * 60 * 60 * 24));
-      
-      // Use day override if set (for testing purposes)
-      if (user.dayOverride !== null && user.dayOverride !== undefined) {
-        daysSinceStart = user.dayOverride;
-      }
+      const daysSinceStart = Math.floor((Date.now() - user.journeyStartDate.getTime()) / (1000 * 60 * 60 * 24));
       
       // Cycle through 77 days (72 category prompts + 5 milestones), then restart
       const cycleDay = daysSinceStart % 77;
@@ -1112,8 +1107,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ 
         ...prompt, 
         isCompleted: !!progress,
-        dayNumber: daysSinceStart + 1,
-        isOverridden: user.dayOverride !== null && user.dayOverride !== undefined
+        dayNumber: daysSinceStart + 1
       });
     } catch (error) {
       console.error("Error fetching today's integration prompt:", error);
@@ -1221,59 +1215,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error updating reminder settings:", error);
       res.status(500).json({ message: "Failed to update reminder settings" });
-    }
-  });
-
-  app.post('/api/user/day-override', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const { day } = req.body;
-      
-      if (day === undefined || day === null) {
-        return res.status(400).json({ message: "Day is required" });
-      }
-      
-      const dayNum = parseInt(day, 10);
-      if (isNaN(dayNum) || dayNum < 0 || dayNum > 76) {
-        return res.status(400).json({ message: "Day must be between 0 and 76" });
-      }
-      
-      const updatedUser = await storage.updateUser(userId, {
-        dayOverride: dayNum
-      });
-      
-      if (!updatedUser) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      res.json({
-        message: "Day override set successfully",
-        dayOverride: updatedUser.dayOverride
-      });
-    } catch (error) {
-      console.error("Error setting day override:", error);
-      res.status(500).json({ message: "Failed to set day override" });
-    }
-  });
-
-  app.delete('/api/user/day-override', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      
-      const updatedUser = await storage.updateUser(userId, {
-        dayOverride: null
-      });
-      
-      if (!updatedUser) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      res.json({
-        message: "Day override cleared successfully"
-      });
-    } catch (error) {
-      console.error("Error clearing day override:", error);
-      res.status(500).json({ message: "Failed to clear day override" });
     }
   });
 

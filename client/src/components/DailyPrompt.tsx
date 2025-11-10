@@ -4,8 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Lightbulb, ArrowRight, CheckCircle2, Loader2, Target, Calendar, X } from "lucide-react";
+import { Lightbulb, ArrowRight, CheckCircle2, Loader2, Target } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -18,12 +17,10 @@ interface IntegrationPrompt {
   pointsValue: number;
   isCompleted?: boolean;
   dayNumber?: number;
-  isOverridden?: boolean;
 }
 
 export function DailyPrompt() {
   const [response, setResponse] = useState("");
-  const [dayInput, setDayInput] = useState("");
   const { toast } = useToast();
 
   const { data: prompt, isLoading, error } = useQuery<IntegrationPrompt>({
@@ -89,65 +86,11 @@ export function DailyPrompt() {
     },
   });
 
-  const setDayOverrideMutation = useMutation({
-    mutationFn: async (day: number) => {
-      return await apiRequest('POST', '/api/user/day-override', { day });
-    },
-    onSuccess: () => {
-      toast({
-        title: "Day override set",
-        description: "You can now test different days!",
-      });
-      queryClient.invalidateQueries({ queryKey: ['/api/integration-prompts/today'] });
-      setDayInput("");
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to set day override",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const clearDayOverrideMutation = useMutation({
-    mutationFn: async () => {
-      return await apiRequest('DELETE', '/api/user/day-override');
-    },
-    onSuccess: () => {
-      toast({
-        title: "Day override cleared",
-        description: "Returning to actual journey day",
-      });
-      queryClient.invalidateQueries({ queryKey: ['/api/integration-prompts/today'] });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to clear day override",
-        variant: "destructive",
-      });
-    },
-  });
-
   const handleSubmit = () => {
     if (response.trim() && prompt) {
       completeMutation.mutate({
         promptId: prompt.id,
         response: response.trim(),
-      });
-    }
-  };
-
-  const handleSetDayOverride = () => {
-    const day = parseInt(dayInput, 10);
-    if (!isNaN(day) && day >= 0 && day <= 76) {
-      setDayOverrideMutation.mutate(day);
-    } else {
-      toast({
-        title: "Invalid day",
-        description: "Please enter a day between 0 and 76",
-        variant: "destructive",
       });
     }
   };
@@ -195,62 +138,8 @@ export function DailyPrompt() {
   };
 
   return (
-    <div className="space-y-3">
-      {prompt.isOverridden && (
-        <Card className="p-4 bg-amber-500/10 border-amber-500/20">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-amber-700 dark:text-amber-400" />
-              <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
-                Testing Day {prompt.dayNumber} (Override Active)
-              </p>
-            </div>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => clearDayOverrideMutation.mutate()}
-              disabled={clearDayOverrideMutation.isPending}
-              data-testid="button-clear-override"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-        </Card>
-      )}
-
-      <Card className="p-4 bg-muted/50">
-        <div className="flex items-center gap-2">
-          <Calendar className="h-4 w-4 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground font-medium">Test Different Days</p>
-        </div>
-        <div className="flex items-center gap-2 mt-2">
-          <Input
-            type="number"
-            min="0"
-            max="76"
-            placeholder="Day (0-76)"
-            value={dayInput}
-            onChange={(e) => setDayInput(e.target.value)}
-            className="h-8 flex-1"
-            data-testid="input-day-override"
-          />
-          <Button
-            size="sm"
-            onClick={handleSetDayOverride}
-            disabled={setDayOverrideMutation.isPending || !dayInput}
-            data-testid="button-set-override"
-          >
-            {setDayOverrideMutation.isPending ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
-            ) : (
-              "Set Day"
-            )}
-          </Button>
-        </div>
-      </Card>
-
-      <Card className="p-6 space-y-4 bg-gradient-to-br from-card to-accent/10">
-        <div className="flex items-start justify-between">
+    <Card className="p-6 space-y-4 bg-gradient-to-br from-card to-accent/10">
+      <div className="flex items-start justify-between">
         <div className="flex items-start gap-3">
           <div className="p-2 rounded-lg bg-primary/10">
             <Lightbulb className="h-5 w-5 text-primary" />
@@ -364,6 +253,5 @@ export function DailyPrompt() {
         )}
       </div>
     </Card>
-    </div>
   );
 }
