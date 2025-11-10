@@ -34,6 +34,7 @@ export const users = pgTable("users", {
   reminderTime: varchar("reminder_time").default("09:00"), // HH:MM format
   reminderTimezone: varchar("reminder_timezone").default("UTC"),
   reminderTypes: text("reminder_types").array().default([]), // ['journal', 'progress', 'practice']
+  dayOverride: integer("day_override"), // For testing - override current day (0-76)
 });
 
 // Journal entries table
