@@ -124,6 +124,9 @@ function AppContent() {
 }
 
 function App() {
+  // Verify new code is loaded - check browser console
+  console.log('✅ App loaded - TooltipProvider fix v3 active');
+  
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
