@@ -23,19 +23,19 @@ const metricConfig = {
     label: 'Mood', 
     icon: Heart, 
     color: '#8b5cf6', 
-    description: 'Overall emotional wellbeing' 
+    description: 'Emotional wellbeing' 
   },
   sleep: { 
-    label: 'Sleep Quality', 
+    label: 'Sleep', 
     icon: Moon, 
     color: '#06b6d4', 
-    description: 'Rest and recovery quality' 
+    description: 'Rest quality' 
   },
   grounding: { 
     label: 'Grounding', 
     icon: Anchor, 
     color: '#10b981', 
-    description: 'Connection to body and present moment' 
+    description: 'Present moment connection' 
   }
 };
 
@@ -53,18 +53,18 @@ export function ProgressChart({ data, selectedMetric, onMetricSelect, isLoading 
   };
 
   return (
-    <Card className="p-6 space-y-4">
-      <div className="flex items-center gap-3">
-        <div className="p-2 rounded-lg bg-primary/10">
-          <TrendingUp className="h-5 w-5 text-primary" />
+    <Card className="p-4 sm:p-6 space-y-3 sm:space-y-4 w-full min-w-0">
+      <div className="flex items-center gap-2 sm:gap-3">
+        <div className="p-1.5 sm:p-2 rounded-lg bg-primary/10 flex-shrink-0">
+          <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
         </div>
-        <div>
-          <h3 className="font-semibold text-lg">Progress Tracking</h3>
-          <p className="text-sm text-muted-foreground">Weekly mood, sleep, and grounding insights</p>
+        <div className="min-w-0 flex-1">
+          <h3 className="font-semibold text-base sm:text-lg">Progress Tracking</h3>
+          <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">Weekly insights</p>
         </div>
       </div>
 
-      <div className="flex gap-2 flex-wrap">
+      <div className="flex gap-1.5 sm:gap-2 flex-wrap overflow-x-auto pb-1">
         {Object.entries(metricConfig).map(([key, config]) => {
           const Icon = config.icon;
           const isSelected = selectedMetric === key;
@@ -74,36 +74,37 @@ export function ProgressChart({ data, selectedMetric, onMetricSelect, isLoading 
               variant={isSelected ? "default" : "outline"}
               size="sm"
               onClick={() => onMetricSelect(key as 'mood' | 'sleep' | 'grounding')}
-              className="flex items-center gap-2"
+              className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0 text-xs sm:text-sm"
               data-testid={`button-metric-${key}`}
             >
-              <Icon className="h-4 w-4" />
-              {config.label}
+              <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">{config.label}</span>
+              <span className="sm:hidden">{config.label}</span>
             </Button>
           );
         })}
       </div>
 
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <IconComponent className="h-5 w-5" style={{ color: currentConfig.color }} />
-            <div>
-              <p className="font-medium">{currentConfig.label}</p>
-              <p className="text-xs text-muted-foreground">{currentConfig.description}</p>
+      <div className="space-y-3 sm:space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <IconComponent className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" style={{ color: currentConfig.color }} />
+            <div className="min-w-0 flex-1">
+              <p className="font-medium text-sm sm:text-base">{currentConfig.label}</p>
+              <p className="text-xs text-muted-foreground hidden sm:block">{currentConfig.description}</p>
             </div>
           </div>
-          <div className="text-right">
-            <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-bold" style={{ color: currentConfig.color }} data-testid={`text-current-${selectedMetric}`}>
+          <div className="text-right flex-shrink-0">
+            <div className="flex items-baseline gap-0.5 sm:gap-1">
+              <span className="text-xl sm:text-2xl font-bold" style={{ color: currentConfig.color }} data-testid={`text-current-${selectedMetric}`}>
                 {latestValue}
               </span>
-              <span className="text-sm text-muted-foreground">/10</span>
+              <span className="text-xs sm:text-sm text-muted-foreground">/10</span>
             </div>
             {trend !== 0 && (
               <Badge 
                 variant={trend > 0 ? "default" : "secondary"}
-                className="text-xs"
+                className="text-[10px] sm:text-xs mt-1"
                 data-testid={`badge-trend-${selectedMetric}`}
               >
                 {trend > 0 ? '+' : ''}{trend.toFixed(1)}
@@ -112,34 +113,37 @@ export function ProgressChart({ data, selectedMetric, onMetricSelect, isLoading 
           </div>
         </div>
 
-        <div className="h-[200px] w-full">
+        <div className="h-[180px] sm:h-[200px] w-full">
           {isLoading ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center space-y-2">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-                <p className="text-sm text-muted-foreground">Loading progress data...</p>
+                <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-primary mx-auto"></div>
+                <p className="text-xs sm:text-sm text-muted-foreground">Loading...</p>
               </div>
             </div>
           ) : data.length === 0 ? (
-            <div className="flex items-center justify-center h-full">
+            <div className="flex items-center justify-center h-full px-4">
               <div className="text-center space-y-2">
-                <p className="text-muted-foreground">No progress data available</p>
-                <p className="text-sm text-muted-foreground">Start tracking your mood in journal entries or daily progress</p>
+                <p className="text-muted-foreground text-sm">No progress data available</p>
+                <p className="text-xs text-muted-foreground">Start tracking in journal entries</p>
               </div>
             </div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data}>
+              <LineChart data={data} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis 
                   dataKey="date" 
                   stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
+                  fontSize={10}
+                  tick={{ fontSize: 10 }}
                 />
                 <YAxis 
                   domain={[0, 10]} 
                   stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
+                  fontSize={10}
+                  tick={{ fontSize: 10 }}
+                  width={30}
                 />
                 <Tooltip 
                   formatter={formatTooltip}
@@ -147,16 +151,17 @@ export function ProgressChart({ data, selectedMetric, onMetricSelect, isLoading 
                   contentStyle={{ 
                     backgroundColor: 'hsl(var(--card))', 
                     border: '1px solid hsl(var(--border))',
-                    borderRadius: '6px'
+                    borderRadius: '6px',
+                    fontSize: '12px'
                   }}
                 />
                 <Line 
                   type="monotone" 
                   dataKey={selectedMetric}
                   stroke={currentConfig.color}
-                  strokeWidth={3}
-                  dot={{ fill: currentConfig.color, strokeWidth: 2, r: 4 }}
-                  activeDot={{ r: 6, stroke: currentConfig.color, strokeWidth: 2 }}
+                  strokeWidth={2}
+                  dot={{ fill: currentConfig.color, strokeWidth: 2, r: 3 }}
+                  activeDot={{ r: 5, stroke: currentConfig.color, strokeWidth: 2 }}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -166,4 +171,3 @@ export function ProgressChart({ data, selectedMetric, onMetricSelect, isLoading 
     </Card>
   );
 }
-

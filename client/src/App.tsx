@@ -93,10 +93,10 @@ function AppContent() {
   return (
     <ThemeProvider>
       <SidebarProvider style={style}>
-        <div className="flex h-screen w-full">
+        <div className="flex h-screen w-full overflow-hidden">
           <AppSidebar />
-          <div className="flex flex-col flex-1">
-            <header className="flex items-center justify-between p-2 sm:p-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="flex flex-col flex-1 min-w-0">
+            <header className="flex items-center justify-between px-3 py-2 sm:px-4 sm:py-3 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex-shrink-0">
               <SidebarTrigger data-testid="button-sidebar-toggle" />
               <div className="flex items-center gap-2 sm:gap-4">
                 <div className="hidden sm:block text-sm text-muted-foreground">
@@ -111,8 +111,8 @@ function AppContent() {
                 </button>
               </div>
             </header>
-            <main className="flex-1 overflow-auto">
-              <div className="w-full max-w-7xl mx-auto px-3 py-3 sm:px-6 sm:py-6">
+            <main className="flex-1 overflow-x-hidden overflow-y-auto">
+              <div className="w-full max-w-7xl mx-auto px-4 py-4 sm:px-6 sm:py-6">
                 <AuthenticatedRouter />
               </div>
             </main>
@@ -124,8 +124,7 @@ function AppContent() {
 }
 
 function App() {
-  // Verify new code is loaded - check browser console
-  console.log('✅ App loaded - TooltipProvider fix v3 active');
+  console.log('✅ App loaded - Mobile responsive layout active');
   
   return (
     <ErrorBoundary>
