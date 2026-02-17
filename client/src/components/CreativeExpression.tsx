@@ -374,7 +374,5 @@ function DrawingCanvas({
 }
 
 export function isCreativeExpressionDay(): boolean {
-  const now = new Date();
-  const day = now.getDate();
-  return day === 1 || day === 15;
+  return true;
 }
