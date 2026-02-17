@@ -374,6 +374,22 @@ function DrawingCanvas({
   }, []);
 
   useEffect(() => {
+    const prevOverflow = document.body.style.overflow;
+    const prevTouchAction = document.body.style.touchAction;
+    const prevPosition = document.body.style.position;
+    const prevWidth = document.body.style.width;
+    const prevHeight = document.body.style.height;
+    document.body.style.overflow = 'hidden';
+    document.body.style.touchAction = 'none';
+    document.body.style.position = 'fixed';
+    document.body.style.width = '100%';
+    document.body.style.height = '100%';
+
+    const preventDefaultTouch = (e: TouchEvent) => {
+      e.preventDefault();
+    };
+    document.addEventListener('touchmove', preventDefaultTouch, { passive: false });
+
     const canvas = canvasRef.current;
     const container = containerRef.current;
     if (!canvas || !container) return;
@@ -397,6 +413,7 @@ function DrawingCanvas({
 
     const handleTouchStart = (e: TouchEvent) => {
       e.preventDefault();
+      e.stopPropagation();
       const touch = e.touches[0];
       const { x, y } = getCanvasPoint(touch.clientX, touch.clientY);
       startDrawing(x, y);
@@ -404,6 +421,7 @@ function DrawingCanvas({
 
     const handleTouchMove = (e: TouchEvent) => {
       e.preventDefault();
+      e.stopPropagation();
       const touch = e.touches[0];
       const { x, y } = getCanvasPoint(touch.clientX, touch.clientY);
       draw(x, y);
@@ -411,6 +429,7 @@ function DrawingCanvas({
 
     const handleTouchEnd = (e: TouchEvent) => {
       e.preventDefault();
+      e.stopPropagation();
       endDrawing();
     };
 
@@ -437,6 +456,12 @@ function DrawingCanvas({
     canvas.addEventListener('mouseleave', handleMouseUp);
 
     return () => {
+      document.body.style.overflow = prevOverflow;
+      document.body.style.touchAction = prevTouchAction;
+      document.body.style.position = prevPosition;
+      document.body.style.width = prevWidth;
+      document.body.style.height = prevHeight;
+      document.removeEventListener('touchmove', preventDefaultTouch);
       canvas.removeEventListener('touchstart', handleTouchStart);
       canvas.removeEventListener('touchmove', handleTouchMove);
       canvas.removeEventListener('touchend', handleTouchEnd);
@@ -456,7 +481,7 @@ function DrawingCanvas({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-background flex flex-col" data-testid="div-drawing-canvas">
+    <div className="fixed inset-0 z-50 bg-background flex flex-col" data-testid="div-drawing-canvas" style={{ touchAction: 'none' }}>
       <div className="flex items-center justify-between gap-2 px-3 py-2 border-b bg-background flex-shrink-0">
         <Button
           size="icon"
@@ -470,10 +495,11 @@ function DrawingCanvas({
         <div className="w-9" />
       </div>
 
-      <div ref={containerRef} className="flex-1 relative touch-none">
+      <div ref={containerRef} className="flex-1 relative overflow-hidden" style={{ touchAction: 'none' }}>
         <canvas
           ref={canvasRef}
-          className="absolute inset-0 cursor-crosshair"
+          className="absolute inset-0 w-full h-full"
+          style={{ touchAction: 'none' }}
           data-testid="canvas-drawing"
         />
       </div>
