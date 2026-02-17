@@ -26,6 +26,7 @@ import AdminReadings from "@/pages/AdminReadings";
 import AdminVideos from "@/pages/AdminVideos";
 import AdminAnalytics from "@/pages/AdminAnalytics";
 import NotFound from "@/pages/not-found";
+import { NotificationScheduler } from "@/components/NotificationScheduler";
 
 function AuthenticatedRouter() {
   return (
@@ -116,6 +117,7 @@ function AppContent() {
                 <AuthenticatedRouter />
               </div>
             </main>
+            <NotificationScheduler />
           </div>
         </div>
       </SidebarProvider>

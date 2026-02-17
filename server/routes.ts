@@ -1396,6 +1396,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         reminderTime: user.reminderTime,
         reminderTimezone: user.reminderTimezone,
         reminderTypes: user.reminderTypes,
+        morningReminderEnabled: user.morningReminderEnabled ?? true,
+        morningReminderTime: user.morningReminderTime || "08:00",
+        eveningReminderEnabled: user.eveningReminderEnabled ?? true,
+        eveningReminderTime: user.eveningReminderTime || "20:00",
       });
     } catch (error) {
       console.error("Error fetching reminder settings:", error);
@@ -1406,13 +1410,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put('/api/settings/reminders', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const { reminderEnabled, reminderTime, reminderTimezone, reminderTypes } = req.body;
+      const { 
+        reminderEnabled, reminderTime, reminderTimezone, reminderTypes,
+        morningReminderEnabled, morningReminderTime,
+        eveningReminderEnabled, eveningReminderTime
+      } = req.body;
+
+      const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
+      if (morningReminderTime && !timeRegex.test(morningReminderTime)) {
+        return res.status(400).json({ message: "Invalid morning reminder time format" });
+      }
+      if (eveningReminderTime && !timeRegex.test(eveningReminderTime)) {
+        return res.status(400).json({ message: "Invalid evening reminder time format" });
+      }
 
       const updatedUser = await storage.updateUserReminderSettings(userId, {
         reminderEnabled,
         reminderTime,
         reminderTimezone,
         reminderTypes,
+        morningReminderEnabled: morningReminderEnabled ?? true,
+        morningReminderTime: morningReminderTime || "08:00",
+        eveningReminderEnabled: eveningReminderEnabled ?? true,
+        eveningReminderTime: eveningReminderTime || "20:00",
       });
 
       if (!updatedUser) {
@@ -1424,6 +1444,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         reminderTime: updatedUser.reminderTime,
         reminderTimezone: updatedUser.reminderTimezone,
         reminderTypes: updatedUser.reminderTypes,
+        morningReminderEnabled: updatedUser.morningReminderEnabled,
+        morningReminderTime: updatedUser.morningReminderTime,
+        eveningReminderEnabled: updatedUser.eveningReminderEnabled,
+        eveningReminderTime: updatedUser.eveningReminderTime,
       });
     } catch (error) {
       console.error("Error updating reminder settings:", error);

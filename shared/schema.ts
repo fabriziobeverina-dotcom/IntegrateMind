@@ -31,9 +31,13 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at").defaultNow(),
   // Daily reminder preferences
   reminderEnabled: boolean("reminder_enabled").default(false),
-  reminderTime: varchar("reminder_time").default("09:00"), // HH:MM format
+  reminderTime: varchar("reminder_time").default("09:00"), // HH:MM format (legacy)
   reminderTimezone: varchar("reminder_timezone").default("UTC"),
   reminderTypes: text("reminder_types").array().default([]), // ['journal', 'progress', 'practice']
+  morningReminderEnabled: boolean("morning_reminder_enabled").default(true),
+  morningReminderTime: varchar("morning_reminder_time").default("08:00"), // HH:MM format
+  eveningReminderEnabled: boolean("evening_reminder_enabled").default(true),
+  eveningReminderTime: varchar("evening_reminder_time").default("20:00"), // HH:MM format
 });
 
 // Journal entries table

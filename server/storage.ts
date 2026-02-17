@@ -168,6 +168,10 @@ export interface IStorage {
     reminderTime?: string;
     reminderTimezone?: string;
     reminderTypes?: string[];
+    morningReminderEnabled?: boolean;
+    morningReminderTime?: string;
+    eveningReminderEnabled?: boolean;
+    eveningReminderTime?: string;
   }): Promise<User | undefined>;
   
   // Admin analytics
@@ -914,6 +918,10 @@ export class DatabaseStorage implements IStorage {
     reminderTime?: string;
     reminderTimezone?: string;
     reminderTypes?: string[];
+    morningReminderEnabled?: boolean;
+    morningReminderTime?: string;
+    eveningReminderEnabled?: boolean;
+    eveningReminderTime?: string;
   }): Promise<User | undefined> {
     const results = await this.db.update(users)
       .set(settings)
