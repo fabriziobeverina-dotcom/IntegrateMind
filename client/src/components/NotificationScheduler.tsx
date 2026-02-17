@@ -132,16 +132,20 @@ export function NotificationScheduler() {
       }
     }
 
-    const isDreamDay = dayOfWeek === 0 || dayOfWeek === 2 || dayOfWeek === 4;
-    if (isDreamDay && settings.morningReminderEnabled) {
-      const dreamTime = parseTime(settings.morningReminderTime || "08:00");
-      const earlyDreamHour = Math.max(0, dreamTime.hours - 1);
+    const isDreamDayNow = dayOfWeek === 0 || dayOfWeek === 2 || dayOfWeek === 4;
+    if (isDreamDayNow && settings.morningReminderEnabled) {
+      const morningTime = parseTime(settings.morningReminderTime || "08:00");
+      let earlyMinutes = morningTime.minutes;
+      let earlyHours = morningTime.hours - 1;
+      if (earlyHours < 0) {
+        earlyHours = 23;
+      }
       const dreamKey = `dream-${dateKey}`;
 
       if (
-        currentHours === earlyDreamHour &&
-        currentMinutes >= dreamTime.minutes &&
-        currentMinutes < dreamTime.minutes + 5 &&
+        currentHours === earlyHours &&
+        currentMinutes >= earlyMinutes &&
+        currentMinutes < earlyMinutes + 5 &&
         lastDreamNotification.current !== dreamKey
       ) {
         lastDreamNotification.current = dreamKey;
