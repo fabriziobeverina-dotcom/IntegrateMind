@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { DailyPrompt } from "@/components/DailyPrompt";
 import { WellbeingScale } from "@/components/WellbeingScale";
 import { DreamJournal, isDreamDay } from "@/components/DreamJournal";
+import { CreativeExpression, isCreativeExpressionDay } from "@/components/CreativeExpression";
 import { PracticeCard } from "@/components/PracticeCard";
 import { StreakTracker } from "@/components/StreakTracker";
 import { ProgressChart } from "@/components/ProgressChart";
@@ -122,6 +123,14 @@ export default function Dashboard() {
         <div className="space-y-3 sm:space-y-4 w-full min-w-0">
           <h2 className="text-base sm:text-lg md:text-xl font-semibold">Dream Journal</h2>
           <DreamJournal />
+        </div>
+      )}
+
+      {/* Creative Expression - 1st & 15th of each month */}
+      {isCreativeExpressionDay() && (
+        <div className="space-y-3 sm:space-y-4 w-full min-w-0">
+          <h2 className="text-base sm:text-lg md:text-xl font-semibold">Creative Expression</h2>
+          <CreativeExpression />
         </div>
       )}
 

@@ -276,6 +276,18 @@ export const dreamJournals = pgTable("dream_journals", {
   userDateIndex: index("dream_user_date_idx").on(table.userId, table.createdAt)
 }));
 
+// Creative expression drawings (twice monthly)
+export const creativeExpressions = pgTable("creative_expressions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  intentionText: text("intention_text"),
+  drawingImage: text("drawing_image"),
+  strokeData: jsonb("stroke_data"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  userDateIndex: index("creative_user_date_idx").on(table.userId, table.createdAt)
+}));
+
 // Practice completions tracking (for the daily micro-practice button)
 export const practiceCompletions = pgTable("practice_completions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -407,6 +419,11 @@ export const insertDreamJournalSchema = createInsertSchema(dreamJournals).omit({
   createdAt: true,
 });
 
+export const insertCreativeExpressionSchema = createInsertSchema(creativeExpressions).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -468,3 +485,6 @@ export type InsertPracticeCompletion = z.infer<typeof insertPracticeCompletionSc
 
 export type DreamJournal = typeof dreamJournals.$inferSelect;
 export type InsertDreamJournal = z.infer<typeof insertDreamJournalSchema>;
+
+export type CreativeExpression = typeof creativeExpressions.$inferSelect;
+export type InsertCreativeExpression = z.infer<typeof insertCreativeExpressionSchema>;

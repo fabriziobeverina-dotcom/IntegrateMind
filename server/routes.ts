@@ -1384,6 +1384,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Creative expressions
+  app.get('/api/creative-expressions', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const entries = await storage.getUserCreativeExpressions(userId, limit);
+      res.json(entries);
+    } catch (error) {
+      console.error("Error fetching creative expressions:", error);
+      res.status(500).json({ message: "Failed to fetch creative expressions" });
+    }
+  });
+
+  app.post('/api/creative-expressions', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { intentionText, drawingImage, strokeData } = req.body;
+
+      if (!drawingImage || typeof drawingImage !== 'string') {
+        return res.status(400).json({ message: "Drawing image is required" });
+      }
+
+      const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+      if (drawingImage.length > MAX_IMAGE_SIZE) {
+        return res.status(400).json({ message: "Drawing image is too large" });
+      }
+
+      const entry = await storage.createCreativeExpression({
+        userId,
+        intentionText: intentionText || null,
+        drawingImage,
+        strokeData: strokeData || null,
+      });
+
+      res.json(entry);
+    } catch (error) {
+      console.error("Error creating creative expression:", error);
+      res.status(500).json({ message: "Failed to create creative expression" });
+    }
+  });
+
   // Practice completions (for daily micro-practice)
   app.get('/api/practice-completions/:promptId', isAuthenticated, async (req: any, res) => {
     try {

@@ -41,6 +41,8 @@ import {
   type InsertPracticeCompletion,
   type DreamJournal,
   type InsertDreamJournal,
+  type CreativeExpression,
+  type InsertCreativeExpression,
   users,
   journalEntries,
   practices,
@@ -60,6 +62,7 @@ import {
   userPromptProgress,
   wellbeingCheckins,
   dreamJournals,
+  creativeExpressions,
   practiceCompletions
 } from "@shared/schema";
 
@@ -164,6 +167,10 @@ export interface IStorage {
   getTodaysDreamJournal(userId: string): Promise<DreamJournal | undefined>;
   getUserDreamJournals(userId: string, limit?: number): Promise<DreamJournal[]>;
   createDreamJournal(entry: InsertDreamJournal): Promise<DreamJournal>;
+
+  // Creative expressions
+  getUserCreativeExpressions(userId: string, limit?: number): Promise<CreativeExpression[]>;
+  createCreativeExpression(entry: InsertCreativeExpression): Promise<CreativeExpression>;
 
   // Practice completions (for daily micro-practice)
   getUserPracticeCompletionsByPrompt(userId: string, promptId: string): Promise<PracticeCompletion | undefined>;
@@ -911,6 +918,19 @@ export class DatabaseStorage implements IStorage {
 
   async createDreamJournal(entry: InsertDreamJournal): Promise<DreamJournal> {
     const results = await this.db.insert(dreamJournals).values(entry).returning();
+    return results[0]!;
+  }
+
+  async getUserCreativeExpressions(userId: string, limit: number = 20): Promise<CreativeExpression[]> {
+    return this.db.select()
+      .from(creativeExpressions)
+      .where(eq(creativeExpressions.userId, userId))
+      .orderBy(desc(creativeExpressions.createdAt))
+      .limit(limit);
+  }
+
+  async createCreativeExpression(entry: InsertCreativeExpression): Promise<CreativeExpression> {
+    const results = await this.db.insert(creativeExpressions).values(entry).returning();
     return results[0]!;
   }
   

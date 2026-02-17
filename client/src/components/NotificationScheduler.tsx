@@ -10,7 +10,7 @@ interface ReminderSettings {
   eveningReminderTime: string;
 }
 
-function getCurrentTimeInTimezone(timezone: string): { hours: number; minutes: number; dateKey: string; dayOfWeek: number } {
+function getCurrentTimeInTimezone(timezone: string): { hours: number; minutes: number; dateKey: string; dayOfWeek: number; dayOfMonth: number } {
   try {
     const now = new Date();
     const timeFormatter = new Intl.DateTimeFormat('en-US', {
@@ -36,10 +36,12 @@ function getCurrentTimeInTimezone(timezone: string): { hours: number; minutes: n
     const dayStr = dayFormatter.format(now);
     const dayMap: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
     const dayOfWeek = dayMap[dayStr] ?? now.getDay();
-    return { hours, minutes, dateKey, dayOfWeek };
+    const dayOfMonthFormatter = new Intl.DateTimeFormat('en-US', { timeZone: timezone, day: 'numeric' });
+    const dayOfMonth = parseInt(dayOfMonthFormatter.format(now), 10);
+    return { hours, minutes, dateKey, dayOfWeek, dayOfMonth };
   } catch {
     const now = new Date();
-    return { hours: now.getHours(), minutes: now.getMinutes(), dateKey: now.toDateString(), dayOfWeek: now.getDay() };
+    return { hours: now.getHours(), minutes: now.getMinutes(), dateKey: now.toDateString(), dayOfWeek: now.getDay(), dayOfMonth: now.getDate() };
   }
 }
 
@@ -74,6 +76,7 @@ export function NotificationScheduler() {
   const lastMorningNotification = useRef<string>('');
   const lastEveningNotification = useRef<string>('');
   const lastDreamNotification = useRef<string>('');
+  const lastCreativeNotification = useRef<string>('');
 
   const { data: settings } = useQuery<ReminderSettings>({
     queryKey: ['/api/settings/reminders'],
@@ -92,7 +95,7 @@ export function NotificationScheduler() {
     if (!settings.reminderEnabled) return;
 
     const timezone = settings.reminderTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const { hours: currentHours, minutes: currentMinutes, dateKey, dayOfWeek } = getCurrentTimeInTimezone(timezone);
+    const { hours: currentHours, minutes: currentMinutes, dateKey, dayOfWeek, dayOfMonth } = getCurrentTimeInTimezone(timezone);
 
     if (settings.morningReminderEnabled) {
       const morningTime = parseTime(settings.morningReminderTime || "08:00");
@@ -153,6 +156,26 @@ export function NotificationScheduler() {
           "Capture Your Dream",
           "It's a dream journal day! Write down your dream before it fades away.",
           "dream-reminder"
+        );
+      }
+    }
+
+    const isCreativeDay = dayOfMonth === 1 || dayOfMonth === 15;
+    if (isCreativeDay) {
+      const morningTime = parseTime(settings.morningReminderTime || "08:00");
+      const creativeKey = `creative-${dateKey}`;
+
+      if (
+        currentHours === morningTime.hours &&
+        currentMinutes >= morningTime.minutes &&
+        currentMinutes < morningTime.minutes + 5 &&
+        lastCreativeNotification.current !== creativeKey
+      ) {
+        lastCreativeNotification.current = creativeKey;
+        showBrowserNotification(
+          "Creative Expression",
+          "Give form to what cannot yet be said in words. Try a scribble drawing today.",
+          "creative-reminder"
         );
       }
     }
