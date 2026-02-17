@@ -134,11 +134,13 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Wellbeing Check-in */}
-      <div className="space-y-3 sm:space-y-4 w-full min-w-0">
-        <h2 className="text-base sm:text-lg md:text-xl font-semibold">Wellbeing Check-In</h2>
-        <WellbeingScale />
-      </div>
+      {/* Wellbeing Check-in - afternoon/evening only (12pm+) */}
+      {new Date().getHours() >= 12 && (
+        <div className="space-y-3 sm:space-y-4 w-full min-w-0">
+          <h2 className="text-base sm:text-lg md:text-xl font-semibold">Wellbeing Check-In</h2>
+          <WellbeingScale />
+        </div>
+      )}
 
       {/* Daily Prompt Section */}
       <div className="space-y-3 sm:space-y-4 w-full min-w-0">
