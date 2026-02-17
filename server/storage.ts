@@ -39,6 +39,8 @@ import {
   type InsertWellbeingCheckin,
   type PracticeCompletion,
   type InsertPracticeCompletion,
+  type DreamJournal,
+  type InsertDreamJournal,
   users,
   journalEntries,
   practices,
@@ -57,6 +59,7 @@ import {
   integrationPrompts,
   userPromptProgress,
   wellbeingCheckins,
+  dreamJournals,
   practiceCompletions
 } from "@shared/schema";
 
@@ -157,6 +160,11 @@ export interface IStorage {
   getTodaysWellbeingCheckin(userId: string): Promise<WellbeingCheckin | undefined>;
   createWellbeingCheckin(checkin: InsertWellbeingCheckin): Promise<WellbeingCheckin>;
   
+  // Dream journal
+  getTodaysDreamJournal(userId: string): Promise<DreamJournal | undefined>;
+  getUserDreamJournals(userId: string, limit?: number): Promise<DreamJournal[]>;
+  createDreamJournal(entry: InsertDreamJournal): Promise<DreamJournal>;
+
   // Practice completions (for daily micro-practice)
   getUserPracticeCompletionsByPrompt(userId: string, promptId: string): Promise<PracticeCompletion | undefined>;
   getTodaysPracticeCompletion(userId: string, promptId: string): Promise<PracticeCompletion | undefined>;
@@ -870,6 +878,39 @@ export class DatabaseStorage implements IStorage {
   
   async createWellbeingCheckin(checkin: InsertWellbeingCheckin): Promise<WellbeingCheckin> {
     const results = await this.db.insert(wellbeingCheckins).values(checkin).returning();
+    return results[0]!;
+  }
+
+  async getTodaysDreamJournal(userId: string): Promise<DreamJournal | undefined> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const results = await this.db.select()
+      .from(dreamJournals)
+      .where(
+        and(
+          eq(dreamJournals.userId, userId),
+          gte(dreamJournals.createdAt, today),
+          lte(dreamJournals.createdAt, tomorrow)
+        )
+      )
+      .limit(1);
+
+    return results[0];
+  }
+
+  async getUserDreamJournals(userId: string, limit: number = 20): Promise<DreamJournal[]> {
+    return this.db.select()
+      .from(dreamJournals)
+      .where(eq(dreamJournals.userId, userId))
+      .orderBy(desc(dreamJournals.createdAt))
+      .limit(limit);
+  }
+
+  async createDreamJournal(entry: InsertDreamJournal): Promise<DreamJournal> {
+    const results = await this.db.insert(dreamJournals).values(entry).returning();
     return results[0]!;
   }
   

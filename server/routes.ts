@@ -1336,6 +1336,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Dream journal
+  app.get('/api/dreams/today', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const entry = await storage.getTodaysDreamJournal(userId);
+      res.json(entry || null);
+    } catch (error) {
+      console.error("Error fetching today's dream journal:", error);
+      res.status(500).json({ message: "Failed to fetch dream journal" });
+    }
+  });
+
+  app.get('/api/dreams', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const entries = await storage.getUserDreamJournals(userId, limit);
+      res.json(entries);
+    } catch (error) {
+      console.error("Error fetching dream journals:", error);
+      res.status(500).json({ message: "Failed to fetch dream journals" });
+    }
+  });
+
+  app.post('/api/dreams', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { dreamTitle, dreamImages, dreamPresent, dreamEmotion, dreamBody, dreamSpeak, dreamConnect, dreamInviting } = req.body;
+
+      const entry = await storage.createDreamJournal({
+        userId,
+        dreamTitle: dreamTitle || null,
+        dreamImages: dreamImages || null,
+        dreamPresent: dreamPresent || null,
+        dreamEmotion: dreamEmotion || null,
+        dreamBody: dreamBody || null,
+        dreamSpeak: dreamSpeak || null,
+        dreamConnect: dreamConnect || null,
+        dreamInviting: dreamInviting || null,
+      });
+
+      res.json(entry);
+    } catch (error) {
+      console.error("Error creating dream journal:", error);
+      res.status(500).json({ message: "Failed to create dream journal" });
+    }
+  });
+
   // Practice completions (for daily micro-practice)
   app.get('/api/practice-completions/:promptId', isAuthenticated, async (req: any, res) => {
     try {

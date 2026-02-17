@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { DailyPrompt } from "@/components/DailyPrompt";
 import { WellbeingScale } from "@/components/WellbeingScale";
+import { DreamJournal, isDreamDay } from "@/components/DreamJournal";
 import { PracticeCard } from "@/components/PracticeCard";
 import { StreakTracker } from "@/components/StreakTracker";
 import { ProgressChart } from "@/components/ProgressChart";
@@ -115,6 +116,14 @@ export default function Dashboard() {
           </Button>
         </Card>
       </div>
+
+      {/* Dream Journal - Tue/Thu/Sun */}
+      {isDreamDay() && (
+        <div className="space-y-3 sm:space-y-4 w-full min-w-0">
+          <h2 className="text-base sm:text-lg md:text-xl font-semibold">Dream Journal</h2>
+          <DreamJournal />
+        </div>
+      )}
 
       {/* Wellbeing Check-in */}
       <div className="space-y-3 sm:space-y-4 w-full min-w-0">

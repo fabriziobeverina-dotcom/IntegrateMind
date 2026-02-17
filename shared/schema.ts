@@ -259,6 +259,23 @@ export const wellbeingCheckins = pgTable("wellbeing_checkins", {
   userDateIndex: index("wellbeing_user_date_idx").on(table.userId, table.createdAt)
 }));
 
+// Dream journal entries (Tue/Thu/Sun)
+export const dreamJournals = pgTable("dream_journals", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  dreamTitle: text("dream_title"),
+  dreamImages: text("dream_images"),
+  dreamPresent: text("dream_present"),
+  dreamEmotion: text("dream_emotion"),
+  dreamBody: text("dream_body"),
+  dreamSpeak: text("dream_speak"),
+  dreamConnect: text("dream_connect"),
+  dreamInviting: text("dream_inviting"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  userDateIndex: index("dream_user_date_idx").on(table.userId, table.createdAt)
+}));
+
 // Practice completions tracking (for the daily micro-practice button)
 export const practiceCompletions = pgTable("practice_completions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -385,6 +402,11 @@ export const insertPracticeCompletionSchema = createInsertSchema(practiceComplet
   completedAt: true,
 });
 
+export const insertDreamJournalSchema = createInsertSchema(dreamJournals).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -443,3 +465,6 @@ export type InsertWellbeingCheckin = z.infer<typeof insertWellbeingCheckinSchema
 
 export type PracticeCompletion = typeof practiceCompletions.$inferSelect;
 export type InsertPracticeCompletion = z.infer<typeof insertPracticeCompletionSchema>;
+
+export type DreamJournal = typeof dreamJournals.$inferSelect;
+export type InsertDreamJournal = z.infer<typeof insertDreamJournalSchema>;
