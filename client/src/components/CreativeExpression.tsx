@@ -1,14 +1,31 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Palette, ArrowRight, X } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Loader2, Palette, ArrowRight, X, Eye } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
-type Step = "intro" | "prepare" | "canvas" | "saved";
+type Step = "intro" | "prepare" | "canvas" | "observe" | "reflect" | "saved";
+
+const REFLECTION_QUESTIONS = [
+  "What do you see in this image?",
+  "What is happening in this drawing?",
+  "What emotion does this image carry?",
+  "If this image could speak, what would it say?",
+  "What part of you does this image represent?",
+  "Does this image relate to your initial intention?",
+  "Is there something this image is asking you to notice?",
+  "Does this image suggest a change or action?",
+];
+
+function pickRandomQuestions(count: number): string[] {
+  const shuffled = [...REFLECTION_QUESTIONS].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, count);
+}
 
 interface StrokePoint {
   x: number;
@@ -19,6 +36,10 @@ interface StrokePoint {
 export function CreativeExpression() {
   const [step, setStep] = useState<Step>("intro");
   const [intention, setIntention] = useState("");
+  const [drawingImageData, setDrawingImageData] = useState<string | null>(null);
+  const [strokesData, setStrokesData] = useState<StrokePoint[][]>([]);
+  const [reflectionAnswers, setReflectionAnswers] = useState<Record<number, string>>({});
+  const reflectionQuestions = useMemo(() => pickRandomQuestions(2), []);
   const { toast } = useToast();
 
   const { data: expressions } = useQuery<any[]>({
@@ -130,15 +151,118 @@ export function CreativeExpression() {
       <DrawingCanvas
         intention={intention}
         onFinish={(imageData, strokes) => {
-          saveMutation.mutate({
-            intentionText: intention,
-            drawingImage: imageData,
-            strokeData: strokes,
-          });
+          setDrawingImageData(imageData);
+          setStrokesData(strokes);
+          setStep("observe");
         }}
         onCancel={() => setStep("prepare")}
-        isSaving={saveMutation.isPending}
+        isSaving={false}
       />
+    );
+  }
+
+  if (step === "observe") {
+    return (
+      <Card className="p-4 sm:p-6 space-y-5 w-full overflow-hidden" data-testid="card-creative-observe">
+        <div className="flex items-start gap-3 min-w-0">
+          <div className="p-2 rounded-lg bg-purple-500/10 flex-shrink-0">
+            <Eye className="h-5 w-5 text-purple-500" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-base sm:text-lg" data-testid="text-observe-title">Observe</h3>
+          </div>
+        </div>
+
+        {drawingImageData && (
+          <div className="rounded-lg overflow-hidden border">
+            <img
+              src={drawingImageData}
+              alt="Your scribble drawing"
+              className="w-full h-auto"
+              data-testid="img-drawing-result"
+            />
+          </div>
+        )}
+
+        <p className="text-sm text-center italic text-muted-foreground" data-testid="text-observe-instruction">
+          Now open your eyes and observe the image. Do not analyze. Simply notice what emerges.
+        </p>
+
+        <Button
+          onClick={() => setStep("reflect")}
+          className="w-full gap-2"
+          data-testid="button-continue-to-reflect"
+        >
+          <ArrowRight className="h-4 w-4" />
+          Continue
+        </Button>
+      </Card>
+    );
+  }
+
+  if (step === "reflect") {
+    return (
+      <Card className="p-4 sm:p-6 space-y-5 w-full overflow-hidden" data-testid="card-creative-reflect">
+        <div className="flex items-start gap-3 min-w-0">
+          <div className="p-2 rounded-lg bg-purple-500/10 flex-shrink-0">
+            <Palette className="h-5 w-5 text-purple-500" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-base sm:text-lg" data-testid="text-reflect-title">Reflection</h3>
+          </div>
+        </div>
+
+        {drawingImageData && (
+          <div className="rounded-lg overflow-hidden border">
+            <img
+              src={drawingImageData}
+              alt="Your scribble drawing"
+              className="w-full h-auto max-h-48 object-contain bg-[#faf9f7]"
+              data-testid="img-drawing-reflect"
+            />
+          </div>
+        )}
+
+        <div className="space-y-4">
+          {reflectionQuestions.map((question, index) => (
+            <div key={index} className="space-y-2">
+              <Label className="text-sm font-medium" data-testid={`text-reflect-question-${index}`}>
+                {question}
+              </Label>
+              <Textarea
+                value={reflectionAnswers[index] || ""}
+                onChange={(e) => setReflectionAnswers(prev => ({ ...prev, [index]: e.target.value }))}
+                placeholder="Take your time..."
+                className="text-sm resize-none"
+                rows={3}
+                data-testid={`input-reflect-answer-${index}`}
+              />
+            </div>
+          ))}
+        </div>
+
+        <Button
+          onClick={() => {
+            if (drawingImageData) {
+              saveMutation.mutate({
+                intentionText: intention,
+                drawingImage: drawingImageData,
+                strokeData: strokesData,
+              });
+            }
+          }}
+          disabled={saveMutation.isPending}
+          className="w-full gap-2"
+          data-testid="button-save-expression"
+        >
+          {saveMutation.isPending ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Palette className="h-4 w-4" />
+          )}
+          {saveMutation.isPending ? "Saving..." : "Save Expression"}
+        </Button>
+      </Card>
     );
   }
 
