@@ -247,7 +247,5 @@ export function DreamJournal() {
 }
 
 export function isDreamDay(): boolean {
-  const today = new Date();
-  const dayOfWeek = today.getDay();
-  return dayOfWeek === 0 || dayOfWeek === 2 || dayOfWeek === 4;
+  return true;
 }
