@@ -249,10 +249,13 @@ export const wellbeingCheckins = pgTable("wellbeing_checkins", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
   wellbeingLevel: integer("wellbeing_level").notNull(), // 1-5 scale (1=sad, 2=low, 3=neutral, 4=good, 5=euphoric)
-  notes: text("notes"), // Optional notes about the mood
+  notes: text("notes"),
+  feelingAboutDay: text("feeling_about_day"),
+  reachedIntention: text("reached_intention"),
+  dayTitle: text("day_title"),
+  strongestSensation: text("strongest_sensation"),
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => ({
-  // Index for faster queries by user and date
   userDateIndex: index("wellbeing_user_date_idx").on(table.userId, table.createdAt)
 }));
 

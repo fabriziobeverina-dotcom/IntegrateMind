@@ -1313,7 +1313,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/wellbeing', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const { wellbeingLevel, notes } = req.body;
+      const { wellbeingLevel, notes, feelingAboutDay, reachedIntention, dayTitle, strongestSensation } = req.body;
 
       if (!wellbeingLevel || wellbeingLevel < 1 || wellbeingLevel > 5) {
         return res.status(400).json({ message: "Wellbeing level must be between 1 and 5" });
@@ -1323,6 +1323,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId,
         wellbeingLevel,
         notes: notes || null,
+        feelingAboutDay: feelingAboutDay || null,
+        reachedIntention: reachedIntention || null,
+        dayTitle: dayTitle || null,
+        strongestSensation: strongestSensation || null,
       });
 
       res.json(checkin);
