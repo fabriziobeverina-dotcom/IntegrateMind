@@ -38,6 +38,7 @@ export const users = pgTable("users", {
   morningReminderTime: varchar("morning_reminder_time").default("08:00"), // HH:MM format
   eveningReminderEnabled: boolean("evening_reminder_enabled").default(true),
   eveningReminderTime: varchar("evening_reminder_time").default("20:00"), // HH:MM format
+  onboardingComplete: boolean("onboarding_complete").default(false),
 });
 
 // Journal entries table

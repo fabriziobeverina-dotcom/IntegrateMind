@@ -27,6 +27,7 @@ import AdminVideos from "@/pages/AdminVideos";
 import AdminAnalytics from "@/pages/AdminAnalytics";
 import NotFound from "@/pages/not-found";
 import { NotificationScheduler } from "@/components/NotificationScheduler";
+import { OnboardingFlow } from "@/components/OnboardingFlow";
 
 function AuthenticatedRouter() {
   return (
@@ -91,6 +92,8 @@ function AppContent() {
     "--sidebar-width-icon": "3rem",
   };
 
+  const showOnboarding = !(user as any)?.onboardingComplete;
+
   return (
     <ThemeProvider>
       <SidebarProvider style={style}>
@@ -120,6 +123,7 @@ function AppContent() {
             <NotificationScheduler />
           </div>
         </div>
+        {showOnboarding && <OnboardingFlow />}
       </SidebarProvider>
     </ThemeProvider>
   );

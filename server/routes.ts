@@ -1548,6 +1548,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post('/api/settings/complete-onboarding', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { 
+        reminderEnabled, morningReminderEnabled, morningReminderTime,
+        eveningReminderEnabled, eveningReminderTime
+      } = req.body;
+
+      const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
+      if (morningReminderTime && !timeRegex.test(morningReminderTime)) {
+        return res.status(400).json({ message: "Invalid morning reminder time format" });
+      }
+      if (eveningReminderTime && !timeRegex.test(eveningReminderTime)) {
+        return res.status(400).json({ message: "Invalid evening reminder time format" });
+      }
+
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+      const updatedUser = await storage.updateUserReminderSettings(userId, {
+        reminderEnabled: reminderEnabled ?? false,
+        reminderTimezone: timezone,
+        morningReminderEnabled: morningReminderEnabled ?? false,
+        morningReminderTime: morningReminderTime || "08:00",
+        eveningReminderEnabled: eveningReminderEnabled ?? false,
+        eveningReminderTime: eveningReminderTime || "20:00",
+        onboardingComplete: true,
+      });
+
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      res.json({ success: true, onboardingComplete: true });
+    } catch (error) {
+      console.error("Error completing onboarding:", error);
+      res.status(500).json({ message: "Failed to complete onboarding" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

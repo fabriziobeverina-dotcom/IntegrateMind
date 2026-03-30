@@ -187,6 +187,7 @@ export interface IStorage {
     morningReminderTime?: string;
     eveningReminderEnabled?: boolean;
     eveningReminderTime?: string;
+    onboardingComplete?: boolean;
   }): Promise<User | undefined>;
   
   // Admin analytics
