@@ -45,7 +45,12 @@ export default function Dashboard() {
   const { data: promptData } = useQuery({
     queryKey: ['/api/integration-prompts/today'],
   });
-  
+
+  // Fetch real streak data
+  const { data: streakData } = useQuery<{ journalStreak: number; practiceStreak: number; totalDays: number }>({
+    queryKey: ['/api/streaks'],
+  });
+
   const isJourneyStart = !user?.journeyStartDate;
 
   const practiceFilters = ['all', 'Calming', 'Energizing', 'Grounding', 'Dreamwork'];
@@ -97,9 +102,9 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         <div className="lg:col-span-2 w-full min-w-0">
           <StreakTracker 
-            journalStreak={12}
-            practiceStreak={8}
-            totalDays={45}
+            journalStreak={streakData?.journalStreak ?? 0}
+            practiceStreak={streakData?.practiceStreak ?? 0}
+            totalDays={streakData?.totalDays ?? 0}
           />
         </div>
         <Card className="p-4 sm:p-6 flex flex-col justify-center items-center space-y-2 sm:space-y-3 w-full min-w-0">
