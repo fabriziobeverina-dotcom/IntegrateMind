@@ -40,3 +40,10 @@ waitForPort = 5000
 
 [agent]
 integrations = ["javascript_database:1.0.0", "javascript_websocket:1.0.0", "javascript_object_storage:1.0.0", "javascript_openai:1.0.0", "javascript_log_in_with_replit:1.0.0"]
+
+[userenv]
+
+[userenv.shared]
+VAPID_PUBLIC_KEY = "BAxn3Tx25-0HBqNt_M8TaV883K59UOxbt46cDfbNAHGSUhOrDgE3XNvdrAiNW9JdTPHkyB_LiH7UCWUeVlP5ppc"
+VAPID_PRIVATE_KEY = "2WwaXVCa8rCUpV1X_pY-tlXO2nKTVLvOktdQioM9gag"
+VAPID_EMAIL = "mailto:admin@integrationcompass.com"

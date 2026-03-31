@@ -1,9 +1,7 @@
 // Notification utilities for Integration Compass
 // Handles service worker registration and push notification subscriptions
 
-// VAPID public key - this should be generated for production
-// For now, using a placeholder that would be replaced with actual VAPID keys
-const VAPID_PUBLIC_KEY = 'BEl62iUYgUivxIkv69yViEuiBIa40HcCWLdHXfhchO0Wr6iQV6wSKL9T_F4EkjCXl9EjwfSqUhB9yQhI3bE_HV4';
+const VAPID_PUBLIC_KEY = 'BAxn3Tx25-0HBqNt_M8TaV883K59UOxbt46cDfbNAHGSUhOrDgE3XNvdrAiNW9JdTPHkyB_LiH7UCWUeVlP5ppc';
 
 export interface NotificationSubscription {
   endpoint: string;
@@ -248,25 +246,29 @@ export class NotificationManager {
     ]);
   }
   
-  // Send test notification
+  // Send test notification — fires directly in the browser (no push server needed)
   public async sendTestNotification(): Promise<void> {
-    try {
-      const response = await fetch('/api/push/test', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to send test notification');
-      }
-      
-      console.log('Test notification sent successfully');
-    } catch (error) {
-      console.error('Error sending test notification:', error);
-      throw error;
+    if (Notification.permission !== 'granted') {
+      throw new Error('Notification permission not granted');
     }
+
+    const title = 'Integration Compass';
+    const options: NotificationOptions = {
+      body: 'Your notifications are working! You\'ll receive daily reminders here.',
+      icon: '/icon-192.png',
+      badge: '/icon-192.png',
+      tag: 'test-notification',
+    };
+
+    // Use service worker showNotification when available (required on mobile/PWA)
+    if (this.swRegistration) {
+      await this.swRegistration.showNotification(title, options);
+    } else {
+      // Fallback to direct Notification API
+      new Notification(title, options);
+    }
+
+    console.log('Test notification sent successfully');
   }
 }
 
