@@ -479,6 +479,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Generate a short-lived signed URL for audio/video playback (bypasses auth issues)
+  // :type is 'audio' or 'video' — matches queryKey join pattern ['/api/practices', id, 'media-url', type]
+  app.get('/api/practices/:id/media-url/:type', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id, type } = req.params;
+      const practice = await storage.getPractice(id);
+      if (!practice) {
+        return res.status(404).json({ message: "Practice not found" });
+      }
+      const objectPath = type === 'video' ? practice.videoUrl : practice.audioUrl;
+      if (!objectPath || !objectPath.startsWith('/objects/')) {
+        // Not a stored file (e.g. YouTube URL) — return as-is
+        return res.json({ url: objectPath });
+      }
+      const objectStorageService = new ObjectStorageService();
+      const signedUrl = await objectStorageService.getSignedDownloadUrl(objectPath, 3600);
+      res.json({ url: signedUrl });
+    } catch (error) {
+      console.error("Error generating media URL:", error);
+      res.status(500).json({ message: "Failed to generate media URL" });
+    }
+  });
+
   app.delete('/api/practices/:id', isAdmin, async (req: any, res) => {
     try {
       const { id } = req.params;

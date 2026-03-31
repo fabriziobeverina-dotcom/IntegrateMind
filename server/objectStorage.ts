@@ -187,6 +187,17 @@ export class ObjectStorageService {
     return objectFile;
   }
 
+  // Generates a short-lived signed GET URL for direct media playback (no auth needed)
+  async getSignedDownloadUrl(objectPath: string, ttlSec: number = 3600): Promise<string> {
+    const objectFile = await this.getObjectEntityFile(objectPath);
+    return signObjectURL({
+      bucketName: objectFile.bucket.name,
+      objectName: objectFile.name,
+      method: "GET",
+      ttlSec,
+    });
+  }
+
   normalizeObjectEntityPath(
     rawPath: string,
   ): string {

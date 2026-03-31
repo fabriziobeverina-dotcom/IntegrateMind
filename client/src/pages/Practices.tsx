@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Plus, Search, Play, Clock, User, Star, Trash2, Edit, Volume2, Video, CheckCircle, RotateCcw } from "lucide-react";
+import { Plus, Search, Play, Clock, User, Star, Trash2, Edit, Volume2, Video, CheckCircle, RotateCcw, Loader2 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 interface Practice {
@@ -27,6 +27,28 @@ interface Practice {
   completedAt?: string;
 }
 
+function isYouTubeUrl(url: string) {
+  return url.includes("youtube.com") || url.includes("youtu.be");
+}
+
+function getYouTubeEmbedUrl(url: string) {
+  const match = url.match(/(?:v=|youtu\.be\/)([^&?/]+)/);
+  return match ? `https://www.youtube.com/embed/${match[1]}` : url;
+}
+
+function isVimeoUrl(url: string) {
+  return url.includes("vimeo.com");
+}
+
+function getVimeoEmbedUrl(url: string) {
+  const match = url.match(/vimeo\.com\/(\d+)/);
+  return match ? `https://player.vimeo.com/video/${match[1]}` : url;
+}
+
+function isObjectStoragePath(url: string) {
+  return url.startsWith('/objects/');
+}
+
 export default function Practices() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -36,6 +58,23 @@ export default function Practices() {
 
   const { data: user } = useQuery<{ isAdmin?: boolean }>({ queryKey: ["/api/auth/user"] });
   const isAdmin = (user as any)?.isAdmin;
+
+  // Fetch signed URL for audio (bypasses auth/SW issues with <audio> element)
+  const { data: audioUrlData, isLoading: audioUrlLoading } = useQuery<{ url: string }>({
+    queryKey: ['/api/practices', selectedPractice?.id, 'media-url', 'audio'],
+    enabled: !!selectedPractice?.audioUrl && isObjectStoragePath(selectedPractice.audioUrl),
+    staleTime: 30 * 60 * 1000, // 30 min (signed URL is valid 1 hr)
+  });
+
+  // Fetch signed URL for stored video files (not YouTube/Vimeo)
+  const { data: videoUrlData, isLoading: videoUrlLoading } = useQuery<{ url: string }>({
+    queryKey: ['/api/practices', selectedPractice?.id, 'media-url', 'video'],
+    enabled: !!selectedPractice?.videoUrl &&
+      isObjectStoragePath(selectedPractice.videoUrl) &&
+      !isYouTubeUrl(selectedPractice.videoUrl) &&
+      !isVimeoUrl(selectedPractice.videoUrl),
+    staleTime: 30 * 60 * 1000,
+  });
 
   const { data: practices = [], isLoading } = useQuery<Practice[]>({
     queryKey: ["/api/practices"],
@@ -111,38 +150,6 @@ export default function Practices() {
     Grounding: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
     Dreamwork: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
   };
-
-  // Strip any baked-in domain from object storage URLs so they work on dev AND production
-  function getMediaSrc(url: string): string {
-    if (!url) return url;
-    try {
-      const parsed = new URL(url);
-      if (parsed.pathname.startsWith('/objects/')) {
-        return parsed.pathname; // use relative path only
-      }
-    } catch {
-      // already a relative path like /objects/...
-    }
-    return url;
-  }
-
-  function isYouTubeUrl(url: string) {
-    return url.includes("youtube.com") || url.includes("youtu.be");
-  }
-
-  function getYouTubeEmbedUrl(url: string) {
-    const match = url.match(/(?:v=|youtu\.be\/)([^&?/]+)/);
-    return match ? `https://www.youtube.com/embed/${match[1]}` : url;
-  }
-
-  function isVimeoUrl(url: string) {
-    return url.includes("vimeo.com");
-  }
-
-  function getVimeoEmbedUrl(url: string) {
-    const match = url.match(/vimeo\.com\/(\d+)/);
-    return match ? `https://player.vimeo.com/video/${match[1]}` : url;
-  }
 
   if (isLoading) {
     return (
@@ -393,14 +400,34 @@ export default function Practices() {
                       <Volume2 className="w-4 h-4" />
                       Audio Guide
                     </p>
-                    <audio
-                      controls
-                      className="w-full rounded-md"
-                      src={getMediaSrc(selectedPractice.audioUrl)}
-                      data-testid="audio-practice-player"
-                    >
-                      Your browser does not support the audio element.
-                    </audio>
+                    {isObjectStoragePath(selectedPractice.audioUrl) ? (
+                      audioUrlLoading ? (
+                        <div className="flex items-center gap-2 text-muted-foreground text-sm py-2">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Loading audio...
+                        </div>
+                      ) : audioUrlData?.url ? (
+                        <audio
+                          controls
+                          className="w-full rounded-md"
+                          src={audioUrlData.url}
+                          data-testid="audio-practice-player"
+                        >
+                          Your browser does not support the audio element.
+                        </audio>
+                      ) : (
+                        <p className="text-sm text-destructive">Unable to load audio.</p>
+                      )
+                    ) : (
+                      <audio
+                        controls
+                        className="w-full rounded-md"
+                        src={selectedPractice.audioUrl}
+                        data-testid="audio-practice-player"
+                      >
+                        Your browser does not support the audio element.
+                      </audio>
+                    )}
                   </div>
                 )}
 
@@ -427,11 +454,29 @@ export default function Practices() {
                         allowFullScreen
                         data-testid="video-practice-player"
                       />
+                    ) : isObjectStoragePath(selectedPractice.videoUrl) ? (
+                      videoUrlLoading ? (
+                        <div className="flex items-center gap-2 text-muted-foreground text-sm py-2">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Loading video...
+                        </div>
+                      ) : videoUrlData?.url ? (
+                        <video
+                          controls
+                          className="w-full rounded-md"
+                          src={videoUrlData.url}
+                          data-testid="video-practice-player"
+                        >
+                          Your browser does not support the video element.
+                        </video>
+                      ) : (
+                        <p className="text-sm text-destructive">Unable to load video.</p>
+                      )
                     ) : (
                       <video
                         controls
                         className="w-full rounded-md"
-                        src={getMediaSrc(selectedPractice.videoUrl!)}
+                        src={selectedPractice.videoUrl}
                         data-testid="video-practice-player"
                       >
                         Your browser does not support the video element.
