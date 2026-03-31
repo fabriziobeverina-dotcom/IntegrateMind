@@ -489,3 +489,10 @@ export type InsertDreamJournal = z.infer<typeof insertDreamJournalSchema>;
 
 export type CreativeExpression = typeof creativeExpressions.$inferSelect;
 export type InsertCreativeExpression = z.infer<typeof insertCreativeExpressionSchema>;
+
+// Site-wide admin settings (key-value store)
+export const siteSettings = pgTable("site_settings", {
+  key: varchar("key").primaryKey(),
+  value: text("value"),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});

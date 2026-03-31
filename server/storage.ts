@@ -2,9 +2,10 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import { eq, desc, and, gte, lte, sql } from "drizzle-orm";
 import { 
-  type User, 
+  type User,
   type InsertUser,
   type UpsertUser,
+  siteSettings,
   type JournalEntry,
   type InsertJournalEntry,
   type Practice,
@@ -215,6 +216,9 @@ export interface IStorage {
     totalPracticeCompletions: number;
     totalPromptCompletions: number;
   }>;
+  getSiteSetting(key: string): Promise<string | null>;
+  setSiteSetting(key: string, value: string): Promise<void>;
+  getAllSiteSettings(): Promise<Record<string, string>>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1165,6 +1169,22 @@ export class DatabaseStorage implements IStorage {
       totalPracticeCompletions,
       totalPromptCompletions,
     };
+  }
+
+  async getSiteSetting(key: string): Promise<string | null> {
+    const result = await this.db.select().from(siteSettings).where(eq(siteSettings.key, key)).limit(1);
+    return result[0]?.value ?? null;
+  }
+
+  async setSiteSetting(key: string, value: string): Promise<void> {
+    await this.db.insert(siteSettings)
+      .values({ key, value, updatedAt: new Date() })
+      .onConflictDoUpdate({ target: siteSettings.key, set: { value, updatedAt: new Date() } });
+  }
+
+  async getAllSiteSettings(): Promise<Record<string, string>> {
+    const rows = await this.db.select().from(siteSettings);
+    return Object.fromEntries(rows.map(r => [r.key, r.value ?? '']));
   }
 }
 

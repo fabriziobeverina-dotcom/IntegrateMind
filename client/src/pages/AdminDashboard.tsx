@@ -1,15 +1,19 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { PlusIcon, BookIcon, VideoIcon, ActivityIcon, Users, BarChart3 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { PlusIcon, BookIcon, VideoIcon, ActivityIcon, BarChart3, MessageCircle, Save } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 export default function AdminDashboard() {
   const { user } = useAuth();
-  
-  // Check if user is admin (you might want to add this check)
+  const { toast } = useToast();
   const isAdmin = (user as any)?.isAdmin;
 
   const { data: practices = [] } = useQuery({
@@ -26,6 +30,28 @@ export default function AdminDashboard() {
     queryKey: ['/api/admin/videos'],
     enabled: isAdmin,
   }) as { data: any[] };
+
+  const { data: siteSettings = {} } = useQuery<Record<string, string>>({
+    queryKey: ['/api/site-settings'],
+    enabled: isAdmin,
+  });
+
+  const [whatsappInput, setWhatsappInput] = useState<string | null>(null);
+  const whatsappValue = whatsappInput !== null ? whatsappInput : (siteSettings['whatsapp_number'] ?? '');
+
+  const updateSettingsMutation = useMutation({
+    mutationFn: async (updates: Record<string, string>) => {
+      return apiRequest('/api/admin/site-settings', { method: 'PUT', body: JSON.stringify(updates) });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/site-settings'] });
+      setWhatsappInput(null);
+      toast({ title: "Settings saved", description: "Site settings updated successfully." });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to save settings.", variant: "destructive" });
+    },
+  });
 
   if (!isAdmin) {
     return (
@@ -53,7 +79,7 @@ export default function AdminDashboard() {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="hover-elevate">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Practices</CardTitle>
             <ActivityIcon className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -64,7 +90,7 @@ export default function AdminDashboard() {
         </Card>
 
         <Card className="hover-elevate">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Readings</CardTitle>
             <BookIcon className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -75,7 +101,7 @@ export default function AdminDashboard() {
         </Card>
 
         <Card className="hover-elevate">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className="flex flex-row items-center justify-between gap-1 space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Videos</CardTitle>
             <VideoIcon className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -185,7 +211,7 @@ export default function AdminDashboard() {
         </Card>
       </div>
 
-      {/* Quick Actions */}
+      {/* Platform Overview */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -215,7 +241,7 @@ export default function AdminDashboard() {
                 </div>
               </div>
             </div>
-            
+
             <div className="space-y-2">
               <h4 className="font-medium">Content Status</h4>
               <div className="space-y-1">
@@ -239,6 +265,50 @@ export default function AdminDashboard() {
                 </div>
               </div>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Site Settings */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MessageCircle className="h-5 w-5" />
+            Site Settings
+          </CardTitle>
+          <CardDescription>
+            Configure platform-wide settings visible to all users
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="space-y-3">
+            <Label htmlFor="input-whatsapp-number">Integration Expert WhatsApp Number</Label>
+            <p className="text-sm text-muted-foreground">
+              Enter the WhatsApp number (with country code, e.g. 15551234567) for the integration expert button shown on the dashboard. Leave empty to hide the button.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Input
+                id="input-whatsapp-number"
+                data-testid="input-whatsapp-number"
+                placeholder="15551234567"
+                value={whatsappValue}
+                onChange={(e) => setWhatsappInput(e.target.value)}
+                className="max-w-xs"
+              />
+              <Button
+                data-testid="button-save-whatsapp"
+                disabled={updateSettingsMutation.isPending}
+                onClick={() => updateSettingsMutation.mutate({ whatsapp_number: whatsappValue })}
+              >
+                <Save className="h-4 w-4 mr-2" />
+                {updateSettingsMutation.isPending ? "Saving..." : "Save"}
+              </Button>
+            </div>
+            {whatsappValue && (
+              <p className="text-xs text-muted-foreground">
+                Preview link: <span className="font-mono">https://wa.me/{whatsappValue.replace(/[^0-9]/g, '')}</span>
+              </p>
+            )}
           </div>
         </CardContent>
       </Card>

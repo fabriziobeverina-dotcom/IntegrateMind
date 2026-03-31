@@ -11,8 +11,9 @@ import { ProgressChart } from "@/components/ProgressChart";
 import { CommunityPost } from "@/components/CommunityPost";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Plus, Compass } from "lucide-react";
+import { Plus, Compass, MessageCircle } from "lucide-react";
 import logoImage from "@assets/ChatGPT Image Nov 10, 2025, 05_44_07 PM_1762767858454.png";
+import expertImage from "@assets/integration_expert.png";
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
@@ -43,6 +44,16 @@ export default function Dashboard() {
   const { data: streakData } = useQuery<{ journalStreak: number; practiceStreak: number; totalDays: number }>({
     queryKey: ['/api/streaks'],
   });
+
+  // Fetch site settings for expert button
+  const { data: siteSettings = {} } = useQuery<Record<string, string>>({
+    queryKey: ['/api/site-settings'],
+  });
+
+  const whatsappNumber = siteSettings['whatsapp_number'] || '';
+  const whatsappUrl = whatsappNumber
+    ? `https://wa.me/${whatsappNumber.replace(/[^0-9]/g, '')}?text=I'm%20interested%20in%20integration%20support`
+    : null;
 
   const isJourneyStart = !user?.journeyStartDate;
 
@@ -190,6 +201,39 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+
+      {/* Walk with our integration expert banner */}
+      {whatsappUrl && (
+        <Card className="overflow-hidden">
+          <div className="flex flex-col sm:flex-row items-center gap-0">
+            <div
+              className="w-full sm:w-48 h-48 sm:h-auto bg-cover bg-center flex-shrink-0"
+              style={{ backgroundImage: `url(${expertImage})`, minHeight: '12rem' }}
+              role="img"
+              aria-label="Integration expert"
+            />
+            <div className="flex-1 p-6 flex flex-col justify-center gap-3">
+              <h3 className="text-lg font-semibold leading-snug">Walk with our integration expert</h3>
+              <p className="text-sm text-muted-foreground">
+                Sometimes the journey benefits from personal guidance. Connect directly with our expert on WhatsApp for support tailored to your experience.
+              </p>
+              <div>
+                <a
+                  href={whatsappUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-testid="button-whatsapp-expert"
+                >
+                  <Button className="gap-2">
+                    <MessageCircle className="w-4 h-4" />
+                    Start conversation
+                  </Button>
+                </a>
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
     </div>
   );
 }

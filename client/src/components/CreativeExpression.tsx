@@ -522,5 +522,7 @@ function DrawingCanvas({
 }
 
 export function isCreativeExpressionDay(): boolean {
-  return true;
+  const date = new Date().getDate();
+  // 1st and 15th of each month
+  return date === 1 || date === 15;
 }

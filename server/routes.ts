@@ -865,6 +865,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Public site settings (e.g. for the WhatsApp expert button)
+  app.get('/api/site-settings', async (req, res) => {
+    try {
+      const settings = await storage.getAllSiteSettings();
+      res.json(settings);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch site settings" });
+    }
+  });
+
+  // Admin-only site settings update
+  app.put('/api/admin/site-settings', isAdmin, async (req: any, res) => {
+    try {
+      const updates: Record<string, string> = req.body;
+      for (const [key, value] of Object.entries(updates)) {
+        await storage.setSiteSetting(key, String(value));
+      }
+      const settings = await storage.getAllSiteSettings();
+      res.json(settings);
+    } catch (error) {
+      console.error("Error updating site settings:", error);
+      res.status(500).json({ message: "Failed to update site settings" });
+    }
+  });
+
   // Admin CSV export — all user data (single aggregated query for performance)
   app.get('/api/admin/export/users', isAdmin, async (req: any, res) => {
     try {
