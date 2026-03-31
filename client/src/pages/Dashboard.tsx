@@ -112,6 +112,12 @@ export default function Dashboard() {
         </Card>
       </div>
 
+      {/* Daily Prompt Section */}
+      <div className="space-y-3 sm:space-y-4 w-full min-w-0">
+        <h2 className="text-base sm:text-lg md:text-xl font-semibold">Today's Reflection</h2>
+        <DailyPrompt />
+      </div>
+
       {/* Dream Journal - Tue/Thu/Sun */}
       {isDreamDay() && (
         <div className="space-y-3 sm:space-y-4 w-full min-w-0">
@@ -135,12 +141,6 @@ export default function Dashboard() {
           <WellbeingScale />
         </div>
       )}
-
-      {/* Daily Prompt Section */}
-      <div className="space-y-3 sm:space-y-4 w-full min-w-0">
-        <h2 className="text-base sm:text-lg md:text-xl font-semibold">Today's Reflection</h2>
-        <DailyPrompt />
-      </div>
 
       {/* Progress Tracking */}
       <div className="space-y-3 sm:space-y-4 w-full min-w-0">
