@@ -26,8 +26,8 @@ const createPracticeSchema = z.object({
   }),
   instructor: z.string().min(1, "Instructor name is required").max(100, "Instructor name must be less than 100 characters"),
   isPremium: z.boolean().default(false),
-  videoUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
-  audioUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
+  videoUrl: z.string().optional().or(z.literal("")),
+  audioUrl: z.string().optional().or(z.literal("")),
 });
 
 type CreatePracticeForm = z.infer<typeof createPracticeSchema>;
@@ -166,16 +166,17 @@ export default function CreatePractice() {
         throw new Error('Failed to finalize upload');
       }
 
-      const { url } = await finalizeResponse.json();
-      const fullUrl = url?.startsWith('http') ? url : `${window.location.origin}${url}`;
+      const { objectPath: finalizedPath } = await finalizeResponse.json();
+      // Store the relative path so it works on any domain (dev or production)
+      const relativePath = finalizedPath.startsWith('/') ? finalizedPath : `/${finalizedPath}`;
       
-      // Update the form with the uploaded file URL
+      // Update the form with the relative path
       if (type === 'audio') {
-        form.setValue('audioUrl', fullUrl);
-        setAudioPreview(fullUrl);
+        form.setValue('audioUrl', relativePath);
+        setAudioPreview(relativePath);
       } else {
-        form.setValue('videoUrl', fullUrl);
-        setVideoPreview(fullUrl);
+        form.setValue('videoUrl', relativePath);
+        setVideoPreview(relativePath);
       }
 
       toast({

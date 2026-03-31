@@ -112,6 +112,20 @@ export default function Practices() {
     Dreamwork: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
   };
 
+  // Strip any baked-in domain from object storage URLs so they work on dev AND production
+  function getMediaSrc(url: string): string {
+    if (!url) return url;
+    try {
+      const parsed = new URL(url);
+      if (parsed.pathname.startsWith('/objects/')) {
+        return parsed.pathname; // use relative path only
+      }
+    } catch {
+      // already a relative path like /objects/...
+    }
+    return url;
+  }
+
   function isYouTubeUrl(url: string) {
     return url.includes("youtube.com") || url.includes("youtu.be");
   }
@@ -382,7 +396,7 @@ export default function Practices() {
                     <audio
                       controls
                       className="w-full rounded-md"
-                      src={selectedPractice.audioUrl}
+                      src={getMediaSrc(selectedPractice.audioUrl)}
                       data-testid="audio-practice-player"
                     >
                       Your browser does not support the audio element.
@@ -417,7 +431,7 @@ export default function Practices() {
                       <video
                         controls
                         className="w-full rounded-md"
-                        src={selectedPractice.videoUrl}
+                        src={getMediaSrc(selectedPractice.videoUrl!)}
                         data-testid="video-practice-player"
                       >
                         Your browser does not support the video element.
