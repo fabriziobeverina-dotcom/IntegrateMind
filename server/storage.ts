@@ -987,6 +987,8 @@ export class DatabaseStorage implements IStorage {
     morningReminderTime?: string;
     eveningReminderEnabled?: boolean;
     eveningReminderTime?: string;
+    onboardingComplete?: boolean;
+    journeyStartDate?: Date;
   }): Promise<User | undefined> {
     const results = await this.db.update(users)
       .set(settings)

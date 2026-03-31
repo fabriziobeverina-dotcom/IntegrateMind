@@ -1222,10 +1222,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/integration-prompts/today', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
+      let user = await storage.getUser(userId);
       
-      if (!user || !user.journeyStartDate) {
-        return res.status(400).json({ message: "Journey start date not set" });
+      // Auto-heal: if journeyStartDate is missing, set it to now (first time reaching the dashboard)
+      if (!user) {
+        return res.status(400).json({ message: "User not found" });
+      }
+      if (!user.journeyStartDate) {
+        const startDate = new Date();
+        await storage.updateUser(userId, { journeyStartDate: startDate });
+        user = { ...user, journeyStartDate: startDate };
       }
       
       // Calculate days since journey started using calendar dates (not 24h intervals)
@@ -1732,6 +1738,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
+      // Only set journeyStartDate when completing onboarding for the first time
+      const existingUser = await storage.getUser(userId);
       const updatedUser = await storage.updateUserReminderSettings(userId, {
         reminderEnabled: reminderEnabled ?? false,
         reminderTimezone: timezone,
@@ -1740,6 +1748,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         eveningReminderEnabled: eveningReminderEnabled ?? false,
         eveningReminderTime: eveningReminderTime || "20:00",
         onboardingComplete: true,
+        journeyStartDate: existingUser?.journeyStartDate ?? new Date(),
       });
 
       if (!updatedUser) {
