@@ -41,7 +41,7 @@ export default function AdminDashboard() {
 
   const updateSettingsMutation = useMutation({
     mutationFn: async (updates: Record<string, string>) => {
-      return apiRequest('/api/admin/site-settings', { method: 'PUT', body: JSON.stringify(updates) });
+      return apiRequest('PUT', '/api/admin/site-settings', updates);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/site-settings'] });
