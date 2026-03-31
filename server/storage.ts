@@ -858,6 +858,41 @@ export class DatabaseStorage implements IStorage {
       .from(users)
       .orderBy(desc(users.createdAt));
   }
+
+  async getUsersExportData(): Promise<any[]> {
+    const result = await this.db.execute(sql`
+      SELECT
+        u.id,
+        COALESCE(u.name, CONCAT(COALESCE(u.first_name,''), ' ', COALESCE(u.last_name,'')), '') AS name,
+        u.email,
+        u.journey_start_date,
+        u.onboarding_complete,
+        u.is_admin,
+        u.reminder_enabled,
+        u.reminder_time,
+        u.reminder_types,
+        COUNT(DISTINCT je.id)  AS journal_entries,
+        COUNT(DISTINCT pc.id)  AS practice_completions,
+        COUNT(DISTINCT pr.id)  AS prompt_completions,
+        COUNT(DISTINCT wc.id)  AS wellbeing_checkins,
+        COUNT(DISTINCT dj.id)  AS dream_entries,
+        COUNT(DISTINCT ce.id)  AS creative_expressions,
+        COUNT(DISTINCT cp.id)  AS community_posts
+      FROM users u
+      LEFT JOIN journal_entries      je ON je.user_id = u.id
+      LEFT JOIN practice_completions pc ON pc.user_id = u.id
+      LEFT JOIN prompt_responses     pr ON pr.user_id = u.id
+      LEFT JOIN wellbeing_checkins   wc ON wc.user_id = u.id
+      LEFT JOIN dream_journals       dj ON dj.user_id = u.id
+      LEFT JOIN creative_expressions ce ON ce.user_id = u.id
+      LEFT JOIN community_posts      cp ON cp.user_id = u.id
+      GROUP BY u.id, u.name, u.email, u.journey_start_date, u.onboarding_complete,
+               u.is_admin, u.reminder_enabled, u.reminder_time, u.reminder_types,
+               u.first_name, u.last_name, u.created_at
+      ORDER BY u.created_at
+    `);
+    return result.rows as any[];
+  }
   
   async getUserWellbeingCheckins(userId: string, limit = 30): Promise<WellbeingCheckin[]> {
     return await this.db.select()

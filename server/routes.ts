@@ -865,13 +865,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin CSV export — all user data
+  // Admin CSV export — all user data (single aggregated query for performance)
   app.get('/api/admin/export/users', isAdmin, async (req: any, res) => {
     try {
-      const users = await storage.getAllUsers();
+      const result = await storage.getUsersExportData();
 
-      // Build CSV rows per user
-      const rows: string[] = [];
+      const escape = (v: any) => {
+        const s = v == null ? '' : String(v);
+        return s.includes(',') || s.includes('"') || s.includes('\n')
+          ? `"${s.replace(/"/g, '""')}"`
+          : s;
+      };
+
       const headers = [
         'user_id', 'name', 'email',
         'journey_start_date', 'onboarding_complete', 'is_admin',
@@ -879,44 +884,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'wellbeing_checkins', 'dream_entries', 'creative_expressions', 'community_posts',
         'reminder_enabled', 'reminder_time', 'reminder_types',
       ];
-      rows.push(headers.join(','));
 
-      for (const user of users) {
-        let analytics: any = {};
-        try {
-          analytics = await storage.getUserAnalytics(user.id);
-        } catch (_) {}
-
-        const escape = (v: any) => {
-          const s = v == null ? '' : String(v);
-          return s.includes(',') || s.includes('"') || s.includes('\n')
-            ? `"${s.replace(/"/g, '""')}"`
-            : s;
-        };
-
+      const rows: string[] = [headers.join(',')];
+      for (const row of result) {
         rows.push([
-          escape(user.id),
-          escape(user.name ?? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim()),
-          escape(user.email),
-          escape(user.journeyStartDate?.toISOString() ?? ''),
-          escape(user.onboardingComplete),
-          escape(user.isAdmin),
-          escape(analytics.journalCount ?? 0),
-          escape(analytics.practiceCompletions ?? 0),
-          escape(analytics.promptCompletions ?? 0),
-          escape(analytics.wellbeingCheckins ?? 0),
-          escape(analytics.dreamEntries ?? 0),
-          escape(analytics.creativeExpressions ?? 0),
-          escape(analytics.communityPosts ?? 0),
-          escape(user.reminderEnabled),
-          escape(user.reminderTime ?? ''),
-          escape(Array.isArray(user.reminderTypes) ? user.reminderTypes.join('|') : ''),
+          escape(row.id),
+          escape(row.name),
+          escape(row.email),
+          escape(row.journey_start_date ? new Date(row.journey_start_date).toISOString().split('T')[0] : ''),
+          escape(row.onboarding_complete),
+          escape(row.is_admin),
+          escape(row.journal_entries),
+          escape(row.practice_completions),
+          escape(row.prompt_completions),
+          escape(row.wellbeing_checkins),
+          escape(row.dream_entries),
+          escape(row.creative_expressions),
+          escape(row.community_posts),
+          escape(row.reminder_enabled),
+          escape(row.reminder_time ?? ''),
+          escape(Array.isArray(row.reminder_types) ? row.reminder_types.join('|') : (row.reminder_types ?? '')),
         ].join(','));
       }
 
       const csv = rows.join('\n');
-      res.setHeader('Content-Type', 'text/csv');
-      res.setHeader('Content-Disposition', `attachment; filename="integration-compass-users-${new Date().toISOString().split('T')[0]}.csv"`);
+      const filename = `integration-compass-users-${new Date().toISOString().split('T')[0]}.csv`;
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Cache-Control', 'no-cache');
       res.send(csv);
     } catch (error) {
       console.error("Error exporting user CSV:", error);

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -73,6 +74,29 @@ function formatDate(s: string | null) {
 
 export default function AdminAnalytics() {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const { toast } = useToast();
+
+  const handleExportCsv = async () => {
+    setExporting(true);
+    try {
+      const res = await fetch('/api/admin/export/users', { credentials: 'include' });
+      if (!res.ok) throw new Error('Export failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `integration-compass-users-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      toast({ title: 'Export failed', description: 'Could not download the CSV file.', variant: 'destructive' });
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const { data: platformStats, isLoading: statsLoading } = useQuery<PlatformStats>({
     queryKey: ["/api/admin/analytics/stats"],
@@ -102,17 +126,11 @@ export default function AdminAnalytics() {
         <Button
           variant="outline"
           data-testid="button-export-csv"
-          onClick={() => {
-            const a = document.createElement('a');
-            a.href = '/api/admin/export/users';
-            a.download = '';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-          }}
+          onClick={handleExportCsv}
+          disabled={exporting}
         >
           <Download className="h-4 w-4 mr-2" />
-          Export CSV
+          {exporting ? 'Exporting…' : 'Export CSV'}
         </Button>
       </div>
 
