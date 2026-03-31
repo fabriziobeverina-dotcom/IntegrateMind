@@ -167,14 +167,15 @@ export default function CreatePractice() {
       }
 
       const { url } = await finalizeResponse.json();
+      const fullUrl = url?.startsWith('http') ? url : `${window.location.origin}${url}`;
       
       // Update the form with the uploaded file URL
       if (type === 'audio') {
-        form.setValue('audioUrl', url);
-        setAudioPreview(url);
+        form.setValue('audioUrl', fullUrl);
+        setAudioPreview(fullUrl);
       } else {
-        form.setValue('videoUrl', url);
-        setVideoPreview(url);
+        form.setValue('videoUrl', fullUrl);
+        setVideoPreview(fullUrl);
       }
 
       toast({
