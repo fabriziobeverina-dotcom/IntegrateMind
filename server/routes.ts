@@ -449,6 +449,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete('/api/practices/:id', isAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const existing = await storage.getPractice(id);
+      if (!existing) {
+        return res.status(404).json({ message: "Practice not found" });
+      }
+      const success = await storage.deletePractice(id);
+      if (!success) {
+        return res.status(404).json({ message: "Practice not found" });
+      }
+      res.json({ message: "Practice deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting practice:", error);
+      res.status(500).json({ message: "Failed to delete practice" });
+    }
+  });
+
   // Admin practices routes (admin-only) - for content management
   app.get('/api/admin/practices', isAdmin, async (req: any, res) => {
     try {
