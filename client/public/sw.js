@@ -1,6 +1,6 @@
 // Integration Compass Service Worker
-const CACHE_NAME = 'integration-compass-v2';
-const STATIC_CACHE = 'integration-compass-static-v2';
+const CACHE_NAME = 'integration-compass-v3';
+const STATIC_CACHE = 'integration-compass-static-v3';
 
 // Core app shell to pre-cache
 const APP_SHELL = [
