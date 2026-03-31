@@ -11,7 +11,7 @@ import {
   SidebarHeader,
   SidebarFooter,
 } from "@/components/ui/sidebar";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/UserAvatar";
 import { useLocation } from "wouter";
 import { ThemeToggle } from "./ThemeToggle";
 import { useAuth } from "@/hooks/useAuth";
@@ -201,12 +201,16 @@ export function AppSidebar() {
       <SidebarFooter className="p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Avatar className="h-8 w-8">
-              <AvatarImage src={(user as any)?.profileImageUrl} />
-              <AvatarFallback>
-                {(user as any)?.firstName?.[0]}{(user as any)?.lastName?.[0] || (user as any)?.email?.[0]?.toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
+            <UserAvatar
+              avatarKey={(user as any)?.avatar}
+              profileImageUrl={(user as any)?.profileImageUrl}
+              name={
+                (user as any)?.firstName && (user as any)?.lastName
+                  ? `${(user as any).firstName} ${(user as any).lastName}`
+                  : (user as any)?.email
+              }
+              size="sm"
+            />
             <div className="flex flex-col">
               <span className="text-sm font-medium" data-testid="text-user-name">
                 {(user as any)?.firstName && (user as any)?.lastName 

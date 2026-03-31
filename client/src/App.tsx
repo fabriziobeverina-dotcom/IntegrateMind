@@ -19,6 +19,7 @@ import CreateVideo from "@/pages/CreateVideo";
 import Journal from "@/pages/Journal";
 import Progress from "@/pages/Progress";
 import Settings from "@/pages/Settings";
+import Profile from "@/pages/Profile";
 import Community from "@/pages/Community";
 import AdminDashboard from "@/pages/AdminDashboard";
 import AdminPractices from "@/pages/AdminPractices";
@@ -52,7 +53,7 @@ function AuthenticatedRouter() {
       <Route path="/admin/users" component={AdminUsers} />
       <Route path="/community" component={Community} />
       <Route path="/progress" component={Progress} />
-      <Route path="/profile" component={() => <div className="p-8"><h1 className="text-2xl font-bold">Profile</h1><p className="text-muted-foreground">User profile settings coming soon...</p></div>} />
+      <Route path="/profile" component={Profile} />
       <Route path="/settings" component={Settings} />
       <Route component={NotFound} />
     </Switch>

@@ -4,7 +4,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { UserAvatar } from "@/components/UserAvatar";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
@@ -25,6 +25,7 @@ interface Author {
   name: string;
   firstName?: string;
   lastName?: string;
+  avatar?: string | null;
 }
 
 interface CommunityPost {
@@ -300,11 +301,17 @@ export default function Community() {
             <Card key={post.id} data-testid={`card-post-${post.id}`}>
               <CardHeader>
                 <div className="flex items-start gap-3">
-                  <Avatar>
-                    <AvatarFallback>
-                      {post.isAnonymous ? <UserCircle className="h-5 w-5" /> : getInitials(post.author, post.isAnonymous)}
-                    </AvatarFallback>
-                  </Avatar>
+                  {post.isAnonymous ? (
+                    <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                      <UserCircle className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                  ) : (
+                    <UserAvatar
+                      avatarKey={post.author.avatar}
+                      name={getDisplayName(post.author, false)}
+                      initials={getInitials(post.author, false)}
+                    />
+                  )}
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <span className="font-semibold" data-testid={`text-post-author-${post.id}`}>
