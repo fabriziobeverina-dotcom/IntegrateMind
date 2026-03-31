@@ -1,6 +1,6 @@
 // Integration Compass Service Worker
-const CACHE_NAME = 'integration-compass-v3';
-const STATIC_CACHE = 'integration-compass-static-v3';
+const CACHE_NAME = 'integration-compass-v4';
+const STATIC_CACHE = 'integration-compass-static-v4';
 
 // Core app shell to pre-cache
 const APP_SHELL = [
@@ -43,8 +43,9 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(request.url);
 
-  // API requests: network-only (never cache)
+  // API and authenticated object requests: always go to network (never cache)
   if (url.pathname.startsWith('/api/')) return;
+  if (url.pathname.startsWith('/objects/')) return;
 
   // Navigation requests: network-first, fall back to cached '/'
   if (request.mode === 'navigate') {
