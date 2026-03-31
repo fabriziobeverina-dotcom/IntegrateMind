@@ -101,7 +101,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Serve protected objects with ACL check
+  // Serve protected objects with ACL check + range request support (required for audio/video)
   app.get("/objects/:objectPath(*)", isAuthenticated, async (req: any, res) => {
     const userId = req.user?.claims?.sub;
     const objectStorageService = new ObjectStorageService();
@@ -115,9 +115,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!canAccess) {
         return res.sendStatus(401);
       }
-      objectStorageService.downloadObject(objectFile, res);
+
+      const [metadata] = await objectFile.getMetadata();
+      const contentType = metadata.contentType || "application/octet-stream";
+      const fileSize = Number(metadata.size);
+
+      res.setHeader("Accept-Ranges", "bytes");
+      res.setHeader("Content-Type", contentType);
+
+      const rangeHeader = req.headers.range;
+      if (rangeHeader) {
+        // Parse "bytes=start-end"
+        const match = rangeHeader.match(/bytes=(\d*)-(\d*)/);
+        if (!match) return res.sendStatus(416);
+
+        const start = match[1] ? parseInt(match[1], 10) : 0;
+        const end = match[2] ? parseInt(match[2], 10) : fileSize - 1;
+        const chunkSize = end - start + 1;
+
+        if (start >= fileSize || end >= fileSize) return res.sendStatus(416);
+
+        res.writeHead(206, {
+          "Content-Range": `bytes ${start}-${end}/${fileSize}`,
+          "Content-Length": chunkSize,
+          "Content-Type": contentType,
+          "Accept-Ranges": "bytes",
+        });
+        objectFile.createReadStream({ start, end }).pipe(res);
+      } else {
+        res.setHeader("Content-Length", fileSize);
+        objectFile.createReadStream().pipe(res);
+      }
     } catch (error) {
-      console.error("Error checking object access:", error);
+      console.error("Error serving object:", error);
       if (error instanceof ObjectNotFoundError) {
         return res.sendStatus(404);
       }
