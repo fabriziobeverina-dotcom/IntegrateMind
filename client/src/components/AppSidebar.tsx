@@ -61,6 +61,11 @@ const adminNavItems = [
     icon: Shield,
   },
   {
+    title: "Manage Users",
+    url: "/admin/users",
+    icon: Users,
+  },
+  {
     title: "User Analytics",
     url: "/admin/analytics",
     icon: BarChart3,

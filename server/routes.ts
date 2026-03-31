@@ -823,6 +823,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Toggle admin status for a user
+  app.patch('/api/admin/users/:id', isAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { isAdmin: newAdminStatus } = req.body;
+      if (typeof newAdminStatus !== 'boolean') {
+        return res.status(400).json({ message: "isAdmin must be a boolean" });
+      }
+      const updated = await storage.updateUser(id, { isAdmin: newAdminStatus });
+      if (!updated) return res.status(404).json({ message: "User not found" });
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating user admin status:", error);
+      res.status(500).json({ message: "Failed to update user" });
+    }
+  });
+
   app.get('/api/admin/analytics/users/:userId', isAdmin, async (req: any, res) => {
     try {
       const { userId } = req.params;
