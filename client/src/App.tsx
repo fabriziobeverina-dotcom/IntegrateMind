@@ -28,6 +28,7 @@ import AdminAnalytics from "@/pages/AdminAnalytics";
 import NotFound from "@/pages/not-found";
 import { NotificationScheduler } from "@/components/NotificationScheduler";
 import { OnboardingFlow } from "@/components/OnboardingFlow";
+import { InstallPrompt } from "@/components/InstallPrompt";
 
 function AuthenticatedRouter() {
   return (
@@ -124,6 +125,7 @@ function AppContent() {
           </div>
         </div>
         {showOnboarding && <OnboardingFlow />}
+        <InstallPrompt />
       </SidebarProvider>
     </ThemeProvider>
   );
