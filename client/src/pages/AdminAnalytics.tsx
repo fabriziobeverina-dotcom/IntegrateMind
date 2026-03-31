@@ -1,24 +1,15 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Users, BookOpen, Activity, Target, TrendingUp, User } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Users, BookOpen, Activity, Target, TrendingUp, User,
+  Flame, Brain, Palette, MessageSquare, Moon, Heart,
+} from "lucide-react";
 
 interface PlatformStats {
   totalUsers: number;
@@ -30,185 +21,156 @@ interface PlatformStats {
 
 interface UserData {
   id: string;
-  email: string;
-  name: string;
+  email: string | null;
   firstName: string | null;
   lastName: string | null;
-  createdAt: string;
+  username: string | null;
+  createdAt: string | null;
   isAdmin: boolean;
+}
+
+interface UserStats {
+  journalCount: number;
+  practiceCompletions: number;
+  promptCompletions: number;
+  wellbeingCheckins: number;
+  dreamEntries: number;
+  creativeExpressions: number;
+  communityPosts: number;
+  totalPoints: number;
+  journalStreak: number;
+  practiceStreak: number;
+  avgWellbeing: number;
 }
 
 interface UserAnalytics {
   user: UserData;
-  stats: {
-    journalCount: number;
-    practiceCompletions: number;
-    promptCompletions: number;
-    totalPoints: number;
-    journalStreak: number;
-    practiceStreak: number;
-    wellbeingCheckins: number;
-    avgWellbeing: number;
-  };
+  stats: UserStats;
+}
+
+const FEATURES: { key: keyof UserStats; label: string; icon: any; color: string }[] = [
+  { key: "journalCount",          label: "Journal",             icon: BookOpen,      color: "bg-blue-500" },
+  { key: "practiceCompletions",   label: "Practices",           icon: Activity,      color: "bg-green-500" },
+  { key: "promptCompletions",     label: "Integration Prompts", icon: Target,        color: "bg-purple-500" },
+  { key: "wellbeingCheckins",     label: "Wellbeing Check-ins", icon: Heart,         color: "bg-red-400" },
+  { key: "dreamEntries",          label: "Dream Journal",       icon: Moon,          color: "bg-indigo-500" },
+  { key: "creativeExpressions",   label: "Creative Expression", icon: Palette,       color: "bg-amber-500" },
+  { key: "communityPosts",        label: "Community Posts",     icon: MessageSquare, color: "bg-teal-500" },
+];
+
+function displayName(u: UserData) {
+  return [u.firstName, u.lastName].filter(Boolean).join(" ") || u.username || u.email?.split("@")[0] || u.id;
+}
+
+function totalActivity(stats: UserStats) {
+  return FEATURES.reduce((sum, f) => sum + (stats[f.key] as number), 0);
+}
+
+function formatDate(s: string | null) {
+  if (!s) return "—";
+  return new Date(s).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
 }
 
 export default function AdminAnalytics() {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
   const { data: platformStats, isLoading: statsLoading } = useQuery<PlatformStats>({
-    queryKey: ['/api/admin/analytics/stats'],
+    queryKey: ["/api/admin/analytics/stats"],
   });
 
   const { data: users = [], isLoading: usersLoading } = useQuery<UserData[]>({
-    queryKey: ['/api/admin/analytics/users'],
+    queryKey: ["/api/admin/analytics/users"],
   });
 
   const { data: userAnalytics, isLoading: analyticsLoading } = useQuery<UserAnalytics>({
-    queryKey: ['/api/admin/analytics/users', selectedUserId],
+    queryKey: ["/api/admin/analytics/users", selectedUserId],
     queryFn: async () => {
-      const response = await fetch(`/api/admin/analytics/users/${selectedUserId}`);
-      if (!response.ok) throw new Error('Failed to fetch user analytics');
-      return response.json();
+      const res = await fetch(`/api/admin/analytics/users/${selectedUserId}`, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch user analytics");
+      return res.json();
     },
     enabled: !!selectedUserId,
   });
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
-
   return (
-    <div className="space-y-8">
-      {/* Header */}
+    <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">User Analytics</h1>
-        <p className="text-muted-foreground mt-2">
-          Analyze user engagement and platform activity
-        </p>
+        <h1 className="text-2xl font-bold">User Analytics</h1>
+        <p className="text-muted-foreground mt-1">Platform activity and per-user feature usage breakdown</p>
       </div>
 
-      {/* Platform Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        <Card data-testid="card-total-users">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold" data-testid="text-total-users">
-              {statsLoading ? '...' : platformStats?.totalUsers || 0}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card data-testid="card-active-users">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Users</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold" data-testid="text-active-users">
-              {statsLoading ? '...' : platformStats?.activeUsers || 0}
-            </div>
-            <p className="text-xs text-muted-foreground">Last 30 days</p>
-          </CardContent>
-        </Card>
-
-        <Card data-testid="card-journal-entries">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Journal Entries</CardTitle>
-            <BookOpen className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold" data-testid="text-journal-entries">
-              {statsLoading ? '...' : platformStats?.totalJournalEntries || 0}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card data-testid="card-practice-completions">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Practice Completions</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold" data-testid="text-practice-completions">
-              {statsLoading ? '...' : platformStats?.totalPracticeCompletions || 0}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card data-testid="card-prompt-completions">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Prompt Completions</CardTitle>
-            <Target className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold" data-testid="text-prompt-completions">
-              {statsLoading ? '...' : platformStats?.totalPromptCompletions || 0}
-            </div>
-          </CardContent>
-        </Card>
+      {/* Platform Stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        {[
+          { label: "Total Users",           value: platformStats?.totalUsers,             icon: Users },
+          { label: "Active (30d)",          value: platformStats?.activeUsers,            icon: TrendingUp },
+          { label: "Journal Entries",       value: platformStats?.totalJournalEntries,    icon: BookOpen },
+          { label: "Practice Completions",  value: platformStats?.totalPracticeCompletions, icon: Activity },
+          { label: "Prompt Completions",    value: platformStats?.totalPromptCompletions, icon: Target },
+        ].map(({ label, value, icon: Icon }) => (
+          <Card key={label}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 pt-4 px-4">
+              <CardTitle className="text-xs font-medium text-muted-foreground">{label}</CardTitle>
+              <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+            </CardHeader>
+            <CardContent className="px-4 pb-4">
+              <div className="text-2xl font-bold">{statsLoading ? "—" : (value ?? 0)}</div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       {/* Users Table */}
       <Card>
-        <CardHeader>
-          <CardTitle>All Users</CardTitle>
-          <CardDescription>
-            View detailed analytics for each user
-          </CardDescription>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Users</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {usersLoading ? (
-            <div className="text-center py-8 text-muted-foreground">
-              Loading users...
-            </div>
+            <div className="py-10 text-center text-muted-foreground text-sm">Loading…</div>
           ) : users.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No users found
-            </div>
+            <div className="py-10 text-center text-muted-foreground text-sm">No users yet</div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Joined</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>User</TableHead>
+                  <TableHead className="hidden sm:table-cell">Joined</TableHead>
+                  <TableHead className="hidden md:table-cell">Role</TableHead>
+                  <TableHead className="text-right">Activity</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {users.map((user) => (
-                  <TableRow key={user.id} data-testid={`row-user-${user.id}`}>
-                    <TableCell className="font-medium">
-                      {user.firstName && user.lastName 
-                        ? `${user.firstName} ${user.lastName}`
-                        : user.name || user.email.split('@')[0]}
-                    </TableCell>
-                    <TableCell>{user.email}</TableCell>
+                {users.map((u) => (
+                  <TableRow
+                    key={u.id}
+                    className="cursor-pointer hover-elevate"
+                    onClick={() => setSelectedUserId(u.id)}
+                    data-testid={`row-user-${u.id}`}
+                  >
                     <TableCell>
-                      {user.isAdmin ? (
-                        <Badge variant="default" data-testid={`badge-admin-${user.id}`}>Admin</Badge>
+                      <div className="font-medium">{displayName(u)}</div>
+                      <div className="text-xs text-muted-foreground">{u.email}</div>
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">
+                      {formatDate(u.createdAt)}
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">
+                      {u.isAdmin ? (
+                        <Badge data-testid={`badge-admin-${u.id}`}>Admin</Badge>
                       ) : (
-                        <Badge variant="outline" data-testid={`badge-user-${user.id}`}>User</Badge>
+                        <Badge variant="outline" data-testid={`badge-user-${u.id}`}>User</Badge>
                       )}
                     </TableCell>
-                    <TableCell>{formatDate(user.createdAt)}</TableCell>
                     <TableCell className="text-right">
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setSelectedUserId(user.id)}
-                        data-testid={`button-view-analytics-${user.id}`}
+                        onClick={(e) => { e.stopPropagation(); setSelectedUserId(u.id); }}
+                        data-testid={`button-view-analytics-${u.id}`}
                       >
-                        <User className="h-4 w-4 mr-2" />
-                        View Analytics
+                        <User className="h-3.5 w-3.5 mr-1.5" />
+                        View
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -219,109 +181,88 @@ export default function AdminAnalytics() {
         </CardContent>
       </Card>
 
-      {/* User Analytics Dialog */}
+      {/* User Detail Dialog */}
       <Dialog open={!!selectedUserId} onOpenChange={(open) => !open && setSelectedUserId(null)}>
-        <DialogContent className="max-w-2xl" data-testid="dialog-user-analytics">
+        <DialogContent className="max-w-lg" data-testid="dialog-user-analytics">
           <DialogHeader>
-            <DialogTitle>User Analytics</DialogTitle>
-            <DialogDescription>
-              Detailed activity and engagement metrics
-            </DialogDescription>
+            <DialogTitle>
+              {userAnalytics ? displayName(userAnalytics.user) : "User Activity"}
+            </DialogTitle>
+            {userAnalytics && (
+              <p className="text-sm text-muted-foreground">{userAnalytics.user.email}</p>
+            )}
           </DialogHeader>
-          
+
           {analyticsLoading ? (
-            <div className="text-center py-8 text-muted-foreground">
-              Loading analytics...
-            </div>
+            <div className="py-10 text-center text-muted-foreground text-sm">Loading…</div>
           ) : userAnalytics ? (
-            <div className="space-y-6">
-              {/* User Info */}
-              <div className="space-y-2">
-                <h3 className="font-semibold text-lg" data-testid="text-analytics-user-name">
-                  {userAnalytics.user.firstName && userAnalytics.user.lastName
-                    ? `${userAnalytics.user.firstName} ${userAnalytics.user.lastName}`
-                    : userAnalytics.user.name}
-                </h3>
-                <p className="text-sm text-muted-foreground" data-testid="text-analytics-user-email">
-                  {userAnalytics.user.email}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Joined {formatDate(userAnalytics.user.createdAt)}
-                </p>
+            <div className="space-y-5">
+              {/* Summary row */}
+              <div className="grid grid-cols-3 gap-3 text-center">
+                <div className="rounded-md bg-muted p-3">
+                  <div className="text-xl font-bold">{totalActivity(userAnalytics.stats)}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">Total actions</div>
+                </div>
+                <div className="rounded-md bg-muted p-3">
+                  <div className="text-xl font-bold flex items-center justify-center gap-1">
+                    <Flame className="h-4 w-4 text-orange-500" />
+                    {Math.max(userAnalytics.stats.journalStreak, userAnalytics.stats.practiceStreak)}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-0.5">Best streak</div>
+                </div>
+                <div className="rounded-md bg-muted p-3">
+                  <div className="text-xl font-bold flex items-center justify-center gap-1">
+                    <Brain className="h-4 w-4 text-primary" />
+                    {userAnalytics.stats.totalPoints}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-0.5">Points earned</div>
+                </div>
               </div>
 
-              {/* Stats Grid */}
-              <div className="grid grid-cols-2 gap-4">
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-medium">Journal Entries</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold" data-testid="text-user-journal-count">
-                      {userAnalytics.stats.journalCount}
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Streak: {userAnalytics.stats.journalStreak} days
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-medium">Practice Completions</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold" data-testid="text-user-practice-count">
-                      {userAnalytics.stats.practiceCompletions}
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Streak: {userAnalytics.stats.practiceStreak} days
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-medium">Integration Prompts</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold" data-testid="text-user-prompt-count">
-                      {userAnalytics.stats.promptCompletions}
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Completed
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-medium">Wellbeing Check-Ins</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold" data-testid="text-user-wellbeing-count">
-                      {userAnalytics.stats.wellbeingCheckins}
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Avg: {userAnalytics.stats.avgWellbeing > 0 ? userAnalytics.stats.avgWellbeing.toFixed(1) : 'N/A'} / 5
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-medium">Total Points</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold" data-testid="text-user-total-points">
-                      {userAnalytics.stats.totalPoints}
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Earned
-                    </p>
-                  </CardContent>
-                </Card>
+              {/* Feature breakdown with percentage bars */}
+              <div className="space-y-3">
+                <p className="text-sm font-medium">Feature usage breakdown</p>
+                {(() => {
+                  const total = totalActivity(userAnalytics.stats);
+                  return FEATURES.map(({ key, label, icon: Icon, color }) => {
+                    const count = userAnalytics.stats[key] as number;
+                    const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+                    return (
+                      <div key={key} className="space-y-1" data-testid={`feature-bar-${key}`}>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="flex items-center gap-2">
+                            <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+                            {label}
+                          </span>
+                          <span className="text-muted-foreground">
+                            {count} <span className="text-xs">({pct}%)</span>
+                          </span>
+                        </div>
+                        <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                          <div
+                            className={`h-full rounded-full ${color} transition-all`}
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
+                {totalActivity(userAnalytics.stats) === 0 && (
+                  <p className="text-sm text-muted-foreground text-center py-2">No activity recorded yet</p>
+                )}
               </div>
+
+              {/* Wellbeing */}
+              {userAnalytics.stats.avgWellbeing > 0 && (
+                <div className="rounded-md bg-muted p-3 flex items-center justify-between">
+                  <span className="text-sm flex items-center gap-2">
+                    <Heart className="h-3.5 w-3.5 text-red-400" />
+                    Avg. wellbeing score
+                  </span>
+                  <span className="font-semibold">{userAnalytics.stats.avgWellbeing.toFixed(1)} / 5</span>
+                </div>
+              )}
             </div>
           ) : null}
         </DialogContent>

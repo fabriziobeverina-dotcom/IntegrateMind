@@ -203,6 +203,9 @@ export interface IStorage {
       practiceStreak: number;
       wellbeingCheckins: number;
       avgWellbeing: number;
+      dreamEntries: number;
+      creativeExpressions: number;
+      communityPosts: number;
     };
   }>;
   getPlatformStats(): Promise<{
@@ -1046,6 +1049,24 @@ export class DatabaseStorage implements IStorage {
       .from(wellbeingCheckins)
       .where(eq(wellbeingCheckins.userId, userId));
     const avgWellbeing = Number(avgWellbeingResult[0]?.avg || 0);
+
+    // Get dream journal entries
+    const dreamResult = await this.db.select({ count: sql<number>`COUNT(*)` })
+      .from(dreamJournals)
+      .where(eq(dreamJournals.userId, userId));
+    const dreamEntriesCount = Number(dreamResult[0]?.count || 0);
+
+    // Get creative expressions
+    const creativeResult = await this.db.select({ count: sql<number>`COUNT(*)` })
+      .from(creativeExpressions)
+      .where(eq(creativeExpressions.userId, userId));
+    const creativeExpressionsCount = Number(creativeResult[0]?.count || 0);
+
+    // Get community posts
+    const postsResult = await this.db.select({ count: sql<number>`COUNT(*)` })
+      .from(communityPosts)
+      .where(eq(communityPosts.userId, userId));
+    const communityPostsCount = Number(postsResult[0]?.count || 0);
     
     return {
       user,
@@ -1058,6 +1079,9 @@ export class DatabaseStorage implements IStorage {
         practiceStreak: streaks.practiceStreak,
         wellbeingCheckins: wellbeingCheckinsCount,
         avgWellbeing: Math.round(avgWellbeing * 10) / 10,
+        dreamEntries: dreamEntriesCount,
+        creativeExpressions: creativeExpressionsCount,
+        communityPosts: communityPostsCount,
       }
     };
   }
