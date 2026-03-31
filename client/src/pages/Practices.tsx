@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Plus, Search, Play, Clock, User, Star, Trash2, Edit, Volume2, Video } from "lucide-react";
+import { Plus, Search, Play, Clock, User, Star, Trash2, Edit, Volume2, Video, CheckCircle, RotateCcw } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 interface Practice {
@@ -31,6 +32,10 @@ export default function Practices() {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [selectedPractice, setSelectedPractice] = useState<Practice | null>(null);
+
+  const { data: user } = useQuery<{ isAdmin?: boolean }>({ queryKey: ["/api/auth/user"] });
+  const isAdmin = (user as any)?.isAdmin;
 
   const { data: practices = [], isLoading } = useQuery<Practice[]>({
     queryKey: ["/api/practices"],
@@ -47,11 +52,14 @@ export default function Practices() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/practices"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/user-practices"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/streaks"] });
       toast({
-        title: "Practice Completed!",
-        description: "Your progress has been recorded.",
+        title: "Practice Completed",
+        description: "Great work! Your progress has been saved.",
       });
+      if (selectedPractice) {
+        setSelectedPractice((p) => p ? { ...p, isCompleted: true } : null);
+      }
     },
     onError: (error) => {
       toast({
@@ -67,7 +75,10 @@ export default function Practices() {
       const response = await fetch(`/api/practices/${practiceId}`, {
         method: "DELETE",
       });
-      if (!response.ok) throw new Error("Failed to delete practice");
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.message || "Failed to delete practice");
+      }
       return response.json();
     },
     onSuccess: () => {
@@ -94,12 +105,30 @@ export default function Practices() {
     return matchesSearch && matchesCategory;
   });
 
-  const categoryColors = {
+  const categoryColors: Record<string, string> = {
     Calming: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-    Energizing: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200", 
+    Energizing: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
     Grounding: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
     Dreamwork: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
   };
+
+  function isYouTubeUrl(url: string) {
+    return url.includes("youtube.com") || url.includes("youtu.be");
+  }
+
+  function getYouTubeEmbedUrl(url: string) {
+    const match = url.match(/(?:v=|youtu\.be\/)([^&?/]+)/);
+    return match ? `https://www.youtube.com/embed/${match[1]}` : url;
+  }
+
+  function isVimeoUrl(url: string) {
+    return url.includes("vimeo.com");
+  }
+
+  function getVimeoEmbedUrl(url: string) {
+    const match = url.match(/vimeo\.com\/(\d+)/);
+    return match ? `https://player.vimeo.com/video/${match[1]}` : url;
+  }
 
   if (isLoading) {
     return (
@@ -116,14 +145,14 @@ export default function Practices() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 flex-wrap">
         <div>
           <h1 className="text-3xl font-bold">Meditation Practices</h1>
           <p className="text-muted-foreground">
             Discover and create mindfulness practices for your integration journey
           </p>
         </div>
-        <Button 
+        <Button
           onClick={() => setLocation("/practices/create")}
           className="flex items-center gap-2"
           data-testid="button-create-practice"
@@ -162,11 +191,13 @@ export default function Practices() {
         <Card className="text-center p-12">
           <CardContent>
             <div className="space-y-4">
-              <div className="text-6xl">🧘</div>
+              <div className="flex justify-center">
+                <Play className="w-12 h-12 text-muted-foreground" />
+              </div>
               <div>
                 <h3 className="text-lg font-semibold">No practices found</h3>
                 <p className="text-muted-foreground">
-                  {searchQuery || categoryFilter !== "all" 
+                  {searchQuery || categoryFilter !== "all"
                     ? "Try adjusting your search or filter criteria."
                     : "Start your meditation library by creating your first practice."
                   }
@@ -182,14 +213,14 @@ export default function Practices() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredPractices.map((practice) => (
-            <Card key={practice.id} className="flex flex-col hover-elevate transition-shadow" data-testid={`card-practice-${practice.id}`}>
+            <Card key={practice.id} className="flex flex-col" data-testid={`card-practice-${practice.id}`}>
               <CardHeader>
-                <div className="flex items-start justify-between">
+                <div className="flex items-start justify-between gap-2 flex-wrap">
                   <div className="flex-1">
                     <CardTitle className="text-lg mb-2">{practice.title}</CardTitle>
-                    <div className="flex items-center gap-2 mb-2">
-                      <Badge 
-                        className={categoryColors[practice.category as keyof typeof categoryColors] || "bg-gray-100 text-gray-800"}
+                    <div className="flex items-center gap-2 mb-2 flex-wrap">
+                      <Badge
+                        className={categoryColors[practice.category] || "bg-gray-100 text-gray-800"}
                         data-testid={`badge-category-${practice.id}`}
                       >
                         {practice.category}
@@ -200,10 +231,16 @@ export default function Practices() {
                           Premium
                         </Badge>
                       )}
+                      {practice.isCompleted && (
+                        <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                          Done
+                        </Badge>
+                      )}
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
                   <div className="flex items-center gap-1">
                     <Clock className="w-4 h-4" />
@@ -216,8 +253,8 @@ export default function Practices() {
                 </div>
               </CardHeader>
 
-              <CardContent className="flex-1">
-                <CardDescription className="mb-4">
+              <CardContent className="flex-1 flex flex-col">
+                <CardDescription className="mb-4 flex-1">
                   {practice.description}
                 </CardDescription>
 
@@ -237,57 +274,66 @@ export default function Practices() {
                 </div>
 
                 <div className="flex flex-wrap gap-2 mt-auto">
-                  <Button 
-                    size="sm" 
+                  <Button
+                    size="sm"
                     className="flex-1"
-                    onClick={() => completePracticeMutation.mutate(practice.id)}
-                    disabled={completePracticeMutation.isPending}
+                    onClick={() => setSelectedPractice(practice)}
                     data-testid={`button-complete-${practice.id}`}
                   >
-                    <Play className="w-4 h-4 mr-2" />
-                    {practice.isCompleted ? "Practice Again" : "Start Practice"}
+                    {practice.isCompleted ? (
+                      <>
+                        <RotateCcw className="w-4 h-4 mr-2" />
+                        Practice Again
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-4 h-4 mr-2" />
+                        Start Practice
+                      </>
+                    )}
                   </Button>
-                  
-                  <div className="flex gap-1">
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      onClick={() => setLocation(`/practices/edit/${practice.id}`)}
-                      data-testid={`button-edit-${practice.id}`}
-                    >
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                    
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                          data-testid={`button-delete-${practice.id}`}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete Practice</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Are you sure you want to delete "{practice.title}"? This action cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => deletePracticeMutation.mutate(practice.id)}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+
+                  {isAdmin && (
+                    <div className="flex gap-1">
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        onClick={() => setLocation(`/practices/edit/${practice.id}`)}
+                        data-testid={`button-edit-${practice.id}`}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            size="icon"
+                            variant="outline"
+                            data-testid={`button-delete-${practice.id}`}
                           >
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Practice</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete "{practice.title}"? This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => deletePracticeMutation.mutate(practice.id)}
+                              className="bg-destructive text-destructive-foreground"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  )}
                 </div>
 
                 {practice.isCompleted && practice.completedAt && (
@@ -300,6 +346,112 @@ export default function Practices() {
           ))}
         </div>
       )}
+
+      {/* Practice Player Dialog */}
+      <Dialog open={!!selectedPractice} onOpenChange={(open) => { if (!open) setSelectedPractice(null); }}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" data-testid="dialog-practice-player">
+          {selectedPractice && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-xl">{selectedPractice.title}</DialogTitle>
+                <div className="flex items-center gap-3 text-sm text-muted-foreground flex-wrap">
+                  <div className="flex items-center gap-1">
+                    <Clock className="w-4 h-4" />
+                    {selectedPractice.duration}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <User className="w-4 h-4" />
+                    {selectedPractice.instructor}
+                  </div>
+                  <Badge className={categoryColors[selectedPractice.category] || "bg-gray-100 text-gray-800"}>
+                    {selectedPractice.category}
+                  </Badge>
+                </div>
+              </DialogHeader>
+
+              <div className="space-y-5">
+                <p className="text-muted-foreground leading-relaxed">{selectedPractice.description}</p>
+
+                {/* Audio Player */}
+                {selectedPractice.audioUrl && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium flex items-center gap-2">
+                      <Volume2 className="w-4 h-4" />
+                      Audio Guide
+                    </p>
+                    <audio
+                      controls
+                      className="w-full rounded-md"
+                      src={selectedPractice.audioUrl}
+                      data-testid="audio-practice-player"
+                    >
+                      Your browser does not support the audio element.
+                    </audio>
+                  </div>
+                )}
+
+                {/* Video Player */}
+                {selectedPractice.videoUrl && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium flex items-center gap-2">
+                      <Video className="w-4 h-4" />
+                      Video Guide
+                    </p>
+                    {isYouTubeUrl(selectedPractice.videoUrl) ? (
+                      <iframe
+                        src={getYouTubeEmbedUrl(selectedPractice.videoUrl)}
+                        className="w-full aspect-video rounded-md"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        data-testid="video-practice-player"
+                      />
+                    ) : isVimeoUrl(selectedPractice.videoUrl) ? (
+                      <iframe
+                        src={getVimeoEmbedUrl(selectedPractice.videoUrl)}
+                        className="w-full aspect-video rounded-md"
+                        allow="autoplay; fullscreen; picture-in-picture"
+                        allowFullScreen
+                        data-testid="video-practice-player"
+                      />
+                    ) : (
+                      <video
+                        controls
+                        className="w-full rounded-md"
+                        src={selectedPractice.videoUrl}
+                        data-testid="video-practice-player"
+                      >
+                        Your browser does not support the video element.
+                      </video>
+                    )}
+                  </div>
+                )}
+
+                <div className="flex justify-end pt-2">
+                  <Button
+                    onClick={() => completePracticeMutation.mutate(selectedPractice.id)}
+                    disabled={completePracticeMutation.isPending}
+                    data-testid="button-mark-complete"
+                  >
+                    {completePracticeMutation.isPending ? (
+                      "Saving..."
+                    ) : selectedPractice.isCompleted ? (
+                      <>
+                        <RotateCcw className="w-4 h-4 mr-2" />
+                        Practice Again
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Mark as Complete
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
