@@ -1,24 +1,22 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { DailyPrompt } from "@/components/DailyPrompt";
 import { WellbeingScale } from "@/components/WellbeingScale";
 import { DreamJournal, isDreamDay } from "@/components/DreamJournal";
 import { CreativeExpression, isCreativeExpressionDay } from "@/components/CreativeExpression";
-import { PracticeCard } from "@/components/PracticeCard";
 import { StreakTracker } from "@/components/StreakTracker";
 import { ProgressChart } from "@/components/ProgressChart";
 import { CommunityPost } from "@/components/CommunityPost";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Plus, Filter, Compass } from "lucide-react";
+import { Plus, Compass } from "lucide-react";
 import logoImage from "@assets/ChatGPT Image Nov 10, 2025, 05_44_07 PM_1762767858454.png";
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
   const [selectedMetric, setSelectedMetric] = useState<'mood' | 'sleep' | 'grounding'>('mood');
-  const [activeFilter, setActiveFilter] = useState('all');
   const { user } = useAuth();
 
   // Fetch real progress data
@@ -29,11 +27,6 @@ export default function Dashboard() {
       if (!response.ok) throw new Error('Failed to fetch progress data');
       return response.json();
     }
-  });
-
-  // Fetch real practices from admin
-  const { data: practices = [], isLoading: practicesLoading } = useQuery<any[]>({
-    queryKey: ['/api/practices'],
   });
 
   // Fetch real community posts
@@ -52,12 +45,6 @@ export default function Dashboard() {
   });
 
   const isJourneyStart = !user?.journeyStartDate;
-
-  const practiceFilters = ['all', 'Calming', 'Energizing', 'Grounding', 'Dreamwork'];
-
-  const filteredPractices = activeFilter === 'all' 
-    ? practices.slice(0, 3)
-    : practices.filter((practice: any) => practice.category === activeFilter).slice(0, 3);
 
   return (
     <div className="w-full space-y-4 sm:space-y-6">
@@ -117,9 +104,11 @@ export default function Dashboard() {
             <Plus className="h-4 w-4 mr-2" />
             <span className="truncate">Quick Journal Entry</span>
           </Button>
-          <Button variant="outline" size="lg" className="w-full" data-testid="button-practice-now" onClick={() => setLocation('/practices')}>
-            <span className="truncate">Start Practice</span>
-          </Button>
+          <Link href="/practices" className="w-full">
+            <Button variant="outline" size="lg" className="w-full" data-testid="button-practice-now">
+              <span className="truncate">Start Practice</span>
+            </Button>
+          </Link>
         </Card>
       </div>
 
@@ -151,50 +140,6 @@ export default function Dashboard() {
       <div className="space-y-3 sm:space-y-4 w-full min-w-0">
         <h2 className="text-base sm:text-lg md:text-xl font-semibold">Today's Reflection</h2>
         <DailyPrompt />
-      </div>
-
-      {/* Practices Section */}
-      <div className="space-y-3 sm:space-y-4 w-full min-w-0">
-        <div className="space-y-2 sm:space-y-3">
-          <h2 className="text-base sm:text-lg md:text-xl font-semibold">Recommended Practices</h2>
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 -mx-1 px-1">
-            <Filter className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-            <div className="flex gap-2 flex-nowrap">
-              {practiceFilters.map((filter) => (
-                <Button
-                  key={filter}
-                  variant={activeFilter === filter ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setActiveFilter(filter)}
-                  data-testid={`filter-${filter}`}
-                  className="whitespace-nowrap flex-shrink-0"
-                >
-                  {filter}
-                </Button>
-              ))}
-            </div>
-          </div>
-        </div>
-        
-        {practicesLoading ? (
-          <div className="text-center py-8 text-muted-foreground text-sm">Loading practices...</div>
-        ) : filteredPractices.length === 0 ? (
-          <Card className="p-6 sm:p-8 text-center">
-            <p className="text-muted-foreground text-sm sm:text-base">No practices available yet.</p>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-2">Check back soon for new content from your administrator.</p>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-            {filteredPractices.map((practice: any) => (
-              <PracticeCard
-                key={practice.id}
-                practice={practice}
-                onPlay={(id) => setLocation(`/practices?play=${id}`)}
-                onComplete={(id) => setLocation(`/practices?play=${id}`)}
-              />
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Progress Tracking */}
