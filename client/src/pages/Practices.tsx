@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -55,6 +55,7 @@ export default function Practices() {
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [selectedPractice, setSelectedPractice] = useState<Practice | null>(null);
+  const search = useSearch();
 
   const { data: user } = useQuery<{ isAdmin?: boolean }>({ queryKey: ["/api/auth/user"] });
   const isAdmin = (user as any)?.isAdmin;
@@ -79,6 +80,17 @@ export default function Practices() {
   const { data: practices = [], isLoading } = useQuery<Practice[]>({
     queryKey: ["/api/practices"],
   });
+
+  // Auto-open dialog when navigated here with ?play=<id> (e.g. from Dashboard)
+  useEffect(() => {
+    if (!practices.length) return;
+    const params = new URLSearchParams(search);
+    const playId = params.get("play");
+    if (playId && !selectedPractice) {
+      const practice = practices.find((p) => p.id === playId);
+      if (practice) setSelectedPractice(practice);
+    }
+  }, [search, practices]);
 
   const completePracticeMutation = useMutation({
     mutationFn: async (practiceId: string) => {

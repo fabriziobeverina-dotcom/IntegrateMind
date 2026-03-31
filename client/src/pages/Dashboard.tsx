@@ -117,7 +117,7 @@ export default function Dashboard() {
             <Plus className="h-4 w-4 mr-2" />
             <span className="truncate">Quick Journal Entry</span>
           </Button>
-          <Button variant="outline" size="lg" className="w-full" data-testid="button-practice-now">
+          <Button variant="outline" size="lg" className="w-full" data-testid="button-practice-now" onClick={() => setLocation('/practices')}>
             <span className="truncate">Start Practice</span>
           </Button>
         </Card>
@@ -189,8 +189,8 @@ export default function Dashboard() {
               <PracticeCard
                 key={practice.id}
                 practice={practice}
-                onPlay={(id) => console.log('Playing practice:', id)}
-                onComplete={(id) => console.log('Completed practice:', id)}
+                onPlay={(id) => setLocation(`/practices?play=${id}`)}
+                onComplete={(id) => setLocation(`/practices?play=${id}`)}
               />
             ))}
           </div>
