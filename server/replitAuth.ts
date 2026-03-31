@@ -4,7 +4,8 @@ import passport from "passport";
 import session from "express-session";
 import type { Express, RequestHandler } from "express";
 import memoize from "memoizee";
-import MemoryStore from "memorystore";
+import ConnectPgSimple from "connect-pg-simple";
+import { Pool } from "pg";
 import { storage } from "./storage";
 
 if (!process.env.REPLIT_DOMAINS) {
@@ -22,20 +23,22 @@ const getOidcConfig = memoize(
 );
 
 export function getSession() {
-  const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
-  
-  // Use in-memory session store to avoid Neon database wake-up errors
-  // Sessions persist in memory and are automatically cleaned up
-  const MemStore = MemoryStore(session);
-  const sessionStore = new MemStore({
-    checkPeriod: sessionTtl, // Prune expired entries every week
+  const sessionTtl = 30 * 24 * 60 * 60 * 1000; // 30 days
+
+  const PgSession = ConnectPgSimple(session);
+  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  const sessionStore = new PgSession({
+    pool,
+    createTableIfMissing: true,
+    ttl: sessionTtl / 1000, // seconds
   });
-  
+
   return session({
     secret: process.env.SESSION_SECRET!,
     store: sessionStore,
     resave: false,
     saveUninitialized: false,
+    rolling: true,
     cookie: {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
