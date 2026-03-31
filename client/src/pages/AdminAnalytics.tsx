@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   Users, BookOpen, Activity, Target, TrendingUp, User,
-  Flame, Brain, Palette, MessageSquare, Moon, Heart,
+  Flame, Brain, Palette, MessageSquare, Moon, Heart, Download,
 } from "lucide-react";
 
 interface PlatformStats {
@@ -94,9 +94,26 @@ export default function AdminAnalytics() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">User Analytics</h1>
-        <p className="text-muted-foreground mt-1">Platform activity and per-user feature usage breakdown</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold">User Analytics</h1>
+          <p className="text-muted-foreground mt-1">Platform activity and per-user feature usage breakdown</p>
+        </div>
+        <Button
+          variant="outline"
+          data-testid="button-export-csv"
+          onClick={() => {
+            const a = document.createElement('a');
+            a.href = '/api/admin/export/users';
+            a.download = '';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+          }}
+        >
+          <Download className="h-4 w-4 mr-2" />
+          Export CSV
+        </Button>
       </div>
 
       {/* Platform Stats */}

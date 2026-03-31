@@ -246,29 +246,61 @@ export class NotificationManager {
     ]);
   }
   
-  // Send test notification — fires directly in the browser (no push server needed)
+  // Send test notification — tries server push first (works in background), falls back to browser
   public async sendTestNotification(): Promise<void> {
     if (Notification.permission !== 'granted') {
       throw new Error('Notification permission not granted');
     }
 
+    try {
+      // Try server-side push (works even when app is closed)
+      const response = await fetch('/api/push/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        console.log('Test notification sent via server push');
+        return;
+      }
+
+      // Server returned an error — fall through to browser notification
+      const err = await response.json().catch(() => ({}));
+      console.warn('Server push failed, falling back to browser notification:', err);
+    } catch (e) {
+      console.warn('Server push request failed, using browser fallback:', e);
+    }
+
+    // Browser fallback (requires app to be open)
     const title = 'Integration Compass';
     const options: NotificationOptions = {
-      body: 'Your notifications are working! You\'ll receive daily reminders here.',
+      body: 'Your notifications are working! Enable push to receive them when the app is closed.',
       icon: '/icon-192.png',
-      badge: '/icon-192.png',
       tag: 'test-notification',
     };
 
-    // Use service worker showNotification when available (required on mobile/PWA)
     if (this.swRegistration) {
       await this.swRegistration.showNotification(title, options);
     } else {
-      // Fallback to direct Notification API
       new Notification(title, options);
     }
 
-    console.log('Test notification sent successfully');
+    console.log('Test notification shown via browser API');
+  }
+
+  // Force a fresh push subscription (unsubscribes old key, subscribes with current VAPID key)
+  public async refreshPushSubscription(): Promise<void> {
+    if (!this.swRegistration) {
+      await this.initializeServiceWorker();
+    }
+    if (!this.swRegistration) throw new Error('Service Worker not available');
+
+    const existing = await this.swRegistration.pushManager.getSubscription();
+    if (existing) {
+      await existing.unsubscribe();
+    }
+    await this.enableNotifications();
   }
 }
 

@@ -196,6 +196,23 @@ export default function Settings() {
     }
   };
 
+  const refreshPushSubscription = async () => {
+    try {
+      await notificationManager.refreshPushSubscription();
+      setNotificationPermission(notificationManager.getPermissionStatus());
+      toast({
+        title: "Push subscription refreshed",
+        description: "Your device is now registered for background notifications.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to refresh push subscription.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleSave = () => {
     saveMutation.mutate(localSettings);
   };
@@ -274,15 +291,26 @@ export default function Settings() {
                 </Button>
               )}
               {notificationPermission === 'granted' && (
-                <Button
-                  variant="outline"
-                  onClick={sendTestNotification}
-                  className="gap-2"
-                  data-testid="button-test-notification"
-                >
-                  <TestTube className="h-4 w-4" />
-                  Test Notification
-                </Button>
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={sendTestNotification}
+                    className="gap-2"
+                    data-testid="button-test-notification"
+                  >
+                    <TestTube className="h-4 w-4" />
+                    Test Notification
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={refreshPushSubscription}
+                    className="gap-2"
+                    data-testid="button-refresh-push"
+                  >
+                    <Bell className="h-4 w-4" />
+                    Refresh Push
+                  </Button>
+                </>
               )}
             </div>
           </CardContent>

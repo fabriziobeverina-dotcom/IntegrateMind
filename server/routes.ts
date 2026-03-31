@@ -865,6 +865,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin CSV export — all user data
+  app.get('/api/admin/export/users', isAdmin, async (req: any, res) => {
+    try {
+      const users = await storage.getAllUsers();
+
+      // Build CSV rows per user
+      const rows: string[] = [];
+      const headers = [
+        'user_id', 'name', 'email',
+        'journey_start_date', 'onboarding_complete', 'is_admin',
+        'journal_entries', 'practice_completions', 'prompt_completions',
+        'wellbeing_checkins', 'dream_entries', 'creative_expressions', 'community_posts',
+        'reminder_enabled', 'reminder_time', 'reminder_types',
+      ];
+      rows.push(headers.join(','));
+
+      for (const user of users) {
+        let analytics: any = {};
+        try {
+          analytics = await storage.getUserAnalytics(user.id);
+        } catch (_) {}
+
+        const escape = (v: any) => {
+          const s = v == null ? '' : String(v);
+          return s.includes(',') || s.includes('"') || s.includes('\n')
+            ? `"${s.replace(/"/g, '""')}"`
+            : s;
+        };
+
+        rows.push([
+          escape(user.id),
+          escape(user.name ?? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim()),
+          escape(user.email),
+          escape(user.journeyStartDate?.toISOString() ?? ''),
+          escape(user.onboardingComplete),
+          escape(user.isAdmin),
+          escape(analytics.journalCount ?? 0),
+          escape(analytics.practiceCompletions ?? 0),
+          escape(analytics.promptCompletions ?? 0),
+          escape(analytics.wellbeingCheckins ?? 0),
+          escape(analytics.dreamEntries ?? 0),
+          escape(analytics.creativeExpressions ?? 0),
+          escape(analytics.communityPosts ?? 0),
+          escape(user.reminderEnabled),
+          escape(user.reminderTime ?? ''),
+          escape(Array.isArray(user.reminderTypes) ? user.reminderTypes.join('|') : ''),
+        ].join(','));
+      }
+
+      const csv = rows.join('\n');
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="integration-compass-users-${new Date().toISOString().split('T')[0]}.csv"`);
+      res.send(csv);
+    } catch (error) {
+      console.error("Error exporting user CSV:", error);
+      res.status(500).json({ message: "Failed to export data" });
+    }
+  });
+
   // User content consumption routes
   app.get('/api/readings', isAuthenticated, async (req: any, res) => {
     try {
@@ -1169,8 +1228,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Journey start date not set" });
       }
       
-      // Calculate days since journey started
-      const daysSinceStart = Math.floor((Date.now() - user.journeyStartDate.getTime()) / (1000 * 60 * 60 * 24));
+      // Calculate days since journey started using calendar dates (not 24h intervals)
+      // This ensures Day 2 starts at midnight, not 24 hours after the exact start time
+      const now = new Date();
+      const start = new Date(user.journeyStartDate);
+      const nowMidnight = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+      const startMidnight = Date.UTC(start.getFullYear(), start.getMonth(), start.getDate());
+      const daysSinceStart = Math.floor((nowMidnight - startMidnight) / (1000 * 60 * 60 * 24));
       
       // Cycle through 77 days (72 category prompts + 5 milestones), then restart
       const cycleDay = daysSinceStart % 77;
