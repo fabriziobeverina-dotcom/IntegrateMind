@@ -1,22 +1,8 @@
 // Integration Compass Service Worker
-const CACHE_NAME = 'integration-compass-v4';
-const STATIC_CACHE = 'integration-compass-static-v4';
-
-// Core app shell to pre-cache
-const APP_SHELL = [
-  '/',
-  '/manifest.json',
-  '/icon-192.png',
-  '/icon-512.png',
-];
+const CACHE_NAME = 'integration-compass-v5';
 
 // ─── Install ─────────────────────────────────────────────────────────────────
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(STATIC_CACHE)
-      .then((cache) => cache.addAll(APP_SHELL))
-      .catch((err) => console.warn('[SW] Pre-cache failed (non-fatal):', err))
-  );
   self.skipWaiting();
 });
 
@@ -24,11 +10,7 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((names) =>
-      Promise.all(
-        names
-          .filter((n) => n !== CACHE_NAME && n !== STATIC_CACHE)
-          .map((n) => caches.delete(n))
-      )
+      Promise.all(names.map((n) => caches.delete(n)))
     ).then(() => self.clients.claim())
   );
 });
@@ -47,27 +29,17 @@ self.addEventListener('fetch', (event) => {
   if (url.pathname.startsWith('/api/')) return;
   if (url.pathname.startsWith('/objects/')) return;
 
-  // Navigation requests: network-first, fall back to cached '/'
-  if (request.mode === 'navigate') {
-    event.respondWith(
-      fetch(request)
-        .catch(() => caches.match('/'))
-    );
-    return;
-  }
-
-  // Static assets: cache-first
+  // Everything else: network-first, cache fallback for offline support
   event.respondWith(
-    caches.match(request).then((cached) => {
-      if (cached) return cached;
-      return fetch(request).then((response) => {
+    fetch(request)
+      .then((response) => {
         if (response.ok) {
           const clone = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
         }
         return response;
-      });
-    }).catch(() => caches.match('/'))
+      })
+      .catch(() => caches.match(request))
   );
 });
 
