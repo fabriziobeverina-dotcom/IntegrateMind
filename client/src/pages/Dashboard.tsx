@@ -14,6 +14,7 @@ import { Card } from "@/components/ui/card";
 import { Plus, Compass, MessageCircle } from "lucide-react";
 import logoImage from "@assets/ChatGPT Image Nov 10, 2025, 05_44_07 PM_1762767858454.png";
 import expertImage from "@assets/integration_expert.png";
+import tarotImage from "@assets/tarot_reader.png";
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
@@ -234,6 +235,39 @@ export default function Dashboard() {
           </div>
         </Card>
       )}
+
+      {/* Tarot reading for integration banner */}
+      <Card className="overflow-hidden">
+        <div className="flex flex-col sm:flex-row items-center gap-0">
+          <div
+            className="w-full sm:w-48 h-48 sm:h-auto bg-cover bg-center flex-shrink-0"
+            style={{ backgroundImage: `url(${tarotImage})`, minHeight: '12rem' }}
+            role="img"
+            aria-label="Tarot reader for integration"
+          />
+          <div className="flex-1 p-6 flex flex-col justify-center gap-3">
+            <h3 className="text-lg font-semibold leading-snug">Tarot reading for integration</h3>
+            <p className="text-sm text-muted-foreground">
+              Let the cards illuminate your path. A personal tarot reading can offer powerful symbolic insight to deepen your integration process.
+            </p>
+            {whatsappUrl && (
+              <div>
+                <a
+                  href={`${whatsappUrl.split('?')[0]}?text=I'm%20interested%20in%20a%20tarot%20reading%20for%20integration`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-testid="button-whatsapp-tarot"
+                >
+                  <Button className="gap-2">
+                    <MessageCircle className="w-4 h-4" />
+                    Book a reading
+                  </Button>
+                </a>
+              </div>
+            )}
+          </div>
+        </div>
+      </Card>
     </div>
   );
 }
