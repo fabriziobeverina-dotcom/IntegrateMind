@@ -138,13 +138,11 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Dream Journal - Tue/Thu/Sun */}
-      {isDreamDay() && (
-        <div className="space-y-3 sm:space-y-4 w-full min-w-0">
-          <h2 className="text-base sm:text-lg md:text-xl font-semibold">Dream Journal</h2>
-          <DreamJournal />
-        </div>
-      )}
+      {/* Dream Journal */}
+      <div className="space-y-3 sm:space-y-4 w-full min-w-0">
+        <h2 className="text-base sm:text-lg md:text-xl font-semibold">Dream Journal</h2>
+        <DreamJournal />
+      </div>
 
       {/* Wellbeing Check-in - afternoon/evening only (12pm+) */}
       {new Date().getHours() >= 12 && (
