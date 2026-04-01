@@ -145,23 +145,33 @@ export async function setupAuth(app: Express) {
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
   const user = req.user as any;
 
-  if (!req.isAuthenticated() || !user.expires_at) {
+  if (!req.isAuthenticated()) {
     return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  // Load admin status from DB (best-effort)
+  const loadAdminStatus = async () => {
+    try {
+      const dbUser = await storage.getUserById(user.claims?.sub);
+      user.isAdmin = dbUser?.isAdmin || false;
+    } catch {
+      user.isAdmin = false;
+    }
+  };
+
+  // If no expiry info in the session, trust the session as-is
+  if (!user.expires_at) {
+    await loadAdminStatus();
+    return next();
   }
 
   const now = Math.floor(Date.now() / 1000);
   if (now <= user.expires_at) {
-    // Load user data including admin status
-    try {
-      const dbUser = await storage.getUserById(user.claims.sub);
-      user.isAdmin = dbUser?.isAdmin || false;
-    } catch (error) {
-      console.error("Error loading user data:", error);
-      user.isAdmin = false;
-    }
+    await loadAdminStatus();
     return next();
   }
 
+  // Token is expired — try to refresh
   const refreshToken = user.refresh_token;
   if (!refreshToken) {
     res.status(401).json({ message: "Unauthorized" });
@@ -172,16 +182,7 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
     const config = await getOidcConfig();
     const tokenResponse = await client.refreshTokenGrant(config, refreshToken);
     updateUserSession(user, tokenResponse);
-    
-    // Load user data including admin status after token refresh
-    try {
-      const dbUser = await storage.getUserById(user.claims.sub);
-      user.isAdmin = dbUser?.isAdmin || false;
-    } catch (error) {
-      console.error("Error loading user data:", error);
-      user.isAdmin = false;
-    }
-    
+    await loadAdminStatus();
     return next();
   } catch (error) {
     res.status(401).json({ message: "Unauthorized" });
