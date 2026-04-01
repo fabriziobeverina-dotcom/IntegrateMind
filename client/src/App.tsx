@@ -17,6 +17,7 @@ import Readings from "@/pages/Readings";
 import ReadingDetail from "@/pages/ReadingDetail";
 import CreateReading from "@/pages/CreateReading";
 import EditReading from "@/pages/EditReading";
+import Videos from "@/pages/Videos";
 import CreateVideo from "@/pages/CreateVideo";
 import Journal from "@/pages/Journal";
 import Progress from "@/pages/Progress";
@@ -46,7 +47,7 @@ function AuthenticatedRouter() {
       <Route path="/readings/create" component={CreateReading} />
       <Route path="/readings/edit/:id" component={EditReading} />
       <Route path="/readings/:id" component={ReadingDetail} />
-      <Route path="/videos" component={() => <div className="p-8"><h1 className="text-2xl font-bold">Video Library</h1><p className="text-muted-foreground">Video library coming soon...</p></div>} />
+      <Route path="/videos" component={Videos} />
       <Route path="/videos/create" component={CreateVideo} />
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/admin/practices" component={AdminPractices} />
