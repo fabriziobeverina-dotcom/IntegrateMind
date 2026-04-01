@@ -91,8 +91,9 @@ export function DailyPrompt() {
   const [response, setResponse] = useState("");
   const { toast } = useToast();
 
-  const { data: prompt, isLoading, error } = useQuery<IntegrationPrompt>({
+  const { data: prompt, isLoading, error, refetch } = useQuery<IntegrationPrompt>({
     queryKey: ['/api/integration-prompts/today'],
+    retry: 2,
   });
 
   const { data: pointsData } = useQuery<{ totalPoints: number }>({
@@ -157,13 +158,28 @@ export function DailyPrompt() {
   }
 
   if (error) {
+    const is404 = (error as Error).message?.includes("404");
     return (
       <Card className="p-4 sm:p-6">
         <div className="text-center py-8 space-y-3">
-          <p className="text-destructive font-medium text-sm sm:text-base">Database Connection Error</p>
-          <p className="text-xs sm:text-sm text-muted-foreground">
-            The integration prompts are temporarily unavailable. Please contact your administrator.
-          </p>
+          {is404 ? (
+            <>
+              <p className="font-medium text-sm sm:text-base">No reflection for today</p>
+              <p className="text-xs sm:text-sm text-muted-foreground">
+                Make sure your journey start date is set in your profile settings.
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="font-medium text-sm sm:text-base">Could not load today's reflection</p>
+              <p className="text-xs sm:text-sm text-muted-foreground">
+                There was a temporary connection issue. Please try again.
+              </p>
+              <Button size="sm" variant="outline" onClick={() => refetch()} className="mt-2">
+                Try again
+              </Button>
+            </>
+          )}
         </div>
       </Card>
     );
