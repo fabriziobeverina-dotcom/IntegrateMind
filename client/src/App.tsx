@@ -122,7 +122,7 @@ function AppContent() {
                 </button>
               </div>
             </header>
-            <main className="flex-1 overflow-x-hidden overflow-y-auto">
+            <main className="flex-1 overflow-x-hidden overflow-y-auto relative">
               <div className="w-full max-w-7xl mx-auto px-4 py-4 sm:px-6 sm:py-6">
                 <AuthenticatedRouter />
               </div>
