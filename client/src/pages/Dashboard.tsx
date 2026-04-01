@@ -130,19 +130,19 @@ export default function Dashboard() {
         <DailyPrompt />
       </div>
 
-      {/* Dream Journal - Tue/Thu/Sun */}
-      {isDreamDay() && (
-        <div className="space-y-3 sm:space-y-4 w-full min-w-0">
-          <h2 className="text-base sm:text-lg md:text-xl font-semibold">Dream Journal</h2>
-          <DreamJournal />
-        </div>
-      )}
-
       {/* Creative Expression - 1st & 15th of each month */}
       {isCreativeExpressionDay() && (
         <div className="space-y-3 sm:space-y-4 w-full min-w-0">
           <h2 className="text-base sm:text-lg md:text-xl font-semibold">Creative Expression</h2>
           <CreativeExpression />
+        </div>
+      )}
+
+      {/* Dream Journal - Tue/Thu/Sun */}
+      {isDreamDay() && (
+        <div className="space-y-3 sm:space-y-4 w-full min-w-0">
+          <h2 className="text-base sm:text-lg md:text-xl font-semibold">Dream Journal</h2>
+          <DreamJournal />
         </div>
       )}
 
