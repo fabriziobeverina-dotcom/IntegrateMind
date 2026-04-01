@@ -645,7 +645,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/admin/readings', isAdmin, async (req: any, res) => {
     try {
       const adminId = req.user.claims.sub;
-      const { title, description, content, link, author, category, readTime, isPremium } = req.body;
+      const { title, description, content, link, author, category, readTime, isPremium, thumbnailUrl } = req.body;
       
       if (!title || !description || !category) {
         return res.status(400).json({ message: "Missing required fields" });
@@ -663,7 +663,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         author: author?.trim() || null,
         category: category.trim(),
         readTime: readTime?.trim() || null,
-        isPremium: Boolean(isPremium)
+        isPremium: Boolean(isPremium),
+        thumbnailUrl: thumbnailUrl?.trim() || null,
       };
       
       const reading = await storage.createReading(readingData, adminId);
@@ -862,6 +863,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching user analytics:", error);
       res.status(500).json({ message: "Failed to fetch user analytics" });
+    }
+  });
+
+  // Fetch OG metadata from external URL (admin only, server-side to avoid CORS)
+  app.get('/api/og-metadata', isAdmin, async (req: any, res) => {
+    const { url } = req.query as { url?: string };
+    if (!url) return res.status(400).json({ message: "url parameter required" });
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
+      const response = await fetch(url, {
+        signal: controller.signal,
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; IntegrationCompass/1.0)' },
+      });
+      clearTimeout(timeout);
+      const html = await response.text();
+      const getMeta = (property: string) => {
+        const match = html.match(new RegExp(`<meta[^>]*(?:property|name)=["']${property}["'][^>]*content=["']([^"']+)["']`, 'i'))
+                  || html.match(new RegExp(`<meta[^>]*content=["']([^"']+)["'][^>]*(?:property|name)=["']${property}["']`, 'i'));
+        return match ? match[1] : null;
+      };
+      const getTitle = () => {
+        const og = getMeta('og:title');
+        if (og) return og;
+        const m = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+        return m ? m[1].trim() : null;
+      };
+      res.json({
+        title: getTitle(),
+        description: getMeta('og:description') || getMeta('description'),
+        image: getMeta('og:image'),
+        siteName: getMeta('og:site_name'),
+      });
+    } catch (error) {
+      res.status(422).json({ message: "Could not fetch metadata from that URL" });
     }
   });
 
