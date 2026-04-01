@@ -83,11 +83,7 @@ export default function Readings() {
   const rest = filtered.filter(r => !r.isFeatured);
 
   const handleReadingClick = (reading: Reading) => {
-    if (reading.link) {
-      window.open(reading.link, "_blank", "noopener,noreferrer");
-    } else {
-      setLocation(`/readings/${reading.id}`);
-    }
+    setLocation(`/readings/${reading.id}`);
   };
 
   if (isLoading) {
