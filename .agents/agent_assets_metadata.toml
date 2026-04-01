@@ -6,3 +6,45 @@ id = "VmBYFTh4zohEMwv_KBFVQ"
 uri = "file://attached_assets/integration_expert.png"
 type = "image"
 title = "generated_image"
+
+[[generated]]
+id = "2nAuRlviiApsfA5NQby8-"
+uri = "file://client/src/assets/category_body.png"
+type = "image"
+title = "kambo frog body"
+
+[[generated]]
+id = "ww_C33jvyISxV8WlugUcK"
+uri = "file://client/src/assets/category_emotion.png"
+type = "image"
+title = "bobinsana flower emotion"
+
+[[generated]]
+id = "VVMofEai-4I5yLzLvR0Aj"
+uri = "file://client/src/assets/category_social.png"
+type = "image"
+title = "talking circle social"
+
+[[generated]]
+id = "rYCYQZSSPV3XPZ1AfzPrc"
+uri = "file://client/src/assets/category_environment.png"
+type = "image"
+title = "amazon forest environment"
+
+[[generated]]
+id = "K2AtYIBn7sWrKa2tGKzMI"
+uri = "file://client/src/assets/category_spirit.png"
+type = "image"
+title = "mother ayahuasca spirit"
+
+[[generated]]
+id = "V9GgaAVm_xV6BnK5CWaFh"
+uri = "file://client/src/assets/category_mental.png"
+type = "image"
+title = "toe flower mental"
+
+[[generated]]
+id = "dZVxHfSDAlSCwxgpr7xdG"
+uri = "file://client/src/assets/category_milestone.png"
+type = "image"
+title = "chakra person milestone"
