@@ -172,7 +172,7 @@ export default function AdminDashboard() {
                   Manage Readings
                 </Button>
               </Link>
-              <Link href="/admin/readings/create">
+              <Link href="/readings/create">
                 <Button variant="outline" className="w-full" data-testid="button-create-reading">
                   <PlusIcon className="h-4 w-4 mr-2" />
                   Add New Reading
@@ -204,7 +204,7 @@ export default function AdminDashboard() {
                   Manage Videos
                 </Button>
               </Link>
-              <Link href="/admin/videos/create">
+              <Link href="/videos/create">
                 <Button variant="outline" className="w-full" data-testid="button-create-video">
                   <PlusIcon className="h-4 w-4 mr-2" />
                   Add New Video
