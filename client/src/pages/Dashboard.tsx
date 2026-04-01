@@ -56,6 +56,11 @@ export default function Dashboard() {
     ? `https://wa.me/${whatsappNumber.replace(/[^0-9]/g, '')}?text=I'm%20interested%20in%20integration%20support`
     : null;
 
+  const tarotWhatsappNumber = siteSettings['tarot_whatsapp_number'] || '';
+  const tarotWhatsappUrl = tarotWhatsappNumber
+    ? `https://wa.me/${tarotWhatsappNumber.replace(/[^0-9]/g, '')}?text=I'm%20interested%20in%20a%20tarot%20reading%20for%20integration`
+    : null;
+
   const isJourneyStart = !user?.journeyStartDate;
 
   return (
@@ -248,10 +253,10 @@ export default function Dashboard() {
             <p className="text-sm text-muted-foreground">
               Let the cards illuminate your path. A personal tarot reading can offer powerful symbolic insight to deepen your integration process.
             </p>
-            {whatsappUrl && (
+            {tarotWhatsappUrl && (
               <div>
                 <a
-                  href={`${whatsappUrl.split('?')[0]}?text=I'm%20interested%20in%20a%20tarot%20reading%20for%20integration`}
+                  href={tarotWhatsappUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   data-testid="button-whatsapp-tarot"

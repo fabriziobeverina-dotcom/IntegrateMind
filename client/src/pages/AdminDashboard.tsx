@@ -39,13 +39,17 @@ export default function AdminDashboard() {
   const [whatsappInput, setWhatsappInput] = useState<string | null>(null);
   const whatsappValue = whatsappInput !== null ? whatsappInput : (siteSettings['whatsapp_number'] ?? '');
 
+  const [tarotWhatsappInput, setTarotWhatsappInput] = useState<string | null>(null);
+  const tarotWhatsappValue = tarotWhatsappInput !== null ? tarotWhatsappInput : (siteSettings['tarot_whatsapp_number'] ?? '');
+
   const updateSettingsMutation = useMutation({
     mutationFn: async (updates: Record<string, string>) => {
       return apiRequest('PUT', '/api/admin/site-settings', updates);
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/site-settings'] });
-      setWhatsappInput(null);
+      if ('whatsapp_number' in variables) setWhatsappInput(null);
+      if ('tarot_whatsapp_number' in variables) setTarotWhatsappInput(null);
       toast({ title: "Settings saved", description: "Site settings updated successfully." });
     },
     onError: () => {
@@ -281,10 +285,11 @@ export default function AdminDashboard() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* Integration Expert number */}
           <div className="space-y-3">
             <Label htmlFor="input-whatsapp-number">Integration Expert WhatsApp Number</Label>
             <p className="text-sm text-muted-foreground">
-              Enter the WhatsApp number (with country code, e.g. 15551234567) for the integration expert button shown on the dashboard. Leave empty to hide the button.
+              Number for the "Walk with our integration expert" button. Leave empty to hide the button.
             </p>
             <div className="flex flex-wrap gap-2">
               <Input
@@ -306,7 +311,40 @@ export default function AdminDashboard() {
             </div>
             {whatsappValue && (
               <p className="text-xs text-muted-foreground">
-                Preview link: <span className="font-mono">https://wa.me/{whatsappValue.replace(/[^0-9]/g, '')}</span>
+                Preview: <span className="font-mono">https://wa.me/{whatsappValue.replace(/[^0-9]/g, '')}</span>
+              </p>
+            )}
+          </div>
+
+          <div className="border-t border-border" />
+
+          {/* Tarot reading number */}
+          <div className="space-y-3">
+            <Label htmlFor="input-tarot-whatsapp-number">Tarot Reading WhatsApp Number</Label>
+            <p className="text-sm text-muted-foreground">
+              Number for the "Tarot reading for integration" button. Leave empty to hide the button.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Input
+                id="input-tarot-whatsapp-number"
+                data-testid="input-tarot-whatsapp-number"
+                placeholder="15551234567"
+                value={tarotWhatsappValue}
+                onChange={(e) => setTarotWhatsappInput(e.target.value)}
+                className="max-w-xs"
+              />
+              <Button
+                data-testid="button-save-tarot-whatsapp"
+                disabled={updateSettingsMutation.isPending}
+                onClick={() => updateSettingsMutation.mutate({ tarot_whatsapp_number: tarotWhatsappValue })}
+              >
+                <Save className="h-4 w-4 mr-2" />
+                {updateSettingsMutation.isPending ? "Saving..." : "Save"}
+              </Button>
+            </div>
+            {tarotWhatsappValue && (
+              <p className="text-xs text-muted-foreground">
+                Preview: <span className="font-mono">https://wa.me/{tarotWhatsappValue.replace(/[^0-9]/g, '')}</span>
               </p>
             )}
           </div>
