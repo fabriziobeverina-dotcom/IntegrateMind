@@ -47,5 +47,5 @@ integrations = ["javascript_database:1.0.0", "javascript_websocket:1.0.0", "java
 VAPID_PUBLIC_KEY = "BAxn3Tx25-0HBqNt_M8TaV883K59UOxbt46cDfbNAHGSUhOrDgE3XNvdrAiNW9JdTPHkyB_LiH7UCWUeVlP5ppc"
 VAPID_PRIVATE_KEY = "2WwaXVCa8rCUpV1X_pY-tlXO2nKTVLvOktdQioM9gag"
 VAPID_EMAIL = "mailto:admin@integrationcompass.com"
-TWA_PACKAGE_NAME = "app.replit.integrate_mindbpody"
+TWA_PACKAGE_NAME = "app.replit.integrate_mindbpody.twa"
 TWA_SHA256_FINGERPRINT = "31:15:EA:8C:5A:9E:63:9D:52:97:78:4D:50:13:B8:14:AD:6B:04:40:90:4B:7E:0F:73:29:3E:5F:21:87:EA:4F"
