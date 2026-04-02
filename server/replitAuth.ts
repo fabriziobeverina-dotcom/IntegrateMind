@@ -171,23 +171,21 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
     return next();
   }
 
-  // Token is expired — try to refresh
+  // Token is expired — try to refresh, but fall back to trusting the session
+  // The PostgreSQL session is valid for 30 days; an expired OIDC token should not log users out
   const refreshToken = user.refresh_token;
-  if (!refreshToken) {
-    res.status(401).json({ message: "Unauthorized" });
-    return;
+  if (refreshToken) {
+    try {
+      const config = await getOidcConfig();
+      const tokenResponse = await client.refreshTokenGrant(config, refreshToken);
+      updateUserSession(user, tokenResponse);
+    } catch {
+      // Refresh failed — that's okay, the session itself is still valid
+    }
   }
 
-  try {
-    const config = await getOidcConfig();
-    const tokenResponse = await client.refreshTokenGrant(config, refreshToken);
-    updateUserSession(user, tokenResponse);
-    await loadAdminStatus();
-    return next();
-  } catch (error) {
-    res.status(401).json({ message: "Unauthorized" });
-    return;
-  }
+  await loadAdminStatus();
+  return next();
 };
 
 // Admin-only middleware for content management
