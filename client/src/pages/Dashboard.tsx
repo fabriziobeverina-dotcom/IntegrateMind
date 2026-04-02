@@ -33,7 +33,7 @@ export default function Dashboard() {
 
   // Fetch real community posts
   const { data: posts = [], isLoading: postsLoading } = useQuery<any[]>({
-    queryKey: ['/api/posts'],
+    queryKey: ['/api/community/posts'],
   });
 
   // Check if user just started journey
@@ -172,7 +172,7 @@ export default function Dashboard() {
       <div className="space-y-3 sm:space-y-4 w-full min-w-0 pb-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
           <h2 className="text-base sm:text-lg md:text-xl font-semibold">Community Highlights</h2>
-          <Button variant="outline" size="sm" data-testid="button-view-all-posts" className="w-full sm:w-auto">
+          <Button variant="outline" size="sm" data-testid="button-view-all-posts" className="w-full sm:w-auto" onClick={() => setLocation('/community')}>
             View All Posts
           </Button>
         </div>
