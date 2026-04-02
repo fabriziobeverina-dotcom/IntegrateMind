@@ -1,5 +1,5 @@
 // Integration Compass Service Worker
-const CACHE_NAME = 'integration-compass-v5';
+const CACHE_NAME = 'integration-compass-v6';
 
 // ─── Install ─────────────────────────────────────────────────────────────────
 self.addEventListener('install', (event) => {
