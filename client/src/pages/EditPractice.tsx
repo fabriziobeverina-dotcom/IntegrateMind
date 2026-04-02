@@ -83,8 +83,16 @@ export default function EditPractice() {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
+        credentials: "include",
       });
-      if (!response.ok) throw new Error("Failed to update practice");
+      const contentType = response.headers.get("content-type") || "";
+      if (!response.ok || !contentType.includes("application/json")) {
+        const text = await response.text().catch(() => "");
+        const message = contentType.includes("application/json")
+          ? JSON.parse(text)?.message
+          : undefined;
+        throw new Error(message || `Failed to update practice (${response.status})`);
+      }
       return response.json();
     },
     onSuccess: () => {
