@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import path from "path";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated, isAdmin } from "./replitAuth";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
@@ -8,6 +9,16 @@ import { ObjectPermission } from "./objectAcl";
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication middleware
   await setupAuth(app);
+
+  // Serve manifest.json with correct MIME type and open CORS so PWABuilder can validate
+  app.get('/manifest.json', (req, res) => {
+    res.setHeader('Content-Type', 'application/manifest+json');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    const manifestPath = process.env.NODE_ENV === 'production'
+      ? path.resolve(import.meta.dirname, 'public', 'manifest.json')
+      : path.resolve(import.meta.dirname, '..', 'client', 'public', 'manifest.json');
+    res.sendFile(manifestPath);
+  });
 
   // Auth routes  
   app.get('/api/auth/user', async (req: any, res) => {
