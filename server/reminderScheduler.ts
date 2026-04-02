@@ -299,5 +299,6 @@ export class ReminderScheduler {
   }
 }
 
-// Export singleton instance
+// Export singleton instance — auto-starts the scheduler on import
 export const reminderScheduler = new ReminderScheduler();
+reminderScheduler.setupScheduler();

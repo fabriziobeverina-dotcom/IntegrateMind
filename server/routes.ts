@@ -5,6 +5,7 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated, isAdmin } from "./replitAuth";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
+import { reminderScheduler } from "./reminderScheduler";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication middleware
@@ -1545,10 +1546,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       
-      // Import the reminder scheduler
-      const { reminderScheduler } = await import('./reminderScheduler');
-      
-      // Send test notification using the scheduler
       await reminderScheduler.sendTestNotification(userId);
       
       res.json({ 
