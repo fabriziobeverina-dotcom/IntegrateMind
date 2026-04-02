@@ -31,6 +31,7 @@ import AdminVideos from "@/pages/AdminVideos";
 import AdminAnalytics from "@/pages/AdminAnalytics";
 import AdminUsers from "@/pages/AdminUsers";
 import NotFound from "@/pages/not-found";
+import InstallGuide from "@/pages/InstallGuide";
 import { NotificationScheduler } from "@/components/NotificationScheduler";
 import { OnboardingFlow } from "@/components/OnboardingFlow";
 import { InstallPrompt } from "@/components/InstallPrompt";
@@ -59,6 +60,7 @@ function AuthenticatedRouter() {
       <Route path="/progress" component={Progress} />
       <Route path="/profile" component={Profile} />
       <Route path="/settings" component={Settings} />
+      <Route path="/install" component={InstallGuide} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -68,6 +70,7 @@ function PublicRouter() {
   return (
     <Switch>
       <Route path="/" component={Landing} />
+      <Route path="/install" component={InstallGuide} />
       <Route component={Landing} />
     </Switch>
   );

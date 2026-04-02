@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,7 +24,8 @@ import {
   Compass,
   Heart,
   Save,
-  Loader2
+  Loader2,
+  Smartphone,
 } from "lucide-react";
 import { notificationManager } from "@/lib/notifications";
 
@@ -512,6 +514,23 @@ export default function Settings() {
             )}
           </>
         )}
+
+        <Card>
+          <CardContent className="p-4 sm:p-6 flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-3">
+              <Smartphone className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium">Install the App</p>
+                <p className="text-xs text-muted-foreground">Step-by-step guide for Android and iOS</p>
+              </div>
+            </div>
+            <Link href="/install">
+              <Button variant="outline" size="sm" data-testid="link-install-guide">
+                View Guide
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
 
         <Button 
           onClick={handleSave}
