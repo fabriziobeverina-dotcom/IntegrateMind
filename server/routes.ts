@@ -25,11 +25,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Digital Asset Links — required for TWA APK to run standalone instead of in Chrome
   // Set TWA_PACKAGE_NAME and TWA_SHA256_FINGERPRINT env vars once you have them from bubblewrap
   app.get('/.well-known/assetlinks.json', (req, res) => {
-    const packageName = process.env.TWA_PACKAGE_NAME;
-    const fingerprint = process.env.TWA_SHA256_FINGERPRINT;
-    if (!packageName || !fingerprint) {
-      return res.status(404).json({ error: 'Asset links not configured' });
-    }
+    const packageName = process.env.TWA_PACKAGE_NAME || 'app.replit.integrate_mindbpody.twa';
+    const fingerprint = process.env.TWA_SHA256_FINGERPRINT || '31:15:EA:8C:5A:9E:63:9D:52:97:78:4D:50:13:B8:14:AD:6B:04:40:90:4B:7E:0F:73:29:3E:5F:21:87:EA:4F';
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.json([{
