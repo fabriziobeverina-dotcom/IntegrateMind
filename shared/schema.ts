@@ -61,7 +61,7 @@ export const practices = pgTable("practices", {
   title: text("title").notNull(),
   description: text("description").notNull(),
   duration: text("duration").notNull(), // e.g., "15 min", "30 min"
-  category: text("category").notNull(), // 'Calming', 'Energizing', 'Grounding', 'Dreamwork'
+  category: text("category").notNull(), // 'Calming', 'Energizing', 'Grounding', 'Dreamwork', 'Somatic'
   instructor: text("instructor").notNull(),
   videoUrl: text("video_url"),
   audioUrl: text("audio_url"),

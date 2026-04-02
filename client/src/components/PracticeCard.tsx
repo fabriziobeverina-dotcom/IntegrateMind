@@ -9,7 +9,7 @@ interface Practice {
   title: string;
   description: string;
   duration: string;
-  category: 'Calming' | 'Energizing' | 'Grounding' | 'Dreamwork';
+  category: 'Calming' | 'Energizing' | 'Grounding' | 'Dreamwork' | 'Somatic';
   instructor: string;
   completed?: boolean;
 }
@@ -24,7 +24,8 @@ const categoryColors = {
   Calming: "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-800",
   Energizing: "bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800",
   Grounding: "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800",
-  Dreamwork: "bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 border-purple-200 dark:border-purple-800"
+  Dreamwork: "bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 border-purple-200 dark:border-purple-800",
+  Somatic: "bg-rose-100 dark:bg-rose-900/30 text-rose-800 dark:text-rose-300 border-rose-200 dark:border-rose-800"
 };
 
 export function PracticeCard({ practice, onPlay, onComplete }: PracticeCardProps) {

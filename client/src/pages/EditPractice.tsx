@@ -19,7 +19,7 @@ const editPracticeSchema = z.object({
   title: z.string().min(1, "Title is required").max(200, "Title must be less than 200 characters"),
   description: z.string().min(10, "Description must be at least 10 characters").max(1000, "Description must be less than 1000 characters"),
   duration: z.string().min(1, "Duration is required"),
-  category: z.enum(["Calming", "Energizing", "Grounding", "Dreamwork"], {
+  category: z.enum(["Calming", "Energizing", "Grounding", "Dreamwork", "Somatic"], {
     required_error: "Please select a category",
   }),
   instructor: z.string().min(1, "Instructor name is required").max(100, "Instructor name must be less than 100 characters"),
@@ -259,6 +259,7 @@ export default function EditPractice() {
                           <SelectItem value="Energizing">Energizing</SelectItem>
                           <SelectItem value="Grounding">Grounding</SelectItem>
                           <SelectItem value="Dreamwork">Dreamwork</SelectItem>
+                          <SelectItem value="Somatic">Somatic</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />

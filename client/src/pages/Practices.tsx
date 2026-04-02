@@ -161,6 +161,7 @@ export default function Practices() {
     Energizing: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
     Grounding: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
     Dreamwork: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
+    Somatic: "bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-200",
   };
 
   if (isLoading) {
@@ -216,6 +217,7 @@ export default function Practices() {
             <SelectItem value="Energizing">Energizing</SelectItem>
             <SelectItem value="Grounding">Grounding</SelectItem>
             <SelectItem value="Dreamwork">Dreamwork</SelectItem>
+            <SelectItem value="Somatic">Somatic</SelectItem>
           </SelectContent>
         </Select>
       </div>
