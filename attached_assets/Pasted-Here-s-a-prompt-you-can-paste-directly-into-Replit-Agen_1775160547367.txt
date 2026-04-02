@@ -1,0 +1,125 @@
+Here's a prompt you can paste directly into Replit Agent:
+
+---
+
+**FEATURE: Passive Crisis Detection & Facilitator Alert System**
+
+Implement a red flag / crisis detection system. This is a sensitive feature — the tone must always feel like a perceptive friend, never clinical surveillance. Follow these specifications exactly.
+
+---
+
+**LAYER 1 — Passive behavioral signals**
+
+Track the following automatically from existing data, no new user input required:
+
+- **Journaling dropout**: user has not created a journal entry for 4+ consecutive days after having journaled at least 3 times in the previous 7 days
+- **Entry length collapse**: average journal entry length drops below 30 words for 3 consecutive days, after previously averaging 80+ words
+- **Obsessive repetition**: same root words (stemmed) appear in 5+ consecutive entries dominating >40% of content — indicates rumination
+- **Streak break after consistency**: user breaks a streak of 7+ days
+
+Each of these sets an internal flag on the user record. Flags are additive: 1 flag = watch, 2+ flags simultaneously = trigger weekly pulse early (do not wait for the 7-day cycle).
+
+---
+
+**LAYER 2 — Weekly pulse check**
+
+Every 7 days, before the daily prompt loads, show a full-screen interstitial (cannot be skipped, but can be dismissed with one tap — do not block app access). Title: *"A quick check-in"*. Subtitle: *"Three questions. No right answers."*
+
+Three questions, each rated 1–5 with simple emoji scale (not numbers — use moon phases or simple nature icons consistent with app aesthetic):
+
+1. *How has your sleep been this week?*
+2. *How easily have you managed daily tasks and responsibilities?*
+3. *How connected have you felt to the people around you?*
+
+Store responses with timestamp. Calculate a composite score (sum, max 15). Compare to previous week's score.
+
+**Trigger alert if ANY of:**
+- Any single question scores 1
+- Two or more questions score 2 or below
+- Composite score drops 5+ points from previous week
+- First-time pulse and composite score is 6 or below
+
+---
+
+**LAYER 3 — The response (what the user sees)**
+
+When alert is triggered, do NOT show any warning message, crisis language, or clinical framing.
+
+Instead, do two things silently:
+
+**A) Override the next day's prompt** — regardless of the 77-day cycle position, replace with a grounding prompt from a special "stabilization" bank. Create a new prompt category called `stabilization` (does not appear in normal rotation). Add these 5 prompts to the bank:
+
+1. *"Today, just one practice: find three points of contact between your body and a surface — floor, chair, ground. Rest your attention there for two minutes. Nothing else is required of you today."*
+
+2. *"Notice something in your immediate environment that is not moving. A wall, a table, a tree. Let your eyes rest on it without trying to understand it. Two minutes. That's the practice."*
+
+3. *"Put one hand on your chest and one on your belly. Breathe until you feel both hands move. Do this for ten breaths. You don't have to reflect on anything today."*
+
+4. *"Today's prompt is simple: drink a full glass of water slowly, noticing the temperature and weight of it. The medicine works through the body. The body needs tending."*
+
+5. *"Step outside for five minutes. No phone. No agenda. Just stand somewhere and let the air touch your face. Return when you're ready."*
+
+Rotate through these 5 in order, resetting after the fifth.
+
+**B) Show a soft message** — appears below the stabilization prompt as a small card, not a modal, not an alert. Warm amber background (consistent with existing accent colors). Text:
+
+> *"Integration isn't always linear. Some periods are heavier than others — that's not failure, that's the process. If this week has felt harder than you can hold alone, reaching out is a sign of wisdom."*
+> 
+> **[Connect with Paojilhuasca]** → links to `https://wa.me/51916499055`
+
+This card appears for 3 consecutive days after the trigger, then disappears unless a new trigger occurs.
+
+---
+
+**LAYER 4 — Facilitator dashboard**
+
+Add a new protected route `/admin/wellbeing` accessible only to users with role `admin`.
+
+Display a table with the following columns:
+- User display name (or "Anonymous" if user has not set a name)
+- Days since last journal entry
+- Last pulse check scores (3 individual + composite)
+- Score delta from previous week
+- Active flags (list which behavioral flags are set)
+- Alert status: `watching` / `triggered` / `resolved`
+- Last alert date
+
+Add a **"Mark resolved"** button per row — clicking it clears the alert status and logs the resolution with timestamp and an optional free-text note field ("facilitator followed up", etc.).
+
+Add a toggle at the top: **"Show only triggered users"** — default ON.
+
+Style the dashboard simply. No need to match the main app aesthetic perfectly — this is a back-office tool. Prioritize clarity and scannability. Use red/amber/green status indicators consistently.
+
+---
+
+**LAYER 5 — Data & schema**
+
+Add to the users table (or a linked `user_wellbeing` table):
+- `flags`: JSON array of active flag names with timestamps
+- `pulse_history`: JSON array of weekly pulse records `{date, q1, q2, q3, composite}`
+- `alert_status`: enum `none | watching | triggered | resolved`
+- `alert_triggered_at`: timestamp
+- `alert_resolved_at`: timestamp
+- `stabilization_prompt_index`: integer 0–4 (tracks rotation position)
+- `facilitator_note`: text (written from admin dashboard)
+
+---
+
+**CONSTRAINTS — read carefully:**
+
+- Never use the words "crisis", "mental health", "distress", "disorder", "depression" anywhere in user-facing UI or copy
+- Never block app access — all check-ins are interstitials that can be dismissed
+- Never send push notifications for this feature (too alarming out of context)
+- The pulse check must feel visually consistent with the rest of the app — same fonts, same card style, nature-based emoji scale not clinical numbers
+- The admin dashboard is completely invisible to regular users — no routes, no links, no references in user-facing code
+- All behavioral flag logic runs server-side on a daily cron job, not client-side
+
+---
+
+**TESTING:**
+
+Add a hidden debug route `/debug/wellbeing-test` (non-admin, for development only, remove before production) that lets you manually set flag states and trigger the alert flow to verify the UI response without waiting for real behavioral data.
+
+---
+
+That's the full spec. It should give Replit Agent enough precision to implement without having to interpret ambiguous requirements. The only thing you may need to adjust is whether the admin dashboard should be tied to an existing admin role system you already have, or whether you need to create one.

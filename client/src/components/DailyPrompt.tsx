@@ -87,7 +87,11 @@ const DEFAULT_CONFIG: CategoryConfig = {
   label: "Integration",
 };
 
-export function DailyPrompt() {
+interface DailyPromptProps {
+  stabilizationPrompt?: string | null;
+}
+
+export function DailyPrompt({ stabilizationPrompt }: DailyPromptProps = {}) {
   const [response, setResponse] = useState("");
   const { toast } = useToast();
 
@@ -257,10 +261,10 @@ export function DailyPrompt() {
 
       {/* Content body */}
       <div className="p-4 sm:p-6 space-y-4">
-        {/* Prompt text */}
+        {/* Prompt text — overridden with a grounding prompt during stabilization periods */}
         <div className="p-3 sm:p-4 rounded-lg bg-background border border-border">
           <p className="font-serif text-sm sm:text-base leading-relaxed" data-testid="text-prompt">
-            {prompt.prompt}
+            {stabilizationPrompt ?? prompt.prompt}
           </p>
         </div>
 

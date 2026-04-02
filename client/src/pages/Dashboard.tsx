@@ -9,9 +9,10 @@ import { CreativeExpression, isCreativeExpressionDay } from "@/components/Creati
 import { StreakTracker } from "@/components/StreakTracker";
 import { ProgressChart } from "@/components/ProgressChart";
 import { CommunityPost } from "@/components/CommunityPost";
+import { PulseCheckInterstitial } from "@/components/PulseCheckInterstitial";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Plus, Compass, MessageCircle } from "lucide-react";
+import { Plus, Compass, MessageCircle, ExternalLink } from "lucide-react";
 import logoImage from "@assets/ChatGPT Image Nov 10, 2025, 05_44_07 PM_1762767858454.png";
 import expertImage from "@assets/integration_expert.png";
 import tarotImage from "@assets/tarot_reader.png";
@@ -19,7 +20,21 @@ import tarotImage from "@assets/tarot_reader.png";
 export default function Dashboard() {
   const [, setLocation] = useLocation();
   const [selectedMetric, setSelectedMetric] = useState<'mood' | 'sleep' | 'grounding'>('mood');
+  const [pulseCheckDismissed, setPulseCheckDismissed] = useState(false);
   const { user } = useAuth();
+
+  // Pulse check and stabilization status
+  const { data: pulseStatus } = useQuery<{
+    pulseCheckDue: boolean;
+    stabilizationActive: boolean;
+    stabilizationPrompt: string | null;
+    alertStatus: string;
+  }>({
+    queryKey: ['/api/wellbeing/pulse-status'],
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  const showPulseCheck = !pulseCheckDismissed && pulseStatus?.pulseCheckDue === true;
 
   // Fetch real progress data
   const { data: progressData = [], isLoading: progressLoading } = useQuery({
@@ -64,6 +79,11 @@ export default function Dashboard() {
   const isJourneyStart = !user?.journeyStartDate;
 
   return (
+    <>
+    {/* Weekly pulse check interstitial — shown once per week, dismissible */}
+    {showPulseCheck && (
+      <PulseCheckInterstitial onComplete={() => setPulseCheckDismissed(true)} />
+    )}
     <div className="w-full space-y-4 sm:space-y-6">
       {/* Welcome Section with Logo for Journey Start */}
       {isJourneyStart ? (
@@ -132,7 +152,27 @@ export default function Dashboard() {
       {/* Daily Prompt Section */}
       <div className="space-y-3 sm:space-y-4 w-full min-w-0">
         <h2 className="text-base sm:text-lg md:text-xl font-semibold">Today's Reflection</h2>
-        <DailyPrompt />
+        <DailyPrompt stabilizationPrompt={pulseStatus?.stabilizationPrompt ?? null} />
+
+        {/* Stabilization support card — shown for 3 days after alert trigger, no clinical language */}
+        {pulseStatus?.stabilizationActive && (
+          <div className="rounded-lg p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50">
+            <p className="text-sm text-amber-900 dark:text-amber-200 leading-relaxed italic">
+              "Integration isn't always linear. Some periods are heavier than others — that's not failure, that's the process. If this week has felt harder than you can hold alone, reaching out is a sign of wisdom."
+            </p>
+            <a
+              href="https://wa.me/51916499055"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 mt-3 text-sm font-medium text-amber-800 dark:text-amber-300 underline underline-offset-2"
+              data-testid="link-stabilization-connect"
+            >
+              <MessageCircle className="h-3.5 w-3.5" />
+              Connect with Paojilhuasca
+              <ExternalLink className="h-3 w-3" />
+            </a>
+          </div>
+        )}
       </div>
 
       {/* Creative Expression - 1st & 15th of each month */}
@@ -272,5 +312,6 @@ export default function Dashboard() {
         </div>
       </Card>
     </div>
+    </>
   );
 }

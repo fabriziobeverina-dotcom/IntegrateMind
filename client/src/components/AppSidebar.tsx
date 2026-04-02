@@ -1,4 +1,4 @@
-import { BookOpen, Compass, Users, TrendingUp, User, Settings, Home, Shield, Activity, BookIcon, VideoIcon, BarChart3 } from "lucide-react";
+import { BookOpen, Compass, Users, TrendingUp, User, Settings, Home, Shield, Activity, BookIcon, VideoIcon, BarChart3, HeartHandshake } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -84,6 +84,11 @@ const adminNavItems = [
     title: "Manage Videos",
     url: "/admin/videos",
     icon: VideoIcon,
+  },
+  {
+    title: "Wellbeing Monitor",
+    url: "/admin/wellbeing",
+    icon: HeartHandshake,
   },
 ];
 

@@ -6,6 +6,13 @@ import { setupAuth, isAuthenticated, isAdmin } from "./replitAuth";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
 import { reminderScheduler } from "./reminderScheduler";
+import {
+  setupWellbeingScheduler,
+  isPulseCheckDue,
+  processPulseSubmission,
+  getStabilizationPrompt,
+  STABILIZATION_PROMPTS,
+} from "./wellbeingChecker";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication middleware
@@ -1895,6 +1902,116 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to complete onboarding" });
     }
   });
+
+  // ─── Wellbeing system routes ─────────────────────────────────────────────────
+
+  // Check if weekly pulse is due + whether stabilization card should show
+  app.get('/api/wellbeing/pulse-status', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const wb = await storage.getUserWellbeing(userId);
+      res.json({
+        pulseCheckDue: isPulseCheckDue(wb),
+        stabilizationActive: (wb?.stabilizationDaysRemaining ?? 0) > 0,
+        stabilizationPrompt: (wb?.stabilizationDaysRemaining ?? 0) > 0
+          ? getStabilizationPrompt(wb?.stabilizationPromptIndex ?? 0)
+          : null,
+        alertStatus: wb?.alertStatus ?? 'none',
+      });
+    } catch (error) {
+      console.error("Error fetching pulse status:", error);
+      res.status(500).json({ message: "Failed to fetch pulse status" });
+    }
+  });
+
+  // Submit weekly pulse check answers
+  app.post('/api/wellbeing/pulse', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { q1, q2, q3 } = req.body;
+      if (![q1, q2, q3].every(q => Number.isInteger(q) && q >= 1 && q <= 5)) {
+        return res.status(400).json({ message: "Each answer must be an integer 1–5" });
+      }
+      const { triggered } = await processPulseSubmission(userId, q1, q2, q3);
+      res.json({ ok: true, triggered });
+    } catch (error) {
+      console.error("Error submitting pulse:", error);
+      res.status(500).json({ message: "Failed to submit pulse check" });
+    }
+  });
+
+  // Admin — all users wellbeing data
+  app.get('/api/admin/wellbeing', isAdmin, async (req: any, res) => {
+    try {
+      const rows = await storage.getAllUsersWithWellbeing();
+      // Compute days since last journal for each user
+      const result = await Promise.all(rows.map(async ({ user, wellbeing }) => {
+        const entries = await storage.getUserJournalEntries(user.id, 1);
+        const lastEntry = entries[0];
+        const daysSinceJournal = lastEntry
+          ? Math.floor((Date.now() - new Date(lastEntry.createdAt!).getTime()) / (1000 * 60 * 60 * 24))
+          : null;
+        const pulseHistory = (wellbeing?.pulseHistory ?? []) as any[];
+        const lastPulse = pulseHistory[pulseHistory.length - 1] ?? null;
+        const prevPulse = pulseHistory[pulseHistory.length - 2] ?? null;
+        return {
+          userId: user.id,
+          displayName: [user.firstName, user.lastName].filter(Boolean).join(' ') || user.name || 'Anonymous',
+          daysSinceJournal,
+          lastPulse,
+          scoreDelta: (lastPulse && prevPulse) ? lastPulse.composite - prevPulse.composite : null,
+          flags: wellbeing?.flags ?? [],
+          alertStatus: wellbeing?.alertStatus ?? 'none',
+          alertTriggeredAt: wellbeing?.alertTriggeredAt ?? null,
+          facilitatorNote: wellbeing?.facilitatorNote ?? null,
+        };
+      }));
+      res.json(result);
+    } catch (error) {
+      console.error("Error fetching admin wellbeing:", error);
+      res.status(500).json({ message: "Failed to fetch wellbeing data" });
+    }
+  });
+
+  // Admin — mark alert resolved
+  app.post('/api/admin/wellbeing/:userId/resolve', isAdmin, async (req: any, res) => {
+    try {
+      const { userId } = req.params;
+      const { note } = req.body;
+      await storage.resolveWellbeingAlert(userId, note);
+      res.json({ ok: true });
+    } catch (error) {
+      console.error("Error resolving wellbeing alert:", error);
+      res.status(500).json({ message: "Failed to resolve alert" });
+    }
+  });
+
+  // Debug route — manually set wellbeing state (development only)
+  if (process.env.NODE_ENV !== 'production') {
+    app.post('/debug/wellbeing-test', isAuthenticated, async (req: any, res) => {
+      try {
+        const userId = req.user.claims.sub;
+        const { alertStatus, flags, stabilizationDaysRemaining, forcePulseDue } = req.body;
+        const update: any = {};
+        if (alertStatus) update.alertStatus = alertStatus;
+        if (Array.isArray(flags)) update.flags = flags;
+        if (typeof stabilizationDaysRemaining === 'number') update.stabilizationDaysRemaining = stabilizationDaysRemaining;
+        if (forcePulseDue) update.lastPulseDate = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000);
+        if (alertStatus === 'triggered') {
+          update.alertTriggeredAt = new Date();
+          update.stabilizationDaysRemaining = stabilizationDaysRemaining ?? 3;
+        }
+        const wb = await storage.upsertUserWellbeing(userId, update);
+        res.json({ ok: true, wellbeing: wb });
+      } catch (error) {
+        console.error("Debug wellbeing test error:", error);
+        res.status(500).json({ message: "Debug error" });
+      }
+    });
+  }
+
+  // Start wellbeing scheduler
+  setupWellbeingScheduler();
 
   const httpServer = createServer(app);
   return httpServer;

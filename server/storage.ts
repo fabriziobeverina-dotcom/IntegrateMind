@@ -64,7 +64,11 @@ import {
   wellbeingCheckins,
   dreamJournals,
   creativeExpressions,
-  practiceCompletions
+  practiceCompletions,
+  userWellbeing,
+  type UserWellbeing,
+  type WellbeingFlag,
+  type PulseRecord
 } from "@shared/schema";
 
 export interface IStorage {
@@ -219,6 +223,13 @@ export interface IStorage {
   getSiteSetting(key: string): Promise<string | null>;
   setSiteSetting(key: string, value: string): Promise<void>;
   getAllSiteSettings(): Promise<Record<string, string>>;
+
+  // Wellbeing / crisis detection
+  getUserWellbeing(userId: string): Promise<UserWellbeing | null>;
+  upsertUserWellbeing(userId: string, data: Partial<Omit<UserWellbeing, 'userId'>>): Promise<UserWellbeing>;
+  getAllUsersWithWellbeing(): Promise<Array<{ user: User; wellbeing: UserWellbeing | null }>>;
+  resolveWellbeingAlert(userId: string, note?: string): Promise<void>;
+  getAllUsersForFlagCheck(): Promise<User[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1186,6 +1197,44 @@ export class DatabaseStorage implements IStorage {
   async getAllSiteSettings(): Promise<Record<string, string>> {
     const rows = await this.db.select().from(siteSettings);
     return Object.fromEntries(rows.map(r => [r.key, r.value ?? '']));
+  }
+
+  // ─── Wellbeing / crisis detection ──────────────────────────────────────────
+
+  async getUserWellbeing(userId: string): Promise<UserWellbeing | null> {
+    const [row] = await this.db.select().from(userWellbeing).where(eq(userWellbeing.userId, userId)).limit(1);
+    return row ?? null;
+  }
+
+  async upsertUserWellbeing(userId: string, data: Partial<Omit<UserWellbeing, 'userId'>>): Promise<UserWellbeing> {
+    const [row] = await this.db.insert(userWellbeing)
+      .values({ userId, ...data, updatedAt: new Date() })
+      .onConflictDoUpdate({
+        target: userWellbeing.userId,
+        set: { ...data, updatedAt: new Date() }
+      })
+      .returning();
+    return row;
+  }
+
+  async getAllUsersWithWellbeing(): Promise<Array<{ user: User; wellbeing: UserWellbeing | null }>> {
+    const allUsers = await this.db.select().from(users).orderBy(desc(users.createdAt));
+    const wellbeingRows = await this.db.select().from(userWellbeing);
+    const wellbeingMap = new Map(wellbeingRows.map(w => [w.userId, w]));
+    return allUsers.map(u => ({ user: u, wellbeing: wellbeingMap.get(u.id) ?? null }));
+  }
+
+  async resolveWellbeingAlert(userId: string, note?: string): Promise<void> {
+    await this.upsertUserWellbeing(userId, {
+      alertStatus: 'resolved',
+      alertResolvedAt: new Date(),
+      stabilizationDaysRemaining: 0,
+      ...(note !== undefined ? { facilitatorNote: note } : {}),
+    });
+  }
+
+  async getAllUsersForFlagCheck(): Promise<User[]> {
+    return this.db.select().from(users);
   }
 }
 

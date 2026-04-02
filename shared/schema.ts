@@ -496,3 +496,31 @@ export const siteSettings = pgTable("site_settings", {
   value: text("value"),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
+
+// User wellbeing — crisis detection & facilitator alert system
+export const userWellbeing = pgTable("user_wellbeing", {
+  userId: varchar("user_id").primaryKey().references(() => users.id),
+  // Behavioral flags set by daily cron (JSON array of {name, setAt})
+  flags: jsonb("flags").default([]),
+  // Weekly pulse history (JSON array of {date, q1, q2, q3, composite})
+  pulseHistory: jsonb("pulse_history").default([]),
+  // Alert status
+  alertStatus: text("alert_status").default("none"), // none | watching | triggered | resolved
+  alertTriggeredAt: timestamp("alert_triggered_at"),
+  alertResolvedAt: timestamp("alert_resolved_at"),
+  // Stabilization prompt rotation (0–4)
+  stabilizationPromptIndex: integer("stabilization_prompt_index").default(0),
+  // How many more days to show the stabilization card (set to 3 on trigger)
+  stabilizationDaysRemaining: integer("stabilization_days_remaining").default(0),
+  // When the stabilization period started
+  stabilizationStartedAt: timestamp("stabilization_started_at"),
+  // Last time the weekly pulse was shown
+  lastPulseDate: timestamp("last_pulse_date"),
+  // Facilitator note written from admin dashboard
+  facilitatorNote: text("facilitator_note"),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type UserWellbeing = typeof userWellbeing.$inferSelect;
+export type WellbeingFlag = { name: string; setAt: string };
+export type PulseRecord = { date: string; q1: number; q2: number; q3: number; composite: number };
