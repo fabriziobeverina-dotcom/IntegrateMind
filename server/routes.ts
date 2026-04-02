@@ -307,6 +307,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Share summary of last 7 days with facilitator
+  app.get('/api/journal/share-summary', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      const allEntries = await storage.getUserJournalEntries(userId, 100);
+
+      // Only include non-private entries from the last 7 days
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+      const recentEntries = allEntries
+        .filter(e => !e.isPrivate && new Date(e.createdAt!) >= sevenDaysAgo)
+        .sort((a, b) => new Date(a.createdAt!).getTime() - new Date(b.createdAt!).getTime());
+
+      const facilitatorWhatsapp = await storage.getSiteSetting('whatsapp_number');
+
+      const userName = user
+        ? [user.firstName, user.lastName].filter(Boolean).join(' ') || user.name || 'A participant'
+        : 'A participant';
+
+      res.json({
+        userName,
+        entries: recentEntries,
+        facilitatorWhatsapp: facilitatorWhatsapp || null,
+        periodStart: sevenDaysAgo.toISOString(),
+        periodEnd: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error("Error building share summary:", error);
+      res.status(500).json({ message: "Failed to build share summary" });
+    }
+  });
+
   app.get('/api/journal/search', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;

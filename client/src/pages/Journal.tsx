@@ -11,6 +11,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -28,9 +30,14 @@ import {
   Edit3,
   Trash2,
   Lock,
-  Globe
+  Globe,
+  Share2,
+  Copy,
+  MessageCircle,
+  Mail,
+  CheckCheck
 } from "lucide-react";
-import { format } from "date-fns";
+import { format, subDays } from "date-fns";
 
 const journalEntrySchema = z.object({
   title: z.string().min(1, "Title is required").max(200, "Title must be less than 200 characters"),
@@ -83,10 +90,84 @@ const moodEmojis = {
   10: { icon: Heart, label: "Excellent", color: "text-green-700" }
 };
 
+interface ShareSummary {
+  userName: string;
+  entries: JournalEntry[];
+  facilitatorWhatsapp: string | null;
+  periodStart: string;
+  periodEnd: string;
+}
+
+function buildShareText(summary: ShareSummary): string {
+  const start = format(new Date(summary.periodStart), 'MMM d');
+  const end = format(new Date(summary.periodEnd), 'MMM d, yyyy');
+  const lines: string[] = [
+    `Integration Journey — Last 7 Days`,
+    `Shared by: ${summary.userName}`,
+    `Period: ${start} – ${end}`,
+    ``,
+  ];
+
+  if (summary.entries.length === 0) {
+    lines.push('No journal entries in the past 7 days.');
+  } else {
+    summary.entries.forEach((entry) => {
+      const date = format(new Date(entry.createdAt), 'EEE, MMM d');
+      const moodStr = entry.mood ? `Mood: ${entry.mood}/10` : '';
+      const excerpt = entry.content.length > 300
+        ? entry.content.slice(0, 300).trimEnd() + '...'
+        : entry.content;
+      lines.push(`— ${date}${moodStr ? '  |  ' + moodStr : ''}`);
+      lines.push(`"${entry.title}"`);
+      lines.push(excerpt);
+      if (entry.tags && entry.tags.length > 0) {
+        lines.push(`Tags: ${entry.tags.map(t => '#' + t).join(' ')}`);
+      }
+      lines.push('');
+    });
+  }
+
+  lines.push('Sent from Integration Compass');
+  return lines.join('\n');
+}
+
 export default function Journal() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("write");
+  const [showShareDialog, setShowShareDialog] = useState(false);
+  const [copied, setCopied] = useState(false);
   const { toast } = useToast();
+
+  // Share summary query — only runs when dialog is open
+  const { data: shareSummary, isLoading: shareLoading } = useQuery<ShareSummary>({
+    queryKey: ['/api/journal/share-summary'],
+    enabled: showShareDialog,
+  });
+
+  const handleCopy = async () => {
+    if (!shareSummary) return;
+    await navigator.clipboard.writeText(buildShareText(shareSummary));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+    toast({ title: "Copied to clipboard", description: "Paste it anywhere to share." });
+  };
+
+  const handleWhatsApp = () => {
+    if (!shareSummary) return;
+    const text = encodeURIComponent(buildShareText(shareSummary));
+    const number = shareSummary.facilitatorWhatsapp
+      ? shareSummary.facilitatorWhatsapp.replace(/[^0-9]/g, '')
+      : '';
+    const url = number ? `https://wa.me/${number}?text=${text}` : `https://wa.me/?text=${text}`;
+    window.open(url, '_blank');
+  };
+
+  const handleEmail = () => {
+    if (!shareSummary) return;
+    const subject = encodeURIComponent('My Integration Journey — Last 7 Days');
+    const body = encodeURIComponent(buildShareText(shareSummary));
+    window.open(`mailto:?subject=${subject}&body=${body}`, '_blank');
+  };
 
   // Fetch today's prompt
   const { data: todayPrompt } = useQuery({
@@ -234,9 +315,20 @@ export default function Journal() {
 
   return (
     <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Journal</h1>
-        <p className="text-muted-foreground">Your personal integration journey</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-3xl font-bold">Journal</h1>
+          <p className="text-muted-foreground">Your personal integration journey</p>
+        </div>
+        <Button
+          variant="outline"
+          onClick={() => setShowShareDialog(true)}
+          data-testid="button-share-facilitator"
+          className="flex items-center gap-2"
+        >
+          <Share2 className="h-4 w-4" />
+          Share with Facilitator
+        </Button>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -538,6 +630,85 @@ export default function Journal() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Share with Facilitator Dialog */}
+      <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Share2 className="h-5 w-5" />
+              Share with Your Facilitator
+            </DialogTitle>
+            <DialogDescription>
+              A summary of your last 7 days of journal entries will be shared. Only entries marked as public are included.
+            </DialogDescription>
+          </DialogHeader>
+
+          {shareLoading ? (
+            <div className="py-8 text-center text-muted-foreground">Building your summary...</div>
+          ) : shareSummary ? (
+            <div className="space-y-4">
+              {/* Entry count info */}
+              <div className="flex items-center justify-between text-sm text-muted-foreground bg-muted rounded-md px-3 py-2">
+                <span>
+                  {shareSummary.entries.length === 0
+                    ? 'No public entries in the last 7 days'
+                    : `${shareSummary.entries.length} entr${shareSummary.entries.length === 1 ? 'y' : 'ies'} from ${format(new Date(shareSummary.periodStart), 'MMM d')} – ${format(new Date(shareSummary.periodEnd), 'MMM d')}`}
+                </span>
+                <Lock className="h-3.5 w-3.5" />
+              </div>
+
+              {/* Preview */}
+              <ScrollArea className="h-52 rounded-md border bg-muted/30 p-3">
+                <pre className="text-xs text-muted-foreground whitespace-pre-wrap font-sans leading-relaxed">
+                  {buildShareText(shareSummary)}
+                </pre>
+              </ScrollArea>
+
+              {/* Share actions */}
+              <div className="grid grid-cols-1 gap-2">
+                {shareSummary.facilitatorWhatsapp && (
+                  <Button
+                    onClick={handleWhatsApp}
+                    className="w-full"
+                    data-testid="button-share-whatsapp"
+                  >
+                    <MessageCircle className="h-4 w-4 mr-2" />
+                    Send via WhatsApp to Facilitator
+                  </Button>
+                )}
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={handleCopy}
+                    data-testid="button-share-copy"
+                  >
+                    {copied ? (
+                      <><CheckCheck className="h-4 w-4 mr-2" />Copied</>
+                    ) : (
+                      <><Copy className="h-4 w-4 mr-2" />Copy Text</>
+                    )}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleEmail}
+                    data-testid="button-share-email"
+                  >
+                    <Mail className="h-4 w-4 mr-2" />
+                    Send by Email
+                  </Button>
+                </div>
+              </div>
+
+              {!shareSummary.facilitatorWhatsapp && (
+                <p className="text-xs text-muted-foreground text-center">
+                  WhatsApp sharing is available once your facilitator's number is configured.
+                </p>
+              )}
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
