@@ -10,14 +10,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication middleware
   await setupAuth(app);
 
+  // Resolve public dir (works in both dev and prod)
+  const publicDir = process.env.NODE_ENV === 'production'
+    ? path.resolve(import.meta.dirname, 'public')
+    : path.resolve(import.meta.dirname, '..', 'client', 'public');
+
   // Serve manifest.json with correct MIME type and open CORS so PWABuilder can validate
   app.get('/manifest.json', (req, res) => {
     res.setHeader('Content-Type', 'application/manifest+json');
     res.setHeader('Access-Control-Allow-Origin', '*');
-    const manifestPath = process.env.NODE_ENV === 'production'
-      ? path.resolve(import.meta.dirname, 'public', 'manifest.json')
-      : path.resolve(import.meta.dirname, '..', 'client', 'public', 'manifest.json');
-    res.sendFile(manifestPath);
+    res.sendFile(path.join(publicDir, 'manifest.json'));
+  });
+
+  // Serve service worker with correct headers so PWABuilder can detect it
+  app.get('/sw.js', (req, res) => {
+    res.setHeader('Content-Type', 'application/javascript');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Service-Worker-Allowed', '/');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.sendFile(path.join(publicDir, 'sw.js'));
+  });
+
+  // Add Link header to HTML responses so crawlers find the manifest without parsing HTML
+  app.use((req, res, next) => {
+    if (!req.path.startsWith('/api') && !req.path.includes('.')) {
+      res.setHeader('Link', '</manifest.json>; rel="manifest"');
+    }
+    next();
   });
 
   // Auth routes  
