@@ -22,6 +22,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.sendFile(path.join(publicDir, 'manifest.json'));
   });
 
+  // Digital Asset Links — required for TWA APK to run standalone instead of in Chrome
+  // Set TWA_PACKAGE_NAME and TWA_SHA256_FINGERPRINT env vars once you have them from bubblewrap
+  app.get('/.well-known/assetlinks.json', (req, res) => {
+    const packageName = process.env.TWA_PACKAGE_NAME;
+    const fingerprint = process.env.TWA_SHA256_FINGERPRINT;
+    if (!packageName || !fingerprint) {
+      return res.status(404).json({ error: 'Asset links not configured' });
+    }
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.json([{
+      relation: ['delegate_permission/common.handle_all_urls'],
+      target: {
+        namespace: 'android_app',
+        package_name: packageName,
+        sha256_cert_fingerprints: [fingerprint],
+      },
+    }]);
+  });
+
   // Serve service worker with correct headers so PWABuilder can detect it
   app.get('/sw.js', (req, res) => {
     res.setHeader('Content-Type', 'application/javascript');
