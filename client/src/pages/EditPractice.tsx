@@ -79,7 +79,7 @@ export default function EditPractice() {
 
   const updatePracticeMutation = useMutation({
     mutationFn: async (data: EditPracticeForm) => {
-      const response = await fetch(`/api/practices/${id}`, {
+      const response = await fetch(`/api/admin/practices/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
