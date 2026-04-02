@@ -814,10 +814,11 @@ export class DatabaseStorage implements IStorage {
   }
   
   async seedIntegrationPrompts(prompts: InsertIntegrationPrompt[]): Promise<void> {
-    // Delete existing prompts first
+    // Delete dependent records first (foreign key constraints)
+    await this.db.delete(practiceCompletions);
+    await this.db.delete(userPromptProgress);
+    // Now delete and replace the prompts
     await this.db.delete(integrationPrompts);
-    
-    // Insert all prompts
     if (prompts.length > 0) {
       await this.db.insert(integrationPrompts).values(prompts);
     }
