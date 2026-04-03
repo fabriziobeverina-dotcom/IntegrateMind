@@ -51,6 +51,13 @@ export const users = pgTable("users", {
   seedsHistory: jsonb("seeds_history").default([]),
   plantStage: text("plant_stage").default("seed"), // seed | sprout | plant | flowering | tree
   badgesUnlocked: jsonb("badges_unlocked").default([]),
+  // Push notifications
+  pushPermissionAsked: boolean("push_permission_asked").default(false),
+  pushSubscription: jsonb("push_subscription"), // nullable — stores full PushSubscription JSON
+  somaticNudgeSentAt: timestamp("somatic_nudge_sent_at"), // nullable
+  somaticNudgeShownAt: timestamp("somatic_nudge_shown_at"), // nullable
+  somaticPracticeCompleted: boolean("somatic_practice_completed").default(false),
+  lastNotificationSentAt: timestamp("last_notification_sent_at"), // nullable
 });
 
 // Journal entries table

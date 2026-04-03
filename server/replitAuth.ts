@@ -29,6 +29,7 @@ export function getSession() {
   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
   const sessionStore = new PgSession({
     pool,
+    tableName: 'sessions',
     ttl: sessionTtl / 1000, // seconds
   });
 

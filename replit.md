@@ -103,6 +103,54 @@ The platform includes a progressive gamification system called **Seeds** that re
 
 **Design Rule:** Gamification UI hidden until first seeds earned (hasEarnedFirstSeeds). No leaderboards.
 
+### Somatic Practice Push Notification & In-App Nudge
+
+**Push Notification Infrastructure:**
+- Native Web Push API with service worker (`client/public/sw.js`)
+- Simplified utilities in `client/src/lib/push.ts`: `subscribeToPush()`, `unsubscribeFromPush()`, `getPushSubscriptionStatus()`, `savePushSubscription()`
+- VAPID keys in `VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY`/`VAPID_EMAIL` env vars
+- Full PushSubscription JSON stored in `users.push_subscription` (jsonb) + legacy `push_subscriptions` table
+
+**Permission Request Screen (`PushPermissionScreen.tsx`):**
+- Full-screen interstitial shown after ceremony onboarding completes
+- Controlled by `users.push_permission_asked` boolean (set immediately when shown)
+- "Yes, remind me" → calls `subscribeToPush()` → saves subscription
+- "Not now" → marks asked without subscribing, never shows again
+- Hidden entirely on browsers without Push API support
+
+**Somatic Nudge Condition (all must be true):**
+- `somatic_practice_completed = false`
+- User has ≥ 3 journal entries
+- ≥ 5 days since first journal entry
+- `somatic_nudge_sent_at` is null OR > 7 days ago
+
+**Daily Cron Job:**
+- Runs at 09:00 UTC via server-side timer in `reminderScheduler.ts`
+- Also triggerable via `POST /api/push/send-somatic-nudge` with `X-Cron-Secret` header
+- Only sends between 08:00–21:00 UTC
+- On 410/404 subscription errors: clears stored push_subscription
+
+**Global Throttle:** Max 1 push per user per 20 hours; `last_notification_sent_at` tracks last send
+
+**In-App Banner (Practices page):**
+- Amber inline banner shown above category filter when somatic nudge condition is true
+- Shows regardless of push notification permission status
+- Dismiss button: sets `somatic_nudge_shown_at` (hides for 7 days)
+- Tapping banner: filters to Somatic category + scrolls + amber pulse highlight
+- Hidden permanently once somatic practice is completed
+
+**New Users Columns:** `push_permission_asked`, `push_subscription` (jsonb), `somatic_nudge_sent_at`, `somatic_nudge_shown_at`, `somatic_practice_completed`, `last_notification_sent_at`
+
+**API Endpoints:**
+- `POST /api/push/subscribe` — saves subscription (new JSON format + legacy)
+- `POST /api/push/unsubscribe` — removes subscription
+- `POST /api/push/permission-asked` — marks permission screen shown
+- `GET /api/push/status` — returns subscribed, permission_asked, somatic_nudge_eligible, somatic_banner_visible
+- `POST /api/push/somatic-nudge-shown` — records banner dismissal
+- `POST /api/push/send-somatic-nudge` — cron trigger (X-Cron-Secret required)
+
+**DB Note:** `tableName: 'sessions'` set in connect-pg-simple config to match drizzle schema. Do NOT run `db:push --force` without checking — it previously dropped the session table.
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.

@@ -36,9 +36,11 @@ import InstallGuide from "@/pages/InstallGuide";
 import { NotificationScheduler } from "@/components/NotificationScheduler";
 import { OnboardingFlow } from "@/components/OnboardingFlow";
 import { CeremonyOnboarding } from "@/components/CeremonyOnboarding";
+import { PushPermissionScreen } from "@/components/PushPermissionScreen";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { SeedsAwardOverlay, BadgeUnlockOverlay } from "@/components/SeedsAward";
 import { PhaseTransitionInterstitial } from "@/components/PhaseIndicator";
+import { isPushSupported } from "@/lib/push";
 
 function AuthenticatedRouter() {
   return (
@@ -110,6 +112,11 @@ function AppContent() {
 
   const showOnboarding = !(user as any)?.onboardingComplete;
   const showCeremonyOnboarding = (user as any)?.onboardingComplete && !(user as any)?.onboardingCeremonyComplete;
+  const showPushPermission =
+    (user as any)?.onboardingComplete &&
+    (user as any)?.onboardingCeremonyComplete &&
+    !(user as any)?.pushPermissionAsked &&
+    isPushSupported();
 
   return (
     <ThemeProvider>
@@ -142,7 +149,10 @@ function AppContent() {
         </div>
         {showOnboarding && <OnboardingFlow />}
         {showCeremonyOnboarding && <CeremonyOnboarding />}
-        {!showOnboarding && !showCeremonyOnboarding && <PhaseTransitionInterstitial />}
+        {!showOnboarding && !showCeremonyOnboarding && showPushPermission && (
+          <PushPermissionScreen onDone={() => {}} />
+        )}
+        {!showOnboarding && !showCeremonyOnboarding && !showPushPermission && <PhaseTransitionInterstitial />}
         <InstallPrompt />
       </SidebarProvider>
     </ThemeProvider>

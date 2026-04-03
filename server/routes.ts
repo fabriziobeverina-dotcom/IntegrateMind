@@ -1201,6 +1201,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const isSomatic = practice.category?.toLowerCase() === 'somatic';
         gamification = await storage.awardSeeds(userId, 'practice_complete', { practiceId: id, isSomatic });
+        // Mark somatic practice as completed — permanently disables somatic nudge
+        if (isSomatic) {
+          await storage.updateUser(userId, { somaticPracticeCompleted: true } as any);
+        }
       } catch (e) { console.error('Seeds award error (practice):', e); }
 
       res.status(201).json({ ...completion, gamification });
@@ -1622,56 +1626,137 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/push/subscribe', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const { endpoint, p256dh, auth, userAgent } = req.body;
-      
-      // Validate required fields
+
+      // Support new format: { subscription: { endpoint, keys: { p256dh, auth } } }
+      // and legacy format: { endpoint, p256dh, auth }
+      let endpoint: string, p256dh: string, auth: string, userAgent: string;
+      let fullSubscriptionJson: any;
+
+      if (req.body.subscription && req.body.subscription.endpoint) {
+        // New format — full PushSubscription JSON
+        fullSubscriptionJson = req.body.subscription;
+        endpoint = fullSubscriptionJson.endpoint;
+        p256dh = fullSubscriptionJson.keys?.p256dh;
+        auth = fullSubscriptionJson.keys?.auth;
+        userAgent = req.headers['user-agent'] || 'Unknown';
+      } else {
+        // Legacy format
+        ({ endpoint, p256dh, auth, userAgent } = req.body);
+        fullSubscriptionJson = { endpoint, keys: { p256dh, auth } };
+      }
+
       if (!endpoint || !p256dh || !auth) {
         return res.status(400).json({ message: "Missing required subscription data" });
       }
-      
-      // Create push subscription
-      const subscription = await storage.createPushSubscription({
-        userId,
-        endpoint,
-        p256dh,
-        auth,
+
+      // Save to legacy push_subscriptions table
+      await storage.createPushSubscription({
+        userId, endpoint, p256dh, auth,
         userAgent: userAgent || 'Unknown'
       });
-      
-      res.status(201).json({
-        message: "Push subscription saved successfully",
-        subscriptionId: subscription.id
-      });
+
+      // Also save to users.push_subscription for somatic nudge queries
+      await storage.updateUser(userId, {
+        pushSubscription: fullSubscriptionJson,
+        pushPermissionAsked: true,
+      } as any);
+
+      res.status(201).json({ success: true, message: "Push subscription saved successfully" });
     } catch (error) {
       console.error("Error saving push subscription:", error);
       res.status(500).json({ message: "Failed to save push subscription" });
     }
   });
-  
+
+  // Mark push permission screen as shown (called whether user accepts or declines)
+  app.post('/api/push/permission-asked', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      await storage.updateUser(userId, { pushPermissionAsked: true } as any);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error marking push permission asked:", error);
+      res.status(500).json({ message: "Failed to update permission state" });
+    }
+  });
+
   app.post('/api/push/unsubscribe', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      
-      // Deactivate all push subscriptions for this user
-      const success = await storage.deactivateUserPushSubscriptions(userId);
-      
-      if (success) {
-        res.json({ message: "Push subscription removed successfully" });
-      } else {
-        res.status(404).json({ message: "No active subscriptions found" });
-      }
+      await storage.deactivateUserPushSubscriptions(userId);
+      await storage.updateUser(userId, { pushSubscription: null } as any);
+      res.json({ success: true, message: "Push subscription removed successfully" });
     } catch (error) {
       console.error("Error removing push subscription:", error);
       res.status(500).json({ message: "Failed to remove push subscription" });
     }
   });
-  
+
+  // Push status + somatic nudge eligibility
+  app.get('/api/push/status', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      if (!user) return res.status(404).json({ message: "User not found" });
+
+      const userAny = user as any;
+      const eligible = await storage.isSomaticNudgeEligible(userId);
+
+      // Banner shows if eligible AND (shown_at is null OR > 7 days ago)
+      let bannerVisible = false;
+      if (eligible && !userAny.somaticPracticeCompleted) {
+        const shownAt = userAny.somaticNudgeShownAt ? new Date(userAny.somaticNudgeShownAt) : null;
+        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+        bannerVisible = !shownAt || shownAt < sevenDaysAgo;
+      }
+
+      const subscriptions = await storage.getUserPushSubscriptions(userId);
+
+      res.json({
+        subscribed: subscriptions.length > 0 || !!userAny.pushSubscription,
+        permission_asked: userAny.pushPermissionAsked ?? false,
+        somatic_nudge_eligible: eligible,
+        somatic_banner_visible: bannerVisible,
+        somatic_practice_completed: userAny.somaticPracticeCompleted ?? false,
+      });
+    } catch (error) {
+      console.error("Error fetching push status:", error);
+      res.status(500).json({ message: "Failed to fetch push status" });
+    }
+  });
+
+  // Dismiss somatic banner
+  app.post('/api/push/somatic-nudge-shown', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      await storage.updateUser(userId, { somaticNudgeShownAt: new Date() } as any);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error updating somatic nudge shown:", error);
+      res.status(500).json({ message: "Failed to update" });
+    }
+  });
+
+  // Cron endpoint — send somatic nudge to eligible users
+  app.post('/api/push/send-somatic-nudge', async (req, res) => {
+    const cronSecret = process.env.CRON_SECRET;
+    const provided = req.headers['x-cron-secret'];
+    if (!cronSecret || provided !== cronSecret) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    try {
+      const count = await reminderScheduler.runSomaticNudgeJob();
+      res.json({ success: true, sent: count });
+    } catch (error: any) {
+      console.error("Error running somatic nudge job:", error);
+      res.status(500).json({ message: error.message || "Failed to run somatic nudge job" });
+    }
+  });
+
   app.post('/api/push/test', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      
       await reminderScheduler.sendTestNotification(userId);
-      
       res.json({ 
         message: "Test notification sent successfully",
         note: "Check your device for the notification"

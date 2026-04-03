@@ -1,0 +1,299 @@
+FEATURE: Somatic Practice Push Notification & In-App Nudge
+Read the entire spec before writing any code. This feature has three distinct components: the push notification system setup, the somatic engagement detection logic, and the in-app banner. All three must work independently — the banner shows even if the user has declined push notification permission.
+
+PART 1 — PUSH NOTIFICATION INFRASTRUCTURE
+1.1 Implementation
+Use the Web Push API with a service worker. Do not use any third-party push notification service — implement natively.
+Create the following files if they don't exist:
+client/public/sw.js          — service worker
+client/src/lib/push.ts       — push subscription utilities
+1.2 Service worker (sw.js)
+javascriptself.addEventListener('push', function(event) {
+  if (!event.data) return;
+  
+  const data = event.data.json();
+  
+  const options = {
+    body: data.body,
+    icon: '/icons/icon-192.png',
+    badge: '/icons/badge-72.png',
+    tag: data.tag || 'paojilhuasca',
+    renotify: false,
+    requireInteraction: false,
+    data: {
+      url: data.url || '/'
+    }
+  };
+  
+  event.waitUntil(
+    self.registration.showNotification(data.title, options)
+  );
+});
+
+self.addEventListener('notificationclick', function(event) {
+  event.notification.close();
+  
+  event.waitUntil(
+    clients.matchAll({ type: 'window' }).then(function(clientList) {
+      const url = event.notification.data.url;
+      
+      for (const client of clientList) {
+        if (client.url === url && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      
+      if (clients.openWindow) {
+        return clients.openWindow(url);
+      }
+    })
+  );
+});
+1.3 Push subscription utilities (push.ts)
+Implement the following functions:
+typescript// Request permission and subscribe user to push
+export async function subscribeToPush(): Promise<boolean>
+
+// Unsubscribe user from push
+export async function unsubscribeFromPush(): Promise<void>
+
+// Check current subscription status
+export async function getPushSubscriptionStatus(): Promise<'granted' | 'denied' | 'default'>
+
+// Send subscription to server
+export async function savePushSubscription(subscription: PushSubscription): Promise<void>
+```
+
+`subscribeToPush` must:
+1. Check if service workers and push are supported — return false silently if not
+2. Register the service worker if not already registered
+3. Call `Notification.requestPermission()`
+4. If granted, call `registration.pushManager.subscribe()` with `userVisibleOnly: true` and the VAPID public key
+5. Send the resulting subscription object to `POST /api/push/subscribe`
+6. Return true on success, false on any failure
+
+Never throw errors to the UI from this function — catch everything and return false.
+
+**1.4 VAPID keys**
+
+Generate VAPID key pair on the server using the `web-push` npm package. Store as environment variables:
+```
+VAPID_PUBLIC_KEY
+VAPID_PRIVATE_KEY
+VAPID_CONTACT_EMAIL
+Add web-push to server dependencies. Initialize in server startup:
+typescriptimport webpush from 'web-push';
+
+webpush.setVapidDetails(
+  `mailto:${process.env.VAPID_CONTACT_EMAIL}`,
+  process.env.VAPID_PUBLIC_KEY!,
+  process.env.VAPID_PRIVATE_KEY!
+);
+```
+
+**1.5 Schema additions**
+
+Add to the users table:
+```
+push_subscription       jsonb, nullable
+push_permission_asked   boolean, default false  
+somatic_nudge_sent_at   timestamp, nullable
+somatic_nudge_shown_at  timestamp, nullable
+```
+
+`push_subscription` stores the full PushSubscription JSON object as returned by the browser.
+
+---
+
+**PART 2 — PERMISSION REQUEST FLOW**
+
+**2.1 When to ask**
+
+Do NOT request push permission on first app open. Do NOT request during auth.
+
+Request permission on the screen immediately after the ceremony date onboarding (the last onboarding screen before home). This is the correct moment — the user has just made a commitment by entering their ceremony date and is in a receptive state.
+
+If the user skipped onboarding (pressed "Skip for now"), request permission on their third app open instead. Track app open count in localStorage as `app_open_count`.
+
+**2.2 Permission request screen**
+
+Full screen interstitial, same visual style as onboarding screens. Shows only once — controlled by `push_permission_asked` boolean on user record. Set to true immediately when this screen is shown, before user responds.
+
+Icon: a simple bell SVG, sage green, centered.
+
+Title:
+*"Gentle reminders"*
+
+Body text:
+*"We keep notifications minimal — only when your practice might need a nudge. Never marketing, never noise."*
+
+Two buttons:
+- *"Yes, remind me"* (primary) — calls `subscribeToPush()`, proceeds to home
+- *"Not now"* (text link) — proceeds to home, does not ask again
+
+If `subscribeToPush()` returns false (permission denied by browser before our screen even showed, or unsupported), skip this screen entirely and set `push_permission_asked` to true silently.
+
+---
+
+**PART 3 — SOMATIC DETECTION LOGIC**
+
+**3.1 The condition**
+
+A user is flagged for somatic nudge when ALL of the following are true:
+
+- `somatic_practice_completed` is false (user has never completed a practice in the somatic category)
+- User has at least 3 journal entries logged total
+- At least 5 days have passed since the user's first journal entry
+- `somatic_nudge_sent_at` is null OR more than 7 days have passed since last nudge
+
+**3.2 Where this runs**
+
+Run as a daily server-side cron job at 09:00 local time (use UTC+user timezone if stored, otherwise UTC). The cron job:
+
+1. Queries all users matching the somatic nudge condition
+2. For each matching user with a valid `push_subscription`, sends the push notification
+3. Updates `somatic_nudge_sent_at` to now for each user processed
+4. Logs the count of notifications sent
+
+**3.3 Somatic practice tracking**
+
+When any practice is completed, check if its category is `somatic`. If yes, set `somatic_practice_completed` to true on the user record. This is permanent — once set to true, the nudge condition can never be true again for this user.
+
+---
+
+**PART 4 — THE PUSH NOTIFICATION**
+
+**4.1 Notification content**
+```
+title: "Your body is part of this too"
+body:  "Integration doesn't only happen in the mind. 
+        There's a somatic practice waiting for you — it takes 5 minutes."
+tag:   "somatic-nudge"
+url:   "/practices?category=somatic"
+4.2 Sending from server
+typescriptasync function sendSomaticNudge(userId: string): Promise<void> {
+  const user = await getUserWithSubscription(userId);
+  
+  if (!user.push_subscription) return;
+  
+  const payload = JSON.stringify({
+    title: "Your body is part of this too",
+    body: "Integration doesn't only happen in the mind. There's a somatic practice waiting for you — it takes 5 minutes.",
+    tag: "somatic-nudge",
+    url: "/practices?category=somatic"
+  });
+  
+  try {
+    await webpush.sendNotification(
+      user.push_subscription,
+      payload
+    );
+    
+    await updateUser(userId, { 
+      somatic_nudge_sent_at: new Date() 
+    });
+    
+  } catch (error: any) {
+    // Subscription expired or invalid — clean it up
+    if (error.statusCode === 410 || error.statusCode === 404) {
+      await updateUser(userId, { push_subscription: null });
+    }
+    // Log other errors but do not throw
+    console.error(`Push failed for user ${userId}:`, error.message);
+  }
+}
+4.3 Tap behavior
+On notification tap, open the app and navigate directly to the practices page with the somatic category pre-selected and scrolled into view. The URL /practices?category=somatic must trigger this behavior — handle the query param in the practices page component on mount.
+
+PART 5 — IN-APP BANNER
+5.1 Trigger
+When the user opens the practices tab, check the somatic nudge condition client-side (via a server query). If the condition is true, show the banner regardless of whether push notifications are enabled.
+5.2 Banner design
+Appears at the top of the practices page, above the category filters. Amber background (existing accent color). Rounded corners, consistent with card style. Not a modal — it sits inline in the page flow.
+Left side: a small body/wave SVG icon in forest green.
+Text:
+"You haven't tried a body-based practice yet. That's where a lot of the integration actually lives."
+Right side: an X button to dismiss.
+On dismiss: set somatic_nudge_shown_at to now in the DB. Hide the banner. Do not show again for 7 days.
+The banner also hides permanently (never shows again) once somatic_practice_completed is true.
+5.3 Banner tap behavior
+Tapping anywhere on the banner (except the X) scrolls smoothly to the somatic category section in the practice library and highlights it briefly (a gentle pulse animation, 1 second, using the amber accent color).
+
+PART 6 — GLOBAL NOTIFICATION THROTTLE
+This rule applies to all push notifications across the entire app, not just this feature.
+Maximum one push notification per user per day, regardless of how many triggers are active.
+Implement a notifications_sent_today check before any push send:
+typescriptasync function canSendPushToday(userId: string): Promise<boolean> {
+  const lastSent = await getLastNotificationSentAt(userId);
+  if (!lastSent) return true;
+  
+  const hoursSinceLastSent = 
+    (Date.now() - lastSent.getTime()) / (1000 * 60 * 60);
+    
+  return hoursSinceLastSent >= 20; // 20-hour window, not strict 24h
+}
+```
+
+Add to users table:
+```
+last_notification_sent_at    timestamp, nullable
+```
+
+Update this timestamp after every successful push send, regardless of notification type.
+
+If multiple notification types would fire on the same day for a user, use this priority order:
+
+1. Crisis/red flag alert (highest)
+2. Phase transition reminder
+3. Somatic nudge
+4. Streak reminder (if implemented later)
+
+Only the highest priority pending notification fires. Lower priority ones wait until the next eligible day.
+
+---
+
+**PART 7 — API ENDPOINTS**
+```
+POST /api/push/subscribe
+     body: { subscription: PushSubscription }
+     → saves subscription to user record
+     → returns { success: boolean }
+
+POST /api/push/unsubscribe  
+     body: {}
+     → clears subscription from user record
+     → returns { success: boolean }
+
+GET  /api/push/status
+     → returns { 
+         subscribed: boolean,
+         permission_asked: boolean,
+         somatic_nudge_eligible: boolean
+       }
+
+POST /api/push/send-somatic-nudge
+     → internal cron endpoint, protected with a cron secret header
+     → not callable from client
+     → triggers the full somatic nudge job
+```
+
+Protect the cron endpoint with a `X-Cron-Secret` header check against an environment variable `CRON_SECRET`. Return 401 if missing or incorrect.
+
+---
+
+**PART 8 — ENVIRONMENT VARIABLES NEEDED**
+```
+VAPID_PUBLIC_KEY        — generate with web-push generateVAPIDKeys()
+VAPID_PRIVATE_KEY       — generate with web-push generateVAPIDKeys()  
+VAPID_CONTACT_EMAIL     — your contact email
+CRON_SECRET             — random string, used to protect cron endpoints
+Add all four to the Replit Secrets panel. Do not hardcode any of these in the codebase.
+
+PART 9 — CONSTRAINTS
+
+Never send more than one push notification per user per day
+Never send push notifications between 21:00 and 08:00 user local time — if the cron fires in that window, queue the send for 09:00
+If push_subscription returns a 410 or 404 from the push service, immediately delete the stored subscription — it is expired and will never work again
+The in-app banner must work even if push notifications are declined or unsupported
+Do not show any push notification UI to users on browsers that do not support the Push API — check 'serviceWorker' in navigator && 'PushManager' in window before rendering any notification-related UI
+The somatic nudge must never fire for a user who has already completed any somatic practice, even if somatic_nudge_sent_at would otherwise allow it

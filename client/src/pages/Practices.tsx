@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { notifySeedsAwarded, notifyBadgeUnlocked } from "@/components/SeedsAward";
 import { ALL_BADGES } from "@/components/BadgeGrid";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Plus, Search, Play, Clock, User, Star, Trash2, Edit, Volume2, Video, CheckCircle, RotateCcw, Loader2 } from "lucide-react";
+import { Plus, Search, Play, Clock, User, Star, Trash2, Edit, Volume2, Video, CheckCircle, RotateCcw, Loader2, X } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 interface Practice {
@@ -57,10 +57,43 @@ export default function Practices() {
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [selectedPractice, setSelectedPractice] = useState<Practice | null>(null);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
+  const somaticSectionRef = useRef<HTMLDivElement>(null);
   const search = useSearch();
 
   const { data: user } = useQuery<{ isAdmin?: boolean }>({ queryKey: ["/api/auth/user"] });
   const isAdmin = (user as any)?.isAdmin;
+
+  const { data: pushStatus } = useQuery<{
+    somatic_banner_visible: boolean;
+    somatic_practice_completed: boolean;
+  }>({ queryKey: ["/api/push/status"] });
+
+  const dismissBannerMutation = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/push/somatic-nudge-shown"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/push/status"] });
+    },
+  });
+
+  const showSomaticBanner =
+    !bannerDismissed &&
+    pushStatus?.somatic_banner_visible === true &&
+    !pushStatus?.somatic_practice_completed;
+
+  function handleBannerDismiss() {
+    setBannerDismissed(true);
+    dismissBannerMutation.mutate();
+  }
+
+  function handleBannerClick() {
+    setCategoryFilter("Somatic");
+    setTimeout(() => {
+      somaticSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      somaticSectionRef.current?.classList.add("somatic-pulse");
+      setTimeout(() => somaticSectionRef.current?.classList.remove("somatic-pulse"), 1000);
+    }, 100);
+  }
 
   // Fetch signed URL for audio (bypasses auth/SW issues with <audio> element)
   const { data: audioUrlData, isLoading: audioUrlLoading } = useQuery<{ url: string }>({
@@ -83,10 +116,15 @@ export default function Practices() {
     queryKey: ["/api/practices"],
   });
 
-  // Auto-open dialog when navigated here with ?play=<id> (e.g. from Dashboard)
+  // Auto-open dialog when navigated here with ?play=<id>; auto-filter with ?category=somatic
   useEffect(() => {
-    if (!practices.length) return;
     const params = new URLSearchParams(search);
+    const categoryParam = params.get("category");
+    if (categoryParam) {
+      const mapped = categoryParam.charAt(0).toUpperCase() + categoryParam.slice(1).toLowerCase();
+      setCategoryFilter(mapped);
+    }
+    if (!practices.length) return;
     const playId = params.get("play");
     if (playId && !selectedPractice) {
       const practice = practices.find((p) => p.id === playId);
@@ -205,6 +243,44 @@ export default function Practices() {
           Create Practice
         </Button>
       </div>
+
+      {/* Somatic nudge banner */}
+      {showSomaticBanner && (
+        <div
+          className="flex items-start gap-3 rounded-md bg-amber-100 dark:bg-amber-900/40 px-4 py-3 cursor-pointer"
+          onClick={handleBannerClick}
+          data-testid="banner-somatic-nudge"
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === "Enter" && handleBannerClick()}
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="w-5 h-5 mt-0.5 flex-shrink-0 text-[hsl(150,40%,32%)] dark:text-[hsl(150,40%,60%)]"
+            aria-hidden="true"
+          >
+            <path d="M12 2C8.5 2 6 4.5 6 7c0 2 1 3.5 2 5l1 3h6l1-3c1-1.5 2-3 2-5 0-2.5-2.5-5-6-5z" />
+            <path d="M9 17v1a3 3 0 0 0 6 0v-1" />
+          </svg>
+          <p className="flex-1 text-sm text-amber-900 dark:text-amber-100 leading-snug">
+            You haven't tried a body-based practice yet. That's where a lot of the integration actually lives.
+          </p>
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); handleBannerDismiss(); }}
+            className="flex-shrink-0 text-amber-700 dark:text-amber-300 hover:text-amber-900 dark:hover:text-amber-100 transition-colors"
+            data-testid="button-dismiss-somatic-banner"
+            aria-label="Dismiss"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">

@@ -146,7 +146,9 @@ export interface IStorage {
   createPushSubscription(subscription: InsertPushSubscription): Promise<PushSubscription>;
   deactivateUserPushSubscriptions(userId: string): Promise<boolean>;
   getActivePushSubscriptions(): Promise<PushSubscription[]>;
-  
+  isSomaticNudgeEligible(userId: string): Promise<boolean>;
+  getSomaticNudgeEligibleUsers(): Promise<User[]>;
+
   // Reminder scheduling
   getUsersWithRemindersAt(time: string): Promise<User[]>;
   
@@ -781,7 +783,55 @@ export class DatabaseStorage implements IStorage {
       .where(eq(pushSubscriptions.isActive, true))
       .orderBy(desc(pushSubscriptions.createdAt));
   }
-  
+
+  async isSomaticNudgeEligible(userId: string): Promise<boolean> {
+    const user = await this.getUser(userId);
+    if (!user) return false;
+    const userAny = user as any;
+
+    // Never eligible if somatic practice already completed
+    if (userAny.somaticPracticeCompleted) return false;
+
+    // Check journal entry count and first entry date
+    const journalResult = await this.db.execute(
+      sql`SELECT COUNT(*) as count, MIN(created_at) as first_entry FROM journal_entries WHERE user_id = ${userId}`
+    );
+    const row = (journalResult.rows ?? journalResult)[0] as any;
+    const count = Number(row?.count ?? 0);
+    if (count < 3) return false;
+
+    const firstEntry = row?.first_entry ? new Date(row.first_entry) : null;
+    if (!firstEntry) return false;
+    const daysSinceFirst = (Date.now() - firstEntry.getTime()) / (1000 * 60 * 60 * 24);
+    if (daysSinceFirst < 5) return false;
+
+    // Check somatic_nudge_sent_at — null or > 7 days ago
+    const sentAt = userAny.somaticNudgeSentAt ? new Date(userAny.somaticNudgeSentAt) : null;
+    if (sentAt) {
+      const daysSinceSent = (Date.now() - sentAt.getTime()) / (1000 * 60 * 60 * 24);
+      if (daysSinceSent < 7) return false;
+    }
+
+    return true;
+  }
+
+  async getSomaticNudgeEligibleUsers(): Promise<User[]> {
+    // Get all users who haven't completed somatic practice
+    const candidates = await this.db.execute(
+      sql`SELECT * FROM users WHERE somatic_practice_completed IS NOT TRUE AND push_subscription IS NOT NULL`
+    );
+    const rows = (candidates.rows ?? candidates) as any[];
+    const eligible: User[] = [];
+    for (const row of rows) {
+      // Map snake_case to camelCase for the user object
+      const user = await this.getUser(row.id);
+      if (user && await this.isSomaticNudgeEligible(row.id)) {
+        eligible.push(user);
+      }
+    }
+    return eligible;
+  }
+
   // Reminder scheduling
   async getUsersWithRemindersAt(time: string): Promise<User[]> {
     return await this.db.select()

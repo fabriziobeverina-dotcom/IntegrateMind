@@ -288,12 +288,97 @@ export class ReminderScheduler {
     }
   }
   
+  // Global notification throttle — max 1 push per user per 20 hours
+  private async canSendPushToday(userId: string): Promise<boolean> {
+    const user = await storage.getUser(userId);
+    if (!user) return false;
+    const lastSent = (user as any).lastNotificationSentAt;
+    if (!lastSent) return true;
+    const hoursSince = (Date.now() - new Date(lastSent).getTime()) / (1000 * 60 * 60);
+    return hoursSince >= 20;
+  }
+
+  // Send somatic nudge to a single user
+  async sendSomaticNudge(userId: string): Promise<boolean> {
+    if (!VAPID_CONFIGURED) return false;
+    if (!(await this.canSendPushToday(userId))) return false;
+
+    const user = await storage.getUser(userId);
+    if (!user) return false;
+    const pushSub = (user as any).pushSubscription as { endpoint: string; keys: { p256dh: string; auth: string } } | null;
+    if (!pushSub?.endpoint) return false;
+
+    const payload = JSON.stringify({
+      title: "Your body is part of this too",
+      body: "Integration doesn't only happen in the mind. There's a somatic practice waiting for you — it takes 5 minutes.",
+      tag: "somatic-nudge",
+      url: "/practices?category=somatic",
+    });
+
+    try {
+      await webpush.sendNotification(
+        { endpoint: pushSub.endpoint, keys: { p256dh: pushSub.keys.p256dh, auth: pushSub.keys.auth } },
+        payload,
+        {
+          TTL: 24 * 60 * 60,
+          urgency: 'normal',
+          vapidDetails: { subject: VAPID_EMAIL, publicKey: VAPID_PUBLIC_KEY!, privateKey: VAPID_PRIVATE_KEY! }
+        }
+      );
+      await storage.updateUser(userId, {
+        somaticNudgeSentAt: new Date(),
+        lastNotificationSentAt: new Date(),
+      } as any);
+      return true;
+    } catch (err: any) {
+      if (err?.statusCode === 410 || err?.statusCode === 404) {
+        await storage.updateUser(userId, { pushSubscription: null } as any);
+      }
+      console.error(`Somatic nudge push failed for user ${userId}:`, err?.message);
+      return false;
+    }
+  }
+
+  // Run the somatic nudge cron job — called from POST /api/push/send-somatic-nudge
+  async runSomaticNudgeJob(): Promise<number> {
+    const now = new Date();
+    const utcHour = now.getUTCHours();
+    // Only run between 08:00–21:00 UTC
+    if (utcHour < 8 || utcHour >= 21) {
+      console.log(`[Somatic nudge] Skipping — UTC hour ${utcHour} is outside send window`);
+      return 0;
+    }
+
+    const eligibleUsers = await storage.getSomaticNudgeEligibleUsers();
+    console.log(`[Somatic nudge] ${eligibleUsers.length} eligible users`);
+    let sent = 0;
+    for (const user of eligibleUsers) {
+      const success = await this.sendSomaticNudge(user.id);
+      if (success) sent++;
+    }
+    console.log(`[Somatic nudge] Sent ${sent} notifications`);
+    return sent;
+  }
+
   // Setup periodic reminder processing (would be called on server startup)
   setupScheduler(): void {
     // Check for reminders every minute
     setInterval(() => {
       this.processCurrentReminders();
     }, 60 * 1000); // 60 seconds
+
+    // Run somatic nudge job daily around 09:00 UTC
+    const scheduleSomaticJob = () => {
+      const now = new Date();
+      const nextRun = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 9, 0, 0, 0));
+      if (nextRun <= now) nextRun.setUTCDate(nextRun.getUTCDate() + 1);
+      const delay = nextRun.getTime() - now.getTime();
+      setTimeout(async () => {
+        try { await this.runSomaticNudgeJob(); } catch (e) { console.error('[Somatic nudge] Job error:', e); }
+        scheduleSomaticJob();
+      }, delay);
+    };
+    scheduleSomaticJob();
     
     console.log('Reminder scheduler initialized - checking every minute');
   }
