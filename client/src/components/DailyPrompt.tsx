@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Lightbulb, ArrowRight, CheckCircle2, Loader2, Target } from "lucide-react";
+import { Lightbulb, ArrowRight, CheckCircle2, Loader2, Target, Flame } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -25,6 +25,8 @@ interface IntegrationPrompt {
   prompt: string;
   practice: string;
   pointsValue: number;
+  phaseTags?: string[];
+  userPhase?: string;
   isCompleted?: boolean;
   dayNumber?: number;
 }
@@ -271,6 +273,19 @@ export function DailyPrompt({ stabilizationPrompt }: DailyPromptProps = {}) {
 
       {/* Content body */}
       <div className="p-4 sm:p-6 space-y-4">
+        {/* Acute phase warning banner */}
+        {prompt.userPhase === 'acute' && (
+          <div
+            data-testid="banner-acute-phase"
+            className="flex items-start gap-2.5 rounded-md border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 px-3 py-2.5 text-amber-700 dark:text-amber-400"
+          >
+            <Flame className="w-4 h-4 flex-shrink-0 mt-0.5" />
+            <p className="text-xs leading-relaxed">
+              <span className="font-semibold">Acute phase:</span> You're in your first two weeks. Approach today's prompt gently — rest and grounding come first. There is no rush.
+            </p>
+          </div>
+        )}
+
         {/* Prompt text — overridden with a grounding prompt during stabilization periods */}
         <div className="p-3 sm:p-4 rounded-lg bg-background border border-border">
           <p className="font-serif text-sm sm:text-base leading-relaxed" data-testid="text-prompt">

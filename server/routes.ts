@@ -1482,10 +1482,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if user has already completed this prompt
       const progress = await storage.getUserPromptProgressByPrompt(userId, prompt.id);
       
+      // Include user's current phase so frontend can show phase relevance
+      const userPhase = calculatePhase(user.ceremonyDateApprox ?? null, user.ceremonyWeeksAgo ?? null);
+
       res.json({ 
         ...prompt, 
         isCompleted: !!progress,
-        dayNumber: daysSinceStart + 1
+        dayNumber: daysSinceStart + 1,
+        userPhase: userPhase.phase,
+        userPhaseTags: userPhase.phase === 'none' ? [] : [userPhase.phase],
       });
     } catch (error) {
       console.error("Error fetching today's integration prompt:", error);
@@ -2090,9 +2095,122 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   }
 
+  // ─── Ceremony / Phase Awareness routes ──────────────────────────────────────
+
+  // GET /api/user/phase — returns current integration phase data
+  app.get('/api/user/phase', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      if (!user) return res.status(404).json({ message: "User not found" });
+
+      const phase = calculatePhase(user.ceremonyDateApprox ?? null, user.ceremonyWeeksAgo ?? null);
+      res.json({
+        phase: phase.phase,
+        label: phase.label,
+        description: phase.description,
+        daysSinceCeremony: phase.daysSince,
+        weeksSinceCeremony: phase.weeksSince,
+        medicine: user.ceremonyMedicine ?? [],
+        onboardingCeremonyComplete: user.onboardingCeremonyComplete ?? false,
+        phaseTransitionShown: (user.phaseTransitionShown as Record<string, boolean>) ?? {},
+      });
+    } catch (error) {
+      console.error("Error fetching phase:", error);
+      res.status(500).json({ message: "Failed to fetch phase" });
+    }
+  });
+
+  // POST /api/user/ceremony — saves ceremony date + medicine selection
+  app.post('/api/user/ceremony', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { weeksAgo, medicine } = req.body;
+
+      // weeksAgo: -1 = no ceremony, null = prefer not to say, 0-52+ = actual weeks
+      let ceremonyDateApprox: string | null = null;
+      if (weeksAgo !== null && weeksAgo !== undefined && weeksAgo >= 0) {
+        const d = new Date();
+        d.setDate(d.getDate() - weeksAgo * 7);
+        ceremonyDateApprox = d.toISOString().split('T')[0];
+      }
+
+      const phase = calculatePhase(ceremonyDateApprox, weeksAgo ?? null);
+
+      await storage.updateUser(userId, {
+        ceremonyWeeksAgo: weeksAgo ?? null,
+        ceremonyDateApprox: ceremonyDateApprox ?? undefined,
+        ceremonyMedicine: Array.isArray(medicine) ? medicine : [],
+        ceremonyPhase: phase.phase,
+        onboardingCeremonyComplete: true,
+      } as any);
+
+      res.json({ success: true, phase: phase.phase });
+    } catch (error) {
+      console.error("Error saving ceremony data:", error);
+      res.status(500).json({ message: "Failed to save ceremony data" });
+    }
+  });
+
+  // POST /api/user/phase/transition-seen — marks a phase transition overlay as seen
+  app.post('/api/user/phase/transition-seen', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { phase } = req.body;
+      const user = await storage.getUser(userId);
+      if (!user) return res.status(404).json({ message: "User not found" });
+
+      const existing = (user.phaseTransitionShown as Record<string, boolean>) ?? {};
+      const updated = { ...existing, [phase]: true };
+      await storage.updateUser(userId, { phaseTransitionShown: updated } as any);
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error marking transition seen:", error);
+      res.status(500).json({ message: "Failed to mark transition seen" });
+    }
+  });
+
   // Start wellbeing scheduler
   setupWellbeingScheduler();
 
   const httpServer = createServer(app);
   return httpServer;
+}
+
+// ─── Phase calculation utility ────────────────────────────────────────────────
+// Acute: 0-2 weeks (0-14 days), Integration: 2-8 weeks (15-56 days),
+// Deepening: 8-24 weeks (57-168 days), Long-term: 24+ weeks (169+ days)
+export function calculatePhase(
+  ceremonyDateApprox: string | null,
+  ceremonyWeeksAgo: number | null,
+): { phase: string; label: string; description: string; daysSince: number | null; weeksSince: number | null } {
+  if (ceremonyWeeksAgo === -1) {
+    return { phase: 'none', label: 'No ceremony', description: 'General integration support', daysSince: null, weeksSince: null };
+  }
+  if (ceremonyWeeksAgo === null && !ceremonyDateApprox) {
+    return { phase: 'none', label: 'Journey', description: 'Integration support', daysSince: null, weeksSince: null };
+  }
+
+  let daysSince: number;
+  if (ceremonyDateApprox) {
+    const d = new Date(ceremonyDateApprox);
+    daysSince = Math.floor((Date.now() - d.getTime()) / (1000 * 60 * 60 * 24));
+  } else if (ceremonyWeeksAgo !== null && ceremonyWeeksAgo >= 0) {
+    daysSince = ceremonyWeeksAgo * 7;
+  } else {
+    return { phase: 'none', label: 'Journey', description: 'Integration support', daysSince: null, weeksSince: null };
+  }
+
+  const weeksSince = Math.floor(daysSince / 7);
+
+  if (daysSince <= 14) {
+    return { phase: 'acute', label: 'Acute Phase', description: 'First 2 weeks after ceremony — gentle grounding focus', daysSince, weeksSince };
+  } else if (daysSince <= 56) {
+    return { phase: 'integration', label: 'Integration Phase', description: 'Weeks 2–8 — processing and embodying insights', daysSince, weeksSince };
+  } else if (daysSince <= 168) {
+    return { phase: 'deepening', label: 'Deepening Phase', description: 'Weeks 8–24 — deepening and stabilizing integration', daysSince, weeksSince };
+  } else {
+    return { phase: 'long_term', label: 'Long-term Integration', description: 'Beyond 6 months — sustained practice and growth', daysSince, weeksSince };
+  }
 }

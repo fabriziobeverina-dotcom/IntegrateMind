@@ -39,6 +39,13 @@ export const users = pgTable("users", {
   eveningReminderEnabled: boolean("evening_reminder_enabled").default(true),
   eveningReminderTime: varchar("evening_reminder_time").default("20:00"), // HH:MM format
   onboardingComplete: boolean("onboarding_complete").default(false),
+  // Ceremony / phase tracking
+  onboardingCeremonyComplete: boolean("onboarding_ceremony_complete").default(false),
+  ceremonyWeeksAgo: integer("ceremony_weeks_ago"), // nullable; -1 = no ceremony, null = prefer not to say
+  ceremonyDateApprox: text("ceremony_date_approx"), // stored as ISO date string YYYY-MM-DD
+  ceremonyMedicine: text("ceremony_medicine").array(),
+  ceremonyPhase: text("ceremony_phase").default("none"), // acute | integration | deepening | long_term | none
+  phaseTransitionShown: jsonb("phase_transition_shown").default({}),
   // Gamification — Seeds system
   seedsTotal: integer("seeds_total").default(0).notNull(),
   seedsHistory: jsonb("seeds_history").default([]),
@@ -234,6 +241,7 @@ export const integrationPrompts = pgTable("integration_prompts", {
   prompt: text("prompt").notNull(),
   practice: text("practice").notNull(), // The micro-practice activity
   pointsValue: integer("points_value").notNull().default(10), // Points earned for completing
+  phaseTags: text("phase_tags").array().default(['any']), // acute | integration | deepening | long_term | any
   createdAt: timestamp("created_at").defaultNow(),
 });
 

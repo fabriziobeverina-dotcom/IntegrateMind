@@ -35,8 +35,10 @@ import NotFound from "@/pages/not-found";
 import InstallGuide from "@/pages/InstallGuide";
 import { NotificationScheduler } from "@/components/NotificationScheduler";
 import { OnboardingFlow } from "@/components/OnboardingFlow";
+import { CeremonyOnboarding } from "@/components/CeremonyOnboarding";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { SeedsAwardOverlay, BadgeUnlockOverlay } from "@/components/SeedsAward";
+import { PhaseTransitionInterstitial } from "@/components/PhaseIndicator";
 
 function AuthenticatedRouter() {
   return (
@@ -107,6 +109,7 @@ function AppContent() {
   };
 
   const showOnboarding = !(user as any)?.onboardingComplete;
+  const showCeremonyOnboarding = (user as any)?.onboardingComplete && !(user as any)?.onboardingCeremonyComplete;
 
   return (
     <ThemeProvider>
@@ -138,6 +141,8 @@ function AppContent() {
           </div>
         </div>
         {showOnboarding && <OnboardingFlow />}
+        {showCeremonyOnboarding && <CeremonyOnboarding />}
+        {!showOnboarding && !showCeremonyOnboarding && <PhaseTransitionInterstitial />}
         <InstallPrompt />
       </SidebarProvider>
     </ThemeProvider>

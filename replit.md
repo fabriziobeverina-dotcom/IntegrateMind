@@ -24,6 +24,53 @@ The platform features a 77-day integration prompt cycle designed to guide users 
 - Users can repeat the journey as many times as needed
 - Progress tracking maintains history across multiple cycles
 
+### Ceremony Date / Phase Awareness System
+
+The platform includes a ceremony date onboarding and integration phase tracking system:
+
+**Onboarding Flow (2 screens after main onboarding):**
+- Screen 1 "Your Ceremony Journey": timing selection (8 options from "This week" to "6+ months ago", plus "No ceremony" and "Prefer not to say")
+- Screen 2 "Which medicine guided you?": multi-select medicine options (Ayahuasca, San Pedro, Psilocybin, Kambo, etc.)
+- Controlled by `onboarding_ceremony_complete` boolean on user record
+- Appears after `onboarding_complete = true` but before `onboarding_ceremony_complete = true`
+- POST `/api/user/ceremony` saves ceremony data
+
+**Phase Calculation (server-side):**
+- Acute: 0–14 days after ceremony
+- Integration: 15–56 days (weeks 2–8)
+- Deepening: 57–168 days (weeks 8–24)
+- Long-term: 169+ days (6+ months)
+- None: no ceremony recorded or "prefer not to say"
+
+**Phase UI Components:**
+- `PhaseIndicator`: collapsible chip on Dashboard showing current phase + week number
+- `PhaseTransitionInterstitial`: full-screen overlay when user enters a new phase for first time
+- Profile page: "Ceremony & Phase" card showing phase, week, and medicine tags
+
+**Phase-Tagged Prompts:**
+- `integration_prompts.phase_tags` column (text array)
+- Body + Environment: all `any`
+- Emotion: all `acute, integration`
+- Social: first 3 `integration, deepening, long_term`; rest `any`
+- Spirit: first 6 `any`; last 6 `integration, deepening, long_term`
+- Mental: first 6 `integration, deepening, long_term`; last 6 `any`
+- Milestone: all `deepening, long_term`
+
+**Acute Phase Banner:** Shown in DailyPrompt when `userPhase === 'acute'`
+
+**API Endpoints:**
+- `GET /api/user/phase`: Returns phase, label, description, daysSince, weeksSince, medicine, phaseTransitionShown
+- `POST /api/user/ceremony`: Saves weeksAgo + medicine, calculates phase, sets `onboarding_ceremony_complete = true`
+- `POST /api/user/phase/transition-seen`: Marks a phase transition overlay as seen
+
+**New DB Columns (users table):**
+- `onboarding_ceremony_complete` boolean
+- `ceremony_weeks_ago` integer (nullable; -1 = no ceremony)
+- `ceremony_date_approx` text (YYYY-MM-DD)
+- `ceremony_medicine` text[]
+- `ceremony_phase` text
+- `phase_transition_shown` jsonb
+
 ### Seeds Gamification System
 
 The platform includes a progressive gamification system called **Seeds** that rewards meaningful engagement:

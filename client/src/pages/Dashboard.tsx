@@ -13,6 +13,7 @@ import { PulseCheckInterstitial } from "@/components/PulseCheckInterstitial";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Plus, Compass, MessageCircle, ExternalLink } from "lucide-react";
+import { PhaseIndicator } from "@/components/PhaseIndicator";
 import logoImage from "@assets/ChatGPT Image Nov 10, 2025, 05_44_07 PM_1762767858454.png";
 import expertImage from "@assets/integration_expert.png";
 import tarotImage from "@assets/tarot_reader.png";
@@ -112,13 +113,14 @@ export default function Dashboard() {
           </div>
         </Card>
       ) : (
-        <div className="space-y-1 sm:space-y-2">
+        <div className="space-y-2">
           <h1 className="text-xl sm:text-2xl md:text-3xl font-bold break-words">
             Welcome back, {(user as any)?.firstName || (user as any)?.username || (user as any)?.email?.split('@')[0] || 'there'}
           </h1>
           <p className="text-xs sm:text-sm md:text-base text-muted-foreground">
             Continue your integration journey with today's practice and reflection.
           </p>
+          <PhaseIndicator />
         </div>
       )}
 
