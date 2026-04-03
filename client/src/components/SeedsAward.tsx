@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Leaf, Star, Flower2, TreePine, Sprout, Award } from "lucide-react";
 
 interface FloatingSeed {
@@ -16,23 +16,20 @@ export function notifySeedsAwarded(amount: number, x?: number, y?: number) {
 
 export function SeedsAwardOverlay() {
   const [items, setItems] = useState<FloatingSeed[]>([]);
-  const [counter, setCounter] = useState(0);
-
-  const notify = useCallback((amount: number, x?: number, y?: number) => {
-    const id = counter + 1;
-    setCounter(id);
-    const cx = x ?? (window.innerWidth / 2 + (Math.random() - 0.5) * 120);
-    const cy = y ?? (window.innerHeight * 0.6 + (Math.random() - 0.5) * 80);
-    setItems(prev => [...prev, { id, amount, x: cx, y: cy }]);
-    setTimeout(() => {
-      setItems(prev => prev.filter(i => i.id !== id));
-    }, 2200);
-  }, [counter]);
+  const idRef = useRef(0);
 
   useEffect(() => {
-    _notifyFn = notify;
+    _notifyFn = (amount: number, x?: number, y?: number) => {
+      const id = ++idRef.current;
+      const cx = x ?? (window.innerWidth / 2 + (Math.random() - 0.5) * 80);
+      const cy = y ?? (window.innerHeight * 0.55 + (Math.random() - 0.5) * 40);
+      setItems(prev => [...prev, { id, amount, x: cx, y: cy }]);
+      setTimeout(() => {
+        setItems(prev => prev.filter(i => i.id !== id));
+      }, 2600);
+    };
     return () => { _notifyFn = null; };
-  }, [notify]);
+  }, []);
 
   if (items.length === 0) return null;
 
@@ -41,11 +38,20 @@ export function SeedsAwardOverlay() {
       {items.map(item => (
         <div
           key={item.id}
-          className="absolute flex items-center gap-1 text-sm font-semibold seeds-float-up"
-          style={{ left: item.x, top: item.y, color: 'hsl(130 50% 35%)' }}
+          className="absolute seeds-float-up select-none"
+          style={{ left: item.x, top: item.y }}
         >
-          <Leaf className="w-3.5 h-3.5" />
-          <span>+{item.amount}</span>
+          <div
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold shadow-md"
+            style={{
+              background: 'hsl(130 45% 96%)',
+              color: 'hsl(130 50% 30%)',
+              border: '1px solid hsl(130 40% 78%)',
+            }}
+          >
+            <Leaf className="w-3.5 h-3.5" />
+            <span>+{item.amount} seeds</span>
+          </div>
         </div>
       ))}
     </div>

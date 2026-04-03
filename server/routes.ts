@@ -263,7 +263,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         if (wordCount >= 300) {
           gamification = await storage.awardSeeds(userId, 'journal_300_words', { entryId: entry.id, wordCount });
-        } else if (wordCount >= 100) {
+        } else {
+          // All journal entries earn seeds; 100+ words get the higher tier
           gamification = await storage.awardSeeds(userId, 'journal_100_words', { entryId: entry.id, wordCount });
         }
       } catch (e) { console.error('Seeds award error (journal):', e); }
