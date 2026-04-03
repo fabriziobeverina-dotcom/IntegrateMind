@@ -21,9 +21,12 @@ import {
   Moon,
   Anchor,
   CheckCircle,
-  Clock
+  Clock,
+  Leaf
 } from "lucide-react";
 import { format } from "date-fns";
+import { useGamification } from "@/hooks/useGamification";
+import { PlantVisualization } from "@/components/PlantVisualization";
 
 const progressEntrySchema = z.object({
   mood: z.string().optional(),
@@ -65,6 +68,7 @@ export default function Progress() {
 
   // Get today's date
   const today = new Date().toISOString().split('T')[0];
+  const { data: gamification } = useGamification();
 
   // Fetch aggregated progress data for chart
   const { data: progressData = [], isLoading: chartLoading } = useQuery({
@@ -169,6 +173,41 @@ export default function Progress() {
         <h1 className="text-3xl font-bold">Progress Tracking</h1>
         <p className="text-muted-foreground">Track your daily mood, sleep quality, and grounding levels</p>
       </div>
+
+      {/* Plant visualization — only shown after first seeds earned */}
+      {gamification?.hasEarnedFirstSeeds && (
+        <Card data-testid="plant-card">
+          <CardContent className="pt-6">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+              <PlantVisualization
+                stage={gamification.plantStage}
+                seedsTotal={gamification.seedsTotal}
+                seedsToNextStage={gamification.seedsToNextStage}
+              />
+              <div className="flex-1 space-y-3">
+                <div>
+                  <h3 className="font-semibold text-lg" style={{ fontFamily: '"Crimson Text", Georgia, serif' }}>
+                    Your Integration Plant
+                  </h3>
+                  <p className="text-sm text-muted-foreground mt-0.5">
+                    Every journal entry, practice, and reflection nurtures your growth.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2" data-testid="seeds-count">
+                  <Leaf className="w-4 h-4 text-chart-2" />
+                  <span className="font-semibold text-chart-2">{gamification.seedsTotal.toLocaleString()}</span>
+                  <span className="text-sm text-muted-foreground">seeds gathered</span>
+                </div>
+                {gamification.badgesUnlocked.length > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    {gamification.badgesUnlocked.length} badge{gamification.badgesUnlocked.length !== 1 ? 's' : ''} earned — view on your profile
+                  </p>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Tabs defaultValue="track" className="w-full">
         <TabsList className="grid w-full grid-cols-3">

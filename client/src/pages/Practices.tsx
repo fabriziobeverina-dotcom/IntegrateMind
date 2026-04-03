@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { notifySeedsAwarded, notifyBadgeUnlocked } from "@/components/SeedsAward";
+import { ALL_BADGES } from "@/components/BadgeGrid";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation, useSearch } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -101,9 +103,17 @@ export default function Practices() {
       if (!response.ok) throw new Error("Failed to complete practice");
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/practices"] });
       queryClient.invalidateQueries({ queryKey: ["/api/streaks"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/gamification/status"] });
+      if (data?.gamification?.seedsAwarded > 0) {
+        notifySeedsAwarded(data.gamification.seedsAwarded);
+        (data.gamification.newBadges ?? []).forEach((b: any) => {
+          const def = ALL_BADGES.find(d => d.id === b.id);
+          if (def) notifyBadgeUnlocked({ id: def.id, name: def.name, description: def.description });
+        });
+      }
       toast({
         title: "Practice Completed",
         description: "Great work! Your progress has been saved.",

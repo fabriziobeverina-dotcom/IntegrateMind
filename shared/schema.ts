@@ -39,6 +39,11 @@ export const users = pgTable("users", {
   eveningReminderEnabled: boolean("evening_reminder_enabled").default(true),
   eveningReminderTime: varchar("evening_reminder_time").default("20:00"), // HH:MM format
   onboardingComplete: boolean("onboarding_complete").default(false),
+  // Gamification — Seeds system
+  seedsTotal: integer("seeds_total").default(0).notNull(),
+  seedsHistory: jsonb("seeds_history").default([]),
+  plantStage: text("plant_stage").default("seed"), // seed | sprout | plant | flowering | tree
+  badgesUnlocked: jsonb("badges_unlocked").default([]),
 });
 
 // Journal entries table

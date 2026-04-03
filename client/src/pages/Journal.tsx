@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { notifySeedsAwarded, notifyBadgeUnlocked } from "@/components/SeedsAward";
+import { ALL_BADGES } from "@/components/BadgeGrid";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -238,9 +240,18 @@ export default function Journal() {
       if (!response.ok) throw new Error('Failed to create journal entry');
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['/api/journal/entries'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/gamification/status'] });
       journalForm.reset();
+      // Show seeds award feedback
+      if (data?.gamification?.seedsAwarded > 0) {
+        notifySeedsAwarded(data.gamification.seedsAwarded);
+        (data.gamification.newBadges ?? []).forEach((b: any) => {
+          const def = ALL_BADGES.find(d => d.id === b.id);
+          if (def) notifyBadgeUnlocked({ id: def.id, name: def.name, description: def.description });
+        });
+      }
       toast({
         title: "Journal entry created",
         description: "Your journal entry has been saved successfully."

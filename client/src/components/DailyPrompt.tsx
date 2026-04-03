@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { notifySeedsAwarded, notifyBadgeUnlocked } from "@/components/SeedsAward";
+import { ALL_BADGES } from "@/components/BadgeGrid";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -133,11 +135,19 @@ export function DailyPrompt({ stabilizationPrompt }: DailyPromptProps = {}) {
     mutationFn: async (data: { promptId: string; response: string }) => {
       return await apiRequest('POST', '/api/integration-prompts/complete', data);
     },
-    onSuccess: () => {
-      toast({ title: "Prompt completed!", description: `You earned ${prompt?.pointsValue || 10} points! Keep up the great work.` });
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['/api/integration-prompts/today'] });
       queryClient.invalidateQueries({ queryKey: ['/api/integration-prompts/points'] });
       queryClient.invalidateQueries({ queryKey: ['/api/integration-prompts/progress'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/gamification/status'] });
+      if (data?.gamification?.seedsAwarded > 0) {
+        notifySeedsAwarded(data.gamification.seedsAwarded);
+        (data.gamification.newBadges ?? []).forEach((b: any) => {
+          const def = ALL_BADGES.find(d => d.id === b.id);
+          if (def) notifyBadgeUnlocked({ id: def.id, name: def.name, description: def.description });
+        });
+      }
+      toast({ title: "Prompt completed!", description: `You earned ${prompt?.pointsValue || 10} points! Keep up the great work.` });
       setResponse("");
     },
     onError: (error: any) => {

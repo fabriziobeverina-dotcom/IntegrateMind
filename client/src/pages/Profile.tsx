@@ -7,12 +7,15 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { UserAvatar, AVATAR_PRESETS } from "@/components/UserAvatar";
 import { cn } from "@/lib/utils";
-import { Save, Loader2, Check } from "lucide-react";
+import { Save, Loader2, Check, Leaf } from "lucide-react";
+import { useGamification } from "@/hooks/useGamification";
+import { BadgeGrid } from "@/components/BadgeGrid";
 
 export default function Profile() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null);
+  const { data: gamification } = useGamification();
 
   const userData = user as any;
 
@@ -46,6 +49,8 @@ export default function Profile() {
     if (selectedAvatar) saveMutation.mutate(selectedAvatar);
   };
 
+  const showGamification = gamification?.hasEarnedFirstSeeds;
+
   return (
     <div className="space-y-6 max-w-xl">
       <div>
@@ -66,13 +71,32 @@ export default function Profile() {
               name={displayName}
               size="lg"
             />
-            <div>
+            <div className="flex-1 min-w-0">
               <p className="font-semibold">{displayName}</p>
               <p className="text-sm text-muted-foreground">{userData?.email}</p>
+              {showGamification && (
+                <div className="flex items-center gap-1 mt-1" data-testid="seeds-total-display">
+                  <Leaf className="w-3.5 h-3.5 text-chart-2" />
+                  <span className="text-sm font-medium text-chart-2">{gamification!.seedsTotal.toLocaleString()} seeds</span>
+                  <span className="text-xs text-muted-foreground ml-1 capitalize">· {gamification!.plantStage}</span>
+                </div>
+              )}
             </div>
           </div>
         </CardContent>
       </Card>
+
+      {/* Badges — only shown after first seeds earned */}
+      {showGamification && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Badges</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <BadgeGrid unlockedIds={gamification!.badgesUnlocked} />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Avatar picker */}
       <Card>

@@ -308,3 +308,15 @@
     inset: -1px;
   }
 }
+
+/* Seeds floating award animation */
+@keyframes seeds-float-up {
+  0%   { opacity: 0; transform: translateY(0) scale(0.8); }
+  15%  { opacity: 1; transform: translateY(-6px) scale(1); }
+  70%  { opacity: 1; transform: translateY(-38px) scale(1); }
+  100% { opacity: 0; transform: translateY(-60px) scale(0.95); }
+}
+
+.seeds-float-up {
+  animation: seeds-float-up 2.1s ease-out forwards;
+}

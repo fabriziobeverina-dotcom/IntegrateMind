@@ -24,6 +24,38 @@ The platform features a 77-day integration prompt cycle designed to guide users 
 - Users can repeat the journey as many times as needed
 - Progress tracking maintains history across multiple cycles
 
+### Seeds Gamification System
+
+The platform includes a progressive gamification system called **Seeds** that rewards meaningful engagement:
+
+**Seeds Award Actions:**
+- Journal entry (100+ words): 15 seeds; 300+ words: 25 seeds (idempotent per entry)
+- Prompt completion: 10 seeds
+- First completion in each category: 25 seeds bonus
+- Practice completion: 20 seeds (somatic: 30 seeds)
+- Community engagement (like/comment): 5 seeds
+- Wellbeing pulse check-in: 15 seeds
+- 7-day streak: 50 seeds (weekly, idempotent)
+- 21-day streak: 150 seeds (weekly, idempotent)
+- Cycle complete (77-day): 500 seeds
+
+**Plant Growth Stages** (cumulative seeds thresholds):
+- Seed (0–100), Sprout (101–300), Plant (301–700), Flowering (701–1500), Tree (1501+)
+
+**8 Badges:** first_root, body_awakened, full_spectrum, deep_diver, the_long_walk, full_circle, witness, tender
+
+**Frontend Components:**
+- `PlantVisualization.tsx`: SVG plant with 5 growth stages
+- `BadgeGrid.tsx`: 4×2 badge grid with tooltips showing locked/unlocked state
+- `SeedsAward.tsx`: Floating +N seeds animation overlay + full-screen badge unlock modal
+- `useGamification.ts`: TanStack Query hook for `/api/gamification/status`
+
+**API Endpoints:**
+- `GET /api/gamification/status`: Returns seedsTotal, plantStage, badgesUnlocked, hasEarnedFirstSeeds
+- `GET /api/gamification/history`: Paginated seeds history
+
+**Design Rule:** Gamification UI hidden until first seeds earned (hasEarnedFirstSeeds). No leaderboards.
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.

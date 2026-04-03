@@ -256,7 +256,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       
       const entry = await storage.createJournalEntry(entryData);
-      res.status(201).json(entry);
+
+      // Award seeds based on word count (fire-and-forget, don't block response)
+      const wordCount = content.trim().split(/\s+/).filter(Boolean).length;
+      let gamification: any = null;
+      try {
+        if (wordCount >= 300) {
+          gamification = await storage.awardSeeds(userId, 'journal_300_words', { entryId: entry.id, wordCount });
+        } else if (wordCount >= 100) {
+          gamification = await storage.awardSeeds(userId, 'journal_100_words', { entryId: entry.id, wordCount });
+        }
+      } catch (e) { console.error('Seeds award error (journal):', e); }
+
+      res.status(201).json({ ...entry, gamification });
     } catch (error) {
       console.error("Error creating journal entry:", error);
       res.status(500).json({ message: "Failed to create journal entry" });
@@ -1182,8 +1194,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         practiceId: id,
         notes: req.body.notes || null
       });
-      
-      res.status(201).json(completion);
+
+      // Award seeds — somatic practices earn more
+      let gamification: any = null;
+      try {
+        const isSomatic = practice.category?.toLowerCase() === 'somatic';
+        gamification = await storage.awardSeeds(userId, 'practice_complete', { practiceId: id, isSomatic });
+      } catch (e) { console.error('Seeds award error (practice):', e); }
+
+      res.status(201).json({ ...completion, gamification });
     } catch (error) {
       console.error("Error completing practice:", error);
       res.status(500).json({ message: "Failed to complete practice" });
@@ -1209,10 +1228,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const streaks = await storage.getUserStreaks(userId);
+
+      // Award streak bonuses if applicable
+      try {
+        if (streaks.journalStreak >= 21) {
+          await storage.awardSeeds(userId, 'streak_21', { weekOf: new Date().toISOString().slice(0, 7) });
+        } else if (streaks.journalStreak >= 7) {
+          await storage.awardSeeds(userId, 'streak_7', { weekOf: new Date().toISOString().slice(0, 7) });
+        }
+      } catch (e) {}
+
       res.json(streaks);
     } catch (error) {
       console.error("Error fetching streaks:", error);
       res.status(500).json({ message: "Failed to fetch streaks" });
+    }
+  });
+
+  // Gamification status
+  app.get('/api/gamification/status', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const status = await storage.getGamificationStatus(userId);
+      res.json(status);
+    } catch (error) {
+      console.error("Error fetching gamification status:", error);
+      res.status(500).json({ message: "Failed to fetch gamification status" });
+    }
+  });
+
+  app.get('/api/gamification/history', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const status = await storage.getGamificationStatus(userId);
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = 20;
+      const history = [...status.seedsHistory].reverse().slice((page - 1) * limit, page * limit);
+      res.json({ history, total: status.seedsHistory.length });
+    } catch (error) {
+      console.error("Error fetching seeds history:", error);
+      res.status(500).json({ message: "Failed to fetch seeds history" });
     }
   });
 
@@ -1260,7 +1315,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const success = await storage.likeCommunityPost(postId, userId);
       
       if (success) {
-        res.json({ message: "Post liked successfully" });
+        let gamification: any = null;
+        try { gamification = await storage.awardSeeds(userId, 'community_engage', { targetId: `like:${postId}` }); } catch (e) {}
+        res.json({ message: "Post liked successfully", gamification });
       } else {
         res.status(500).json({ message: "Failed to like post" });
       }
@@ -1315,8 +1372,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         content,
         isAnonymous: isAnonymous || false
       });
-      
-      res.status(201).json(comment);
+
+      let gamification: any = null;
+      try { gamification = await storage.awardSeeds(userId, 'community_engage', { targetId: `comment:${comment.id}` }); } catch (e) {}
+
+      res.status(201).json({ ...comment, gamification });
     } catch (error) {
       console.error("Error creating comment:", error);
       res.status(500).json({ message: "Failed to create comment" });
@@ -1468,8 +1528,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         response,
         pointsEarned
       });
-      
-      res.status(201).json(progress);
+
+      // Award seeds for prompt completion + first-category bonus
+      let gamification: any = null;
+      try {
+        gamification = await storage.awardSeeds(userId, 'prompt_complete', { promptId });
+        // Check if this is the first completion in this category
+        if (prompt?.category && prompt.category !== 'Milestone') {
+          const categoryBonus = await storage.awardSeeds(userId, 'prompt_first_category', { category: prompt.category });
+          if (categoryBonus.seedsAwarded > 0 && gamification) {
+            gamification.seedsAwarded += categoryBonus.seedsAwarded;
+            gamification.newTotal = categoryBonus.newTotal;
+            gamification.newBadges = [...(gamification.newBadges || []), ...(categoryBonus.newBadges || [])];
+          } else if (categoryBonus.seedsAwarded > 0) {
+            gamification = categoryBonus;
+          }
+        }
+      } catch (e) { console.error('Seeds award error (prompt):', e); }
+
+      res.status(201).json({ ...progress, gamification });
     } catch (error) {
       console.error("Error completing prompt:", error);
       res.status(500).json({ message: "Failed to complete prompt" });
@@ -1933,7 +2010,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Each answer must be an integer 1–5" });
       }
       const { triggered } = await processPulseSubmission(userId, q1, q2, q3);
-      res.json({ ok: true, triggered });
+      let gamification: any = null;
+      try { gamification = await storage.awardSeeds(userId, 'pulse_checkin', {}); } catch (e) {}
+      res.json({ ok: true, triggered, gamification });
     } catch (error) {
       console.error("Error submitting pulse:", error);
       res.status(500).json({ message: "Failed to submit pulse check" });

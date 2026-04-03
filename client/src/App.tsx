@@ -36,6 +36,7 @@ import InstallGuide from "@/pages/InstallGuide";
 import { NotificationScheduler } from "@/components/NotificationScheduler";
 import { OnboardingFlow } from "@/components/OnboardingFlow";
 import { InstallPrompt } from "@/components/InstallPrompt";
+import { SeedsAwardOverlay, BadgeUnlockOverlay } from "@/components/SeedsAward";
 
 function AuthenticatedRouter() {
   return (
@@ -152,6 +153,8 @@ function App() {
         <TooltipProvider skipDelayDuration={0} delayDuration={0}>
           <AppContent />
           <Toaster />
+          <SeedsAwardOverlay />
+          <BadgeUnlockOverlay />
         </TooltipProvider>
       </QueryClientProvider>
     </ErrorBoundary>

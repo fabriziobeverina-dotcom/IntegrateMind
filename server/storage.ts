@@ -1236,6 +1236,214 @@ export class DatabaseStorage implements IStorage {
   async getAllUsersForFlagCheck(): Promise<User[]> {
     return this.db.select().from(users);
   }
+
+  // ─── Gamification ────────────────────────────────────────────────────────────
+
+  private getPlantStage(seeds: number): string {
+    if (seeds >= 1501) return 'tree';
+    if (seeds >= 701)  return 'flowering';
+    if (seeds >= 301)  return 'plant';
+    if (seeds >= 101)  return 'sprout';
+    return 'seed';
+  }
+
+  private getSeedsToNextStage(seeds: number): { label: string; remaining: number } | null {
+    if (seeds >= 1501) return null;
+    if (seeds >= 701)  return { label: 'Tree', remaining: 1501 - seeds };
+    if (seeds >= 301)  return { label: 'Flowering', remaining: 701 - seeds };
+    if (seeds >= 101)  return { label: 'Plant', remaining: 301 - seeds };
+    return { label: 'Sprout', remaining: 101 - seeds };
+  }
+
+  async awardSeeds(
+    userId: string,
+    action: string,
+    metadata: Record<string, any> = {}
+  ): Promise<{
+    seedsAwarded: number;
+    newTotal: number;
+    newBadges: Array<{ id: string; unlocked_at: string }>;
+    plantStage: string;
+    previousPlantStage: string;
+  }> {
+    const user = await this.getUser(userId);
+    if (!user) return { seedsAwarded: 0, newTotal: 0, newBadges: [], plantStage: 'seed', previousPlantStage: 'seed' };
+
+    const seedsHistory: any[] = Array.isArray(user.seedsHistory) ? user.seedsHistory as any[] : [];
+    const badgesUnlocked: any[] = Array.isArray(user.badgesUnlocked) ? user.badgesUnlocked as any[] : [];
+    const currentSeeds = user.seedsTotal ?? 0;
+    const previousPlantStage = user.plantStage ?? 'seed';
+    const today = new Date().toISOString().slice(0, 10);
+
+    // Determine seeds and dedupKey per action
+    let seedsToAward = 0;
+    let dedupKey = '';
+
+    switch (action) {
+      case 'journal_100_words': {
+        dedupKey = `journal_words:${metadata.entryId}`;
+        // only award if we haven't already given any journal_words award for this entry
+        if (seedsHistory.some(h => h.dedupKey === dedupKey)) return { seedsAwarded: 0, newTotal: currentSeeds, newBadges: [], plantStage: previousPlantStage, previousPlantStage };
+        seedsToAward = 15;
+        break;
+      }
+      case 'journal_300_words': {
+        dedupKey = `journal_words:${metadata.entryId}`;
+        const prev = seedsHistory.find(h => h.dedupKey === dedupKey);
+        if (prev) {
+          // Already gave 15 — top up by 10 to reach 25 total
+          seedsToAward = 10;
+          // Update the existing history entry in place so dedup still works
+          prev.seeds = 25;
+          prev.action = 'journal_300_words';
+        } else {
+          seedsToAward = 25;
+        }
+        break;
+      }
+      case 'prompt_complete': {
+        dedupKey = `prompt_complete:${metadata.promptId}`;
+        if (seedsHistory.some(h => h.dedupKey === dedupKey)) return { seedsAwarded: 0, newTotal: currentSeeds, newBadges: [], plantStage: previousPlantStage, previousPlantStage };
+        seedsToAward = 10;
+        break;
+      }
+      case 'prompt_first_category': {
+        dedupKey = `prompt_first_category:${metadata.category}`;
+        if (seedsHistory.some(h => h.dedupKey === dedupKey)) return { seedsAwarded: 0, newTotal: currentSeeds, newBadges: [], plantStage: previousPlantStage, previousPlantStage };
+        seedsToAward = 25;
+        break;
+      }
+      case 'practice_complete': {
+        dedupKey = `practice_complete:${metadata.practiceId}:${today}`;
+        if (seedsHistory.some(h => h.dedupKey === dedupKey)) return { seedsAwarded: 0, newTotal: currentSeeds, newBadges: [], plantStage: previousPlantStage, previousPlantStage };
+        seedsToAward = metadata.isSomatic ? 30 : 20;
+        break;
+      }
+      case 'community_engage': {
+        dedupKey = `community_engage:${metadata.targetId}`;
+        if (seedsHistory.some(h => h.dedupKey === dedupKey)) return { seedsAwarded: 0, newTotal: currentSeeds, newBadges: [], plantStage: previousPlantStage, previousPlantStage };
+        seedsToAward = 5;
+        break;
+      }
+      case 'pulse_checkin': {
+        dedupKey = `pulse_checkin:${today}`;
+        if (seedsHistory.some(h => h.dedupKey === dedupKey)) return { seedsAwarded: 0, newTotal: currentSeeds, newBadges: [], plantStage: previousPlantStage, previousPlantStage };
+        seedsToAward = 15;
+        break;
+      }
+      case 'streak_7': {
+        dedupKey = `streak_7:${metadata.weekOf ?? today}`;
+        if (seedsHistory.some(h => h.dedupKey === dedupKey)) return { seedsAwarded: 0, newTotal: currentSeeds, newBadges: [], plantStage: previousPlantStage, previousPlantStage };
+        seedsToAward = 50;
+        break;
+      }
+      case 'streak_21': {
+        dedupKey = `streak_21:${metadata.weekOf ?? today}`;
+        if (seedsHistory.some(h => h.dedupKey === dedupKey)) return { seedsAwarded: 0, newTotal: currentSeeds, newBadges: [], plantStage: previousPlantStage, previousPlantStage };
+        seedsToAward = 150;
+        break;
+      }
+      case 'cycle_complete': {
+        dedupKey = `cycle_complete:${metadata.cycleNumber ?? '1'}`;
+        if (seedsHistory.some(h => h.dedupKey === dedupKey)) return { seedsAwarded: 0, newTotal: currentSeeds, newBadges: [], plantStage: previousPlantStage, previousPlantStage };
+        seedsToAward = 500;
+        break;
+      }
+      default:
+        return { seedsAwarded: 0, newTotal: currentSeeds, newBadges: [], plantStage: previousPlantStage, previousPlantStage };
+    }
+
+    if (seedsToAward === 0) return { seedsAwarded: 0, newTotal: currentSeeds, newBadges: [], plantStage: previousPlantStage, previousPlantStage };
+
+    const newTotal = currentSeeds + seedsToAward;
+    const newPlantStage = this.getPlantStage(newTotal);
+
+    // Add to history (unless it was the top-up case where we updated in place)
+    const existingIdx = seedsHistory.findIndex(h => h.dedupKey === dedupKey);
+    if (existingIdx === -1) {
+      seedsHistory.push({ action, seeds: seedsToAward, timestamp: new Date().toISOString(), metadata, dedupKey });
+    }
+
+    // Check badges
+    const existingBadgeIds = new Set(badgesUnlocked.map((b: any) => b.id));
+    const newBadges: Array<{ id: string; unlocked_at: string }> = [];
+    const now = new Date().toISOString();
+
+    const tryBadge = (id: string, condition: boolean) => {
+      if (condition && !existingBadgeIds.has(id)) {
+        newBadges.push({ id, unlocked_at: now });
+        existingBadgeIds.add(id);
+      }
+    };
+
+    // first_root: first journal entry
+    tryBadge('first_root', action === 'journal_100_words' || action === 'journal_300_words');
+
+    // body_awakened: first somatic practice
+    tryBadge('body_awakened', action === 'practice_complete' && !!metadata.isSomatic);
+
+    // full_spectrum: one entry in all 6 categories
+    if (action === 'prompt_first_category') {
+      const completedCats = seedsHistory.filter(h => h.action === 'prompt_first_category').length;
+      tryBadge('full_spectrum', completedCats >= 5); // current entry makes it 6
+    }
+
+    // deep_diver: 500+ word journal entry
+    tryBadge('deep_diver', (action === 'journal_100_words' || action === 'journal_300_words') && (metadata.wordCount ?? 0) >= 500);
+
+    // the_long_walk: 21-day streak bonus awarded
+    tryBadge('the_long_walk', action === 'streak_21');
+
+    // full_circle: 77-day cycle complete
+    tryBadge('full_circle', action === 'cycle_complete');
+
+    // witness: 10 pulse check-ins
+    if (action === 'pulse_checkin') {
+      const pulseCount = seedsHistory.filter(h => h.action === 'pulse_checkin').length;
+      tryBadge('witness', pulseCount >= 9); // +1 for the one just added
+    }
+
+    // tender: reach flowering or tree stage
+    tryBadge('tender', (newPlantStage === 'flowering' || newPlantStage === 'tree') && previousPlantStage !== 'flowering' && previousPlantStage !== 'tree');
+
+    const allBadges = [...badgesUnlocked, ...newBadges];
+
+    // Persist
+    await this.db.execute(sql`
+      UPDATE users SET
+        seeds_total = ${newTotal},
+        seeds_history = ${JSON.stringify(seedsHistory)}::jsonb,
+        plant_stage = ${newPlantStage},
+        badges_unlocked = ${JSON.stringify(allBadges)}::jsonb
+      WHERE id = ${userId}
+    `);
+
+    return { seedsAwarded: seedsToAward, newTotal, newBadges, plantStage: newPlantStage, previousPlantStage };
+  }
+
+  async getGamificationStatus(userId: string): Promise<{
+    seedsTotal: number;
+    plantStage: string;
+    badgesUnlocked: string[];
+    seedsHistory: any[];
+    seedsToNextStage: { label: string; remaining: number } | null;
+    hasEarnedFirstSeeds: boolean;
+  }> {
+    const user = await this.getUser(userId);
+    if (!user) return { seedsTotal: 0, plantStage: 'seed', badgesUnlocked: [], seedsHistory: [], seedsToNextStage: { label: 'Sprout', remaining: 101 }, hasEarnedFirstSeeds: false };
+    const seedsTotal = user.seedsTotal ?? 0;
+    const rawBadges = Array.isArray(user.badgesUnlocked) ? user.badgesUnlocked as any[] : [];
+    // Badge IDs only (array of strings)
+    const badgesUnlocked = rawBadges.map((b: any) => typeof b === 'string' ? b : b.id).filter(Boolean);
+    return {
+      seedsTotal,
+      plantStage: user.plantStage ?? 'seed',
+      badgesUnlocked,
+      seedsHistory: Array.isArray(user.seedsHistory) ? user.seedsHistory as any[] : [],
+      seedsToNextStage: this.getSeedsToNextStage(seedsTotal),
+      hasEarnedFirstSeeds: seedsTotal > 0,
+    };
+  }
 }
 
 export const storage = new DatabaseStorage();

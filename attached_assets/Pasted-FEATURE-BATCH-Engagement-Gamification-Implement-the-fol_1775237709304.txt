@@ -1,0 +1,218 @@
+FEATURE BATCH: Engagement & Gamification
+Implement the following three features. Read the full spec before starting — they share some data points.
+
+FEATURE 1 — GAMIFICATION SYSTEM
+Add a points and achievement system throughout the app. The goal is to make the journey feel like progression, not repetition. Never use the word "points" in the UI — use "seeds" instead (consistent with the nature/growth aesthetic).
+Earning seeds:
+ActionSeedsComplete daily prompt10Journal entry over 100 words15Journal entry over 300 words25 (replaces 15, not additive)Complete a practice20Complete a somatic practice specifically30Complete weekly pulse check-in157-day streak50 bonus21-day streak150 bonus77-day cycle completion500 bonusFirst entry in each of the 6 categories25 eachEngage with a community post (comment or react)5
+Display:
+
+Show total seeds in the user profile header as a small ambient number — not prominently, not a scoreboard. Subtle.
+On the progress page, show a seed growth visualization: a simple plant that visually grows through stages (seed → sprout → plant → flowering → tree) as seeds accumulate. Thresholds: 0–100 seed, 101–300 sprout, 301–700 plant, 701–1500 flowering, 1500+ tree. Use SVG illustration, consistent with app palette.
+
+Achievements (unlockable badges, shown on profile):
+Badge nameConditionFirst RootFirst journal entryBody AwakenedFirst somatic practice completedFull SpectrumComplete one entry in all 6 prompt categoriesDeep DiverJournal entry over 500 wordsThe Long Walk21-day streakFull CircleComplete the 77-day cycleWitnessComplete 10 weekly pulse check-insTenderReach the "flowering" plant stage
+Show badges as small icons on the profile page. Locked badges are visible but greyed out — so users can see what's possible. When a badge unlocks, show a brief full-screen animation (simple, not loud — a bloom or a ripple, consistent with app aesthetic) with the badge name and a one-line description of what it means.
+Do not add leaderboards. This is a private journey, not a competition.
+
+FEATURE 2 — CEREMONY DATE ONBOARDING + PHASE AWARENESS
+At first login / onboarding, after the existing welcome flow, add a single screen before the app opens:
+Title: "When was your last ceremony?"
+Subtitle: "This helps us walk alongside you at the right pace."
+Show a simple selector: how many weeks ago — options from "This week" up to "More than 12 weeks ago", plus "I haven't had a ceremony yet" and "I'd rather not say."
+Store this as ceremony_weeks_ago (integer, null if declined). Calculate and store ceremony_date_approx as today minus (weeks × 7).
+Also ask: "What medicine did you work with?" — multi-select: Ayahuasca, Bufo, Yopo, Psilocybin, Ketamine, Other, Prefer not to say. Store as ceremony_medicine array.
+Phase calculation:
+Based on ceremony_date_approx, calculate current phase dynamically (recalculates daily):
+PhaseDays post-ceremonyLabel shown in appAcute0–7"The opening"Integration8–30"The settling"Deepening31–90"The roots"Long-term90+"The harvest"
+Phase-aware UI:
+Show current phase as a subtle label on the home screen header — small, below the greeting. e.g. "Day 12 · The settling"
+When phase transitions (detected on daily app open), show a one-time interstitial:
+
+Acute → Integration: "The first week has passed. The intensity often softens now — and the real integration begins. This is when it matters most to stay with the practice."
+Integration → Deepening: "You're a month out. What arrived in the ceremony is starting to ask how it wants to change your actual life. The prompts shift accordingly."
+Deepening → Long-term: "Three months. What's stayed with you? The harvest phase is about discernment — what to carry forward, what to release."
+
+Adjust prompt tone per phase — add a phase tag to each of the 77 prompts (acute / integration / deepening / any) and filter accordingly. Prompts tagged acute only appear in the first 7 days. If user selects "I haven't had a ceremony yet", show only prompts tagged any.
+
+FEATURE 3 — SOMATIC PRACTICE PUSH NOTIFICATION
+Track separately whether a user has ever completed a practice tagged as somatic category.
+Condition to trigger: User has been active in the app (at least 3 journal entries logged) but has zero completed somatic practices, AND it has been 5+ days since their first journal entry.
+Send one push notification (do not repeat more than once every 7 days):
+Title: "Your body is part of this too"
+Body: "Integration doesn't only happen in the mind. There's a somatic practice waiting for you — it takes 5 minutes."
+On tap: open directly to the Somatic category in the practice library, not the home screen.
+Also apply in-app: if the above condition is true and the user opens the practices tab, show a soft banner at the top (amber background, dismissible):
+"You haven't tried a body-based practice yet. That's where a lot of the integration actually lives."
+Banner disappears once any somatic practice is completed. Never reappears.
+For push notifications: use the existing notification infrastructure if already in place. If not, implement using the Web Push API with a service worker. Request notification permission during onboarding, after the ceremony date screen — not at first app open (too early, users decline). Frame it as: "Can we send you occasional gentle reminders? We keep them minimal."
+
+SHARED DATA / SCHEMA ADDITIONS:
+Add to user record:
+
+seeds_total integer default 0
+seeds_history JSON array of {action, seeds, timestamp}
+badges_unlocked JSON array of badge IDs with unlock timestamps
+plant_stage enum seed | sprout | plant | flowering | tree (calculated from seeds_total)
+ceremony_weeks_ago integer nullable
+ceremony_date_approx date nullable
+ceremony_medicine text array nullable
+ceremony_phase enum acute | integration | deepening | long_term | none
+somatic_practice_completed boolean default false
+somatic_nudge_sent_at timestamp nullable
+
+Run the seed-awarding logic server-side on every relevant action — never trust the client to report its own seeds.
+
+CONSTRAINTS:
+
+Seeds and badges must never feel punitive — no "you lost seeds", no streak shame language
+Phase transitions must be gentle, never alarming
+Push notifications: maximum 1 per day total across the entire app, regardless of how many triggers are active — if multiple notifications would fire on the same day, queue them and send the highest priority one only
+The plant visualization must work in both light and dark mode
+Do not show ceremony medicine data anywhere in the UI except the user's own profile — never in community or admin views
+
+
+That's the full spec. The three features are independent — they can be implemented in any order — but the ceremony date onboarding should go in first since phase awareness affects prompt delivery.write the full spec for the gamification to pass directly to replit12:32 PMHere's the full spec:
+
+FEATURE: Gamification System — "Seeds"
+Implement a complete gamification layer. Read this entire spec before writing any code. The system must feel ambient and meaningful, never loud or coercive. The metaphor throughout is organic growth — not points, not scores, not levels.
+
+TERMINOLOGY
+Never use the word "points" anywhere in the UI or copy. The currency is called seeds. The growth visualization is a plant. Badges are called badges (no metaphor needed here — keep it simple).
+
+PART 1 — SEEDS ENGINE
+1.1 Awarding logic
+All seed awards happen server-side only. The client never calculates or reports seeds. Every award is logged to seeds_history.
+Awards:
+TriggerSeedsNotesDaily prompt completed10Once per dayJournal entry submitted, 100–299 words15Once per entryJournal entry submitted, 300+ words25Replaces the 15, not additivePractice completed (non-somatic)20Once per practice per dayPractice completed (somatic category)30Once per practice per dayWeekly pulse check-in completed15Once per weekFirst entry in each of the 6 prompt categories25One-time per category, 6 total opportunities = 150 seeds maxCommunity post commented on or reacted to5Max 15 per day (3 interactions)7-day streak reached50Bonus on the day the streak hits 721-day streak reached150Bonus on the day the streak hits 2177-day cycle completed500One-time per cycle completion
+1.2 Schema additions
+Add to the users table:
+seeds_total          integer, default 0, not null
+seeds_history        jsonb, default '[]'
+plant_stage          text, default 'seed', 
+                     check: seed | sprout | plant | flowering | tree
+badges_unlocked      jsonb, default '[]'
+seeds_history entries follow this structure:
+json{
+  "action": "journal_300_words",
+  "seeds": 25,
+  "timestamp": "2026-04-03T14:22:00Z",
+  "metadata": {}
+}
+1.3 Plant stage thresholds
+Recalculate plant_stage every time seeds_total updates:
+StageSeeds requiredseed0–100sprout101–300plant301–700flowering701–1500tree1501+
+
+PART 2 — PLANT VISUALIZATION
+2.1 What it is
+A single SVG illustration on the Progress page that visually represents the user's current plant stage. It grows as seeds accumulate. This is the primary visual feedback mechanism for the entire gamification system.
+2.2 The five stages — SVG design specs
+Design all five as a single SVG component with conditional rendering per stage. Use the existing app color palette (forest green, sage, amber, earth tones). All stages share the same canvas size (recommend 200×280px viewBox). The plant always sits on a simple soil line at the bottom.
+
+Seed: a small oval shape half-buried in soil. Muted earth tone. A single tiny crack visible on the shell suggesting potential.
+Sprout: two small curved leaves emerging from soil on a thin stem. Sage green. Slight lean to suggest it's reaching.
+Plant: a fuller stem with 4–6 leaves at different heights. Deep forest green. Confident, upright.
+Flowering: same plant structure with 2–3 small flowers blooming. Amber/coral petals. The most visually warm of all stages.
+Tree: a small but complete tree — trunk, branching structure, full canopy. Deep forest green with amber highlights in the canopy suggesting light.
+
+Below the plant illustration, show:
+
+Current stage name in small Crimson Text italic: "Sprout"
+Seeds to next stage as a thin progress bar with label: "175 seeds to Plant" — hidden at tree stage, replaced with "Fully rooted"
+
+2.3 Animation on stage transition
+When plant_stage changes, trigger a one-time full-screen animation on the next app open:
+
+Background fades to a deep forest green
+The new plant stage illustration grows in from the soil line upward (SVG path animation, 1.5 seconds)
+Stage name appears in large Crimson Text
+A single line below: the stage's meaning (see copy below)
+Dismiss with any tap
+
+Stage transition copy:
+TransitionMessage shownseed → sprout"Something is breaking open."sprout → plant"The roots are holding."plant → flowering"What was planted is beginning to show."flowering → tree"You have grown something that will outlast the journey."
+Show this transition screen maximum once per stage change. Store plant_stage_transition_shown as a boolean per stage in the user record or in badges_unlocked metadata.
+
+PART 3 — BADGES
+3.1 Badge definitions
+IDNameConditionDescription shown to userfirst_rootFirst RootFirst journal entry submitted"You began. That's the hardest part."body_awakenedBody AwakenedFirst somatic practice completed"The body is part of this too."full_spectrumFull SpectrumAt least one journal entry in all 6 prompt categories"You've moved through every dimension."deep_diverDeep DiverSingle journal entry over 500 words"You went all the way in."the_long_walkThe Long Walk21-day streak achieved"Consistency is its own kind of medicine."full_circleFull Circle77-day cycle completed"One full journey. The spiral continues."witnessWitness10 weekly pulse check-ins completed"You kept showing up, even to the difficult weeks."tenderTenderPlant stage reaches "flowering""You tended something until it bloomed."
+3.2 Badge data structure
+Each unlocked badge stored in badges_unlocked jsonb array:
+json{
+  "id": "first_root",
+  "unlocked_at": "2026-04-03T14:22:00Z"
+}
+```
+
+**3.3 Badge unlock animation**
+
+When a badge unlocks, show immediately (on the same screen the action happened):
+- Brief full-screen overlay, dark background with slight transparency
+- Badge icon centered, grows in with a gentle scale animation (0.5 → 1.0, 0.8 seconds)
+- Badge name in large Inter 600
+- One-line description in Crimson Text italic
+- Dismiss automatically after 3 seconds or on tap
+
+Badge icons: use simple SVG icons, nature-based. Suggested:
+- First Root: a single root line
+- Body Awakened: a simple body outline with a pulse line through it
+- Full Spectrum: six small dots in a circle, each in a different category color
+- Deep Diver: a downward arrow entering water
+- The Long Walk: a simple path with 21 marks
+- Full Circle: an ouroboros (consistent with your book imagery)
+- Witness: an open eye
+- Tender: a flower
+
+**3.4 Badge display on profile**
+
+Show all 8 badges on the profile page in a 4×2 grid. Unlocked badges show in full color with unlock date on hover/tap. Locked badges show as greyed-out silhouettes — visible but inaccessible. Tapping a locked badge shows its name and condition: *"Complete a 21-day streak to unlock."*
+
+Do not hide locked badges. Seeing what's possible is part of the motivation.
+
+---
+
+**PART 4 — SEEDS DISPLAY**
+
+**4.1 Profile header**
+
+Show `seeds_total` in the profile header as a small ambient element — a tiny leaf icon followed by the number. Example: 🌿 340. Small text, not a headline. Never in a badge or pill shape — just inline text.
+
+**4.2 Seed award micro-feedback**
+
+Every time seeds are awarded, show a brief floating +N animation originating from the action that triggered it (e.g. "+25" floats upward from the journal submit button and fades out over 1 second). This is the only real-time feedback. Keep it light — one second, then gone.
+
+**4.3 Seeds history (optional, low priority)**
+
+If time allows, add a "Seeds history" section in the profile page — a simple chronological list of seed awards with action label and timestamp. Collapsed by default behind a "View history" toggle. Not a priority if it delays other features.
+
+---
+
+**PART 5 — TECHNICAL REQUIREMENTS**
+
+**5.1 Idempotency**
+
+Every seed-awarding action must be idempotent. Check `seeds_history` before awarding to prevent double-awards on retry or network failure. Use action + date (or action + entry ID) as the deduplication key.
+
+**5.2 Server-side only**
+
+No seed logic on the client. All awards go through a single server function `awardSeeds(userId, action, metadata)` that: validates the action is legitimate, checks idempotency, inserts to `seeds_history`, updates `seeds_total`, recalculates `plant_stage`, checks badge conditions, unlocks any newly earned badges, returns the updated state to the client.
+
+**5.3 Badge check on every award**
+
+After every seed award, run the full badge eligibility check for that user. Badge conditions are cheap to evaluate — run all 8 every time rather than trying to be clever about which ones to check. Newly unlocked badges are returned in the `awardSeeds` response so the client can show the unlock animation.
+
+**5.4 API endpoints needed**
+```
+GET  /api/gamification/status        → seeds_total, plant_stage, badges_unlocked, seeds_to_next_stage
+GET  /api/gamification/history       → seeds_history array (paginated)
+POST /api/gamification/award         → internal only, called by other feature handlers
+The /award endpoint should not be callable directly from the client — only invoked internally by other server actions (journal submit, practice complete, etc.).
+
+PART 6 — CONSTRAINTS
+
+Seeds are never deducted. No penalties, no losses, no streak shame.
+Never show a leaderboard or any comparison with other users. This is a private journey.
+The plant visualization must render correctly in both light and dark mode.
+All animations must respect the user's prefers-reduced-motion media query — if set, skip animations and show final state immediately.
+The gamification system must be completely invisible to users who have not yet taken any actions — no empty states showing "0 seeds", no locked badge grids on day one. Show the gamification UI only after the user has earned their first seeds (i.e. after first_root badge is unlocked).
+Badge unlock animations must not interrupt a practice in progress. Queue them and show on next navigation event.
