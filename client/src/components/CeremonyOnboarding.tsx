@@ -20,12 +20,9 @@ const TIMING_OPTIONS = [
 
 const MEDICINE_OPTIONS = [
   "Ayahuasca",
-  "San Pedro / Huachuma",
-  "Psilocybin",
+  "Bufo alvarius",
+  "Yopo",
   "Kambo",
-  "Other plant medicine",
-  "No plant medicine",
-  "Prefer not to say",
 ];
 
 export function CeremonyOnboarding() {
