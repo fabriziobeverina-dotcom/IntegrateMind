@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { UserAvatar, AVATAR_PRESETS } from "@/components/UserAvatar";
 import { cn } from "@/lib/utils";
-import { Save, Loader2, Check, Leaf, Flame, Sprout, TreePine, Flower } from "lucide-react";
+import { Save, Loader2, Leaf, Flame, Sprout, TreePine, Flower } from "lucide-react";
 import { useGamification } from "@/hooks/useGamification";
 import { BadgeGrid } from "@/components/BadgeGrid";
 
@@ -169,10 +169,10 @@ export default function Profile() {
       {/* Avatar picker */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Choose your avatar color</CardTitle>
+          <CardTitle className="text-base">Choose your avatar</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-8 gap-2">
+          <div className="grid grid-cols-5 gap-3">
             {AVATAR_PRESETS.map((preset) => {
               const isSelected = selectedAvatar === preset.key;
               return (
@@ -182,17 +182,19 @@ export default function Profile() {
                   onClick={() => setSelectedAvatar(preset.key)}
                   data-testid={`avatar-preset-${preset.key}`}
                   className={cn(
-                    "relative h-10 w-10 rounded-full transition-all",
-                    preset.bg,
+                    "relative flex flex-col items-center gap-1 rounded-md p-1 transition-all",
                     isSelected
-                      ? "ring-2 ring-offset-2 ring-foreground scale-110"
-                      : "hover:scale-105"
+                      ? "ring-2 ring-primary ring-offset-2"
+                      : "hover:bg-muted"
                   )}
-                  title={preset.key}
+                  title={preset.label}
                 >
-                  {isSelected && (
-                    <Check className="absolute inset-0 m-auto h-4 w-4 text-white drop-shadow" />
-                  )}
+                  <img
+                    src={preset.src}
+                    alt={preset.label}
+                    className="h-12 w-12 rounded-full object-cover"
+                  />
+                  <span className="text-[10px] text-muted-foreground leading-tight text-center">{preset.label}</span>
                 </button>
               );
             })}

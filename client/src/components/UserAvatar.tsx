@@ -1,23 +1,38 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
+import jaguarImg from "@assets/avatars/jaguar.png";
+import anacondaImg from "@assets/avatars/anaconda.png";
+import eagleImg from "@assets/avatars/eagle.png";
+import kamboFrogImg from "@assets/avatars/kambo-frog.png";
+import tapirImg from "@assets/avatars/tapir.png";
+import slothImg from "@assets/avatars/sloth.png";
+import caimanImg from "@assets/avatars/caiman.png";
+import butterflyImg from "@assets/avatars/butterfly.png";
+import capybaraImg from "@assets/avatars/capybara.png";
+import anteaterImg from "@assets/avatars/anteater.png";
+import bobinsanaImg from "@assets/avatars/bobinsana.png";
+import toeImg from "@assets/avatars/toe.png";
+import shipiboImg from "@assets/avatars/shipibo.png";
+import moonImg from "@assets/avatars/moon.png";
+import sunImg from "@assets/avatars/sun.png";
+
 export const AVATAR_PRESETS = [
-  { key: "sky",     bg: "bg-sky-500",     text: "text-white" },
-  { key: "blue",    bg: "bg-blue-600",    text: "text-white" },
-  { key: "violet",  bg: "bg-violet-500",  text: "text-white" },
-  { key: "purple",  bg: "bg-purple-600",  text: "text-white" },
-  { key: "pink",    bg: "bg-pink-500",    text: "text-white" },
-  { key: "rose",    bg: "bg-rose-500",    text: "text-white" },
-  { key: "red",     bg: "bg-red-500",     text: "text-white" },
-  { key: "orange",  bg: "bg-orange-500",  text: "text-white" },
-  { key: "amber",   bg: "bg-amber-500",   text: "text-white" },
-  { key: "yellow",  bg: "bg-yellow-400",  text: "text-gray-900" },
-  { key: "lime",    bg: "bg-lime-500",    text: "text-white" },
-  { key: "green",   bg: "bg-green-600",   text: "text-white" },
-  { key: "teal",    bg: "bg-teal-500",    text: "text-white" },
-  { key: "cyan",    bg: "bg-cyan-500",    text: "text-white" },
-  { key: "slate",   bg: "bg-slate-500",   text: "text-white" },
-  { key: "stone",   bg: "bg-stone-500",   text: "text-white" },
+  { key: "jaguar",     label: "Jaguar",          src: jaguarImg },
+  { key: "anaconda",   label: "Anaconda",         src: anacondaImg },
+  { key: "eagle",      label: "Eagle",            src: eagleImg },
+  { key: "kambo-frog", label: "Kambo Frog",       src: kamboFrogImg },
+  { key: "tapir",      label: "Tapir",            src: tapirImg },
+  { key: "sloth",      label: "Sloth",            src: slothImg },
+  { key: "caiman",     label: "Caiman",           src: caimanImg },
+  { key: "butterfly",  label: "Butterfly",        src: butterflyImg },
+  { key: "capybara",   label: "Capybara",         src: capybaraImg },
+  { key: "anteater",   label: "Anteater",         src: anteaterImg },
+  { key: "bobinsana",  label: "Bobinsana",        src: bobinsanaImg },
+  { key: "toe",        label: "Toé",              src: toeImg },
+  { key: "shipibo",    label: "Shipibo",          src: shipiboImg },
+  { key: "moon",       label: "Moon",             src: moonImg },
+  { key: "sun",        label: "Sun",              src: sunImg },
 ] as const;
 
 export type AvatarPresetKey = typeof AVATAR_PRESETS[number]["key"];
@@ -59,15 +74,12 @@ export function UserAvatar({
 
   return (
     <Avatar className={cn(sizeClass, className)}>
-      {!avatarKey && profileImageUrl ? (
+      {preset ? (
+        <AvatarImage src={preset.src} alt={preset.label} />
+      ) : !avatarKey && profileImageUrl ? (
         <AvatarImage src={profileImageUrl} alt={name} />
       ) : null}
-      <AvatarFallback
-        className={cn(
-          "font-semibold select-none",
-          preset ? `${preset.bg} ${preset.text}` : "bg-muted text-muted-foreground"
-        )}
-      >
+      <AvatarFallback className="font-semibold select-none bg-muted text-muted-foreground">
         {displayInitials}
       </AvatarFallback>
     </Avatar>

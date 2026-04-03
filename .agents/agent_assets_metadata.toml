@@ -54,3 +54,93 @@ id = "B--u2z-wBhE_3-p578w-i"
 uri = "file://attached_assets/tarot_reader.png"
 type = "image"
 title = "tarot reader cute cartoon"
+
+[[generated]]
+id = "r7qPVzePhsip6kylwSD5W"
+uri = "file://client/src/assets/avatars/jaguar.png"
+type = "image"
+title = "jaguar avatar"
+
+[[generated]]
+id = "ai_DxHO0f35VsPhyHwyEn"
+uri = "file://client/src/assets/avatars/anaconda.png"
+type = "image"
+title = "anaconda avatar"
+
+[[generated]]
+id = "t4yn8UJpw30PYyGFxgwBN"
+uri = "file://client/src/assets/avatars/eagle.png"
+type = "image"
+title = "eagle avatar"
+
+[[generated]]
+id = "yYg3pd3wnjU0zK_iLDpJD"
+uri = "file://client/src/assets/avatars/kambo-frog.png"
+type = "image"
+title = "kambo frog avatar"
+
+[[generated]]
+id = "z0PgMaEAPjbbjHGK1SYuz"
+uri = "file://client/src/assets/avatars/tapir.png"
+type = "image"
+title = "tapir avatar"
+
+[[generated]]
+id = "NdhzyTOnZkXKokxM_GLug"
+uri = "file://client/src/assets/avatars/sloth.png"
+type = "image"
+title = "sloth avatar"
+
+[[generated]]
+id = "7CuslBPf7b0kB3S3Bxggd"
+uri = "file://client/src/assets/avatars/caiman.png"
+type = "image"
+title = "caiman avatar"
+
+[[generated]]
+id = "k23hMOBXsEfKezIvy-3oF"
+uri = "file://client/src/assets/avatars/butterfly.png"
+type = "image"
+title = "butterfly avatar"
+
+[[generated]]
+id = "KeTLxC-xGWZ_IveZK6arT"
+uri = "file://client/src/assets/avatars/capybara.png"
+type = "image"
+title = "capybara avatar"
+
+[[generated]]
+id = "JkNK4LwG_qA9s_BVTDy8n"
+uri = "file://client/src/assets/avatars/anteater.png"
+type = "image"
+title = "anteater avatar"
+
+[[generated]]
+id = "hy4PMRFhn00ZxZBn6qP0S"
+uri = "file://client/src/assets/avatars/bobinsana.png"
+type = "image"
+title = "bobinsana avatar"
+
+[[generated]]
+id = "RIYJcxtIExTecMvghz-vq"
+uri = "file://client/src/assets/avatars/toe.png"
+type = "image"
+title = "toe plant avatar"
+
+[[generated]]
+id = "0U8L8nWXuyBI3RzN5OEnj"
+uri = "file://client/src/assets/avatars/shipibo.png"
+type = "image"
+title = "shipibo pattern avatar"
+
+[[generated]]
+id = "e9nekuzlVwsaGrUmFwCLf"
+uri = "file://client/src/assets/avatars/moon.png"
+type = "image"
+title = "moon avatar"
+
+[[generated]]
+id = "OHsbjDed_NdoHyLgrpPQX"
+uri = "file://client/src/assets/avatars/sun.png"
+type = "image"
+title = "sun avatar"
