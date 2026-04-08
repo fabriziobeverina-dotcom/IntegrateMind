@@ -1,0 +1,93 @@
+For mobile, the classic approach is tap a specific element 7 times quickly (like Android's developer mode easter egg). To close, a big tap-friendly ✕ button plus tapping the dark backdrop. Here's the updated snippet:
+
+KillTheShamanEgg.jsx — replace the whole file:
+
+import { useEffect, useState, useRef, useCallback } from "react";
+const GAME_URL = "https://kill-the-shaman.replit.app"; // ← your published URL
+const TAPS_NEEDED = 7;
+const TAP_WINDOW_MS = 3000;
+// Attach {...eggTrigger} to any element you want as the secret tap target
+// e.g. <img src="/logo.png" {...eggTrigger} />
+export function useKillTheShamanEgg() {
+  const [open, setOpen] = useState(false);
+  const taps = useRef([]);
+  const handleTap = useCallback(() => {
+    const now = Date.now();
+    taps.current = [...taps.current, now].filter((t) => now - t < TAP_WINDOW_MS);
+    if (taps.current.length >= TAPS_NEEDED) {
+      taps.current = [];
+      setOpen(true);
+    }
+  }, []);
+  const close = useCallback(() => setOpen(false), []);
+  const eggTrigger = { onClick: handleTap, style: { userSelect: "none" } };
+  return { open, close, eggTrigger };
+}
+export default function KillTheShamanOverlay({ open, close }) {
+  if (!open) return null;
+  return (
+    <div
+      onClick={close}
+      style={{
+        position: "fixed", inset: 0, zIndex: 9999,
+        background: "rgba(0,0,0,0.88)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        touchAction: "none",
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{ position: "relative", maxWidth: "100vw" }}
+      >
+        {/* Big tap-friendly close button */}
+        <button
+          onClick={close}
+          style={{
+            position: "absolute", top: -20, right: -8, zIndex: 1,
+            background: "#ff4444", color: "#fff", border: "2px solid #fff",
+            borderRadius: "50%", width: 40, height: 40,
+            cursor: "pointer", fontWeight: "bold", fontSize: 18,
+            touchAction: "manipulation",
+          }}
+        >✕</button>
+        <iframe
+          src={GAME_URL}
+          width={Math.min(375, window.innerWidth)}
+          height={Math.min(667, window.innerHeight - 40)}
+          style={{ border: "none", borderRadius: 8, display: "block" }}
+          title="Kill the Shaman"
+          allow="autoplay"
+        />
+        {/* Tap backdrop to close hint */}
+        <p style={{
+          textAlign: "center", color: "rgba(255,255,255,0.4)",
+          fontSize: 11, marginTop: 8,
+        }}>
+          tap outside to close
+        </p>
+      </div>
+    </div>
+  );
+}
+
+Usage in your App.jsx:
+
+import { useKillTheShamanEgg } from "./KillTheShamanEgg";
+import KillTheShamanOverlay from "./KillTheShamanEgg";
+export default function App() {
+  const { open, close, eggTrigger } = useKillTheShamanEgg();
+  return (
+    <>
+      {/* Attach eggTrigger to whatever element you want — logo, title, icon, etc. */}
+      <img src="/logo.png" alt="logo" {...eggTrigger} />
+      {/* ...rest of your app... */}
+      <KillTheShamanOverlay open={open} close={close} />
+    </>
+  );
+}
+
+How it works on mobile:
+
+Tap the trigger element 7 times within 3 seconds → game opens
+Tap the ✕ button or anywhere outside the game → closes
+Works entirely with touch, no keyboard needed
