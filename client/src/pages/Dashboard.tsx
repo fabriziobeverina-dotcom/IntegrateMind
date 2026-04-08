@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Plus, Compass, MessageCircle, ExternalLink } from "lucide-react";
 import { PhaseIndicator } from "@/components/PhaseIndicator";
-import logoImage from "@assets/ChatGPT Image Nov 10, 2025, 05_44_07 PM_1762767858454.png";
+import logoImage from "@assets/pao_logo_1775666029285.jpg";
 import expertImage from "@assets/integration_expert.png";
 import tarotImage from "@assets/tarot_reader.png";
 
@@ -115,7 +115,7 @@ export default function Dashboard() {
       ) : (
         <div className="space-y-2">
           <div className="flex items-center gap-3">
-            <img src={logoImage} alt="Paojilhuasca" className="h-8 w-8 rounded-full object-cover shrink-0" />
+            <img src={logoImage} alt="Paojilhuasca" className="h-9 w-9 object-contain shrink-0" />
             <h1 className="text-xl sm:text-2xl md:text-3xl font-bold break-words">
               Welcome back, {(user as any)?.firstName || (user as any)?.username || (user as any)?.email?.split('@')[0] || 'there'}
             </h1>
