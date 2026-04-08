@@ -114,9 +114,12 @@ export default function Dashboard() {
         </Card>
       ) : (
         <div className="space-y-2">
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold break-words">
-            Welcome back, {(user as any)?.firstName || (user as any)?.username || (user as any)?.email?.split('@')[0] || 'there'}
-          </h1>
+          <div className="flex items-center gap-3">
+            <img src={logoImage} alt="Paojilhuasca" className="h-8 w-8 rounded-full object-cover shrink-0" />
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold break-words">
+              Welcome back, {(user as any)?.firstName || (user as any)?.username || (user as any)?.email?.split('@')[0] || 'there'}
+            </h1>
+          </div>
           <p className="text-xs sm:text-sm md:text-base text-muted-foreground">
             Continue your integration journey with today's practice and reflection.
           </p>
