@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Plus, Compass, MessageCircle, ExternalLink } from "lucide-react";
 import { PhaseIndicator } from "@/components/PhaseIndicator";
+import KillTheShamanOverlay, { useKillTheShamanEgg } from "@/components/KillTheShamanEgg";
 import logoImage from "@assets/pao_logo_1775666029285.jpg";
 import expertImage from "@assets/integration_expert.png";
 import tarotImage from "@assets/tarot_reader.png";
@@ -23,6 +24,7 @@ export default function Dashboard() {
   const [selectedMetric, setSelectedMetric] = useState<'mood' | 'sleep' | 'grounding'>('mood');
   const [pulseCheckDismissed, setPulseCheckDismissed] = useState(false);
   const { user } = useAuth();
+  const { open: eggOpen, close: closeEgg, eggTrigger } = useKillTheShamanEgg();
 
   // Pulse check and stabilization status
   const { data: pulseStatus } = useQuery<{
@@ -115,7 +117,7 @@ export default function Dashboard() {
       ) : (
         <div className="space-y-2">
           <div className="flex items-center gap-3">
-            <img src={logoImage} alt="Paojilhuasca" className="h-9 w-9 object-contain shrink-0" />
+            <img src={logoImage} alt="Paojilhuasca" className="h-9 w-9 object-contain shrink-0 cursor-pointer" {...eggTrigger} />
             <h1 className="text-xl sm:text-2xl md:text-3xl font-bold break-words">
               Welcome back, {(user as any)?.firstName || (user as any)?.username || (user as any)?.email?.split('@')[0] || 'there'}
             </h1>
@@ -317,6 +319,7 @@ export default function Dashboard() {
         </div>
       </Card>
     </div>
+    <KillTheShamanOverlay open={eggOpen} close={closeEgg} />
     </>
   );
 }
