@@ -195,16 +195,18 @@ export default function Community() {
     });
   };
 
-  const getDisplayName = (author: Author, isAnonymous: boolean) => {
+  const getDisplayName = (author: Author | null | undefined, isAnonymous: boolean) => {
     if (isAnonymous) return "Anonymous";
+    if (!author) return "Community Member";
     if (author.firstName && author.lastName) {
       return `${author.firstName} ${author.lastName}`;
     }
     return author.name || "Community Member";
   };
 
-  const getInitials = (author: Author, isAnonymous: boolean) => {
+  const getInitials = (author: Author | null | undefined, isAnonymous: boolean) => {
     if (isAnonymous) return "?";
+    if (!author) return "CM";
     if (author.firstName && author.lastName) {
       return `${author.firstName[0]}${author.lastName[0]}`.toUpperCase();
     }
@@ -415,7 +417,7 @@ export default function Community() {
                                   <Badge variant="secondary" className="text-xs">Anonymous</Badge>
                                 )}
                                 <span className="text-xs text-muted-foreground">
-                                  {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}
+                                  {comment.createdAt ? formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true }) : ""}
                                 </span>
                               </div>
                               <p className="text-sm mt-1">{comment.content}</p>
