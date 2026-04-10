@@ -35,10 +35,9 @@ export class ErrorBoundary extends Component<Props, State> {
               The application encountered an error. Please try refreshing the page.
             </p>
             {this.state.error && (
-              <details className="text-xs bg-muted p-2 rounded">
-                <summary className="cursor-pointer font-medium">Error details</summary>
-                <pre className="mt-2 overflow-auto">{this.state.error.toString()}</pre>
-              </details>
+              <div className="text-xs bg-muted p-3 rounded space-y-1">
+                <p className="font-semibold text-destructive">{this.state.error.toString()}</p>
+              </div>
             )}
             <Button
               onClick={() => window.location.href = '/'}

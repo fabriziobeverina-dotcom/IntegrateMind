@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, Component, ReactNode } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
@@ -16,9 +16,45 @@ import {
   Send, 
   Users, 
   UserCircle,
-  Loader2
+  Loader2,
+  AlertCircle
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+
+function safeFormatDate(value: any): string {
+  try {
+    if (!value) return "";
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return "";
+    return formatDistanceToNow(d, { addSuffix: true });
+  } catch {
+    return "";
+  }
+}
+
+class CommentsErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { error: null };
+  }
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+  componentDidCatch(error: Error, info: any) {
+    console.error("Comments section error:", error, info);
+  }
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="flex items-center gap-2 text-sm text-destructive p-3 bg-destructive/10 rounded-md">
+          <AlertCircle className="h-4 w-4 flex-shrink-0" />
+          <span>Unable to load comments: {this.state.error.message}</span>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 interface Author {
   id: string;
@@ -65,7 +101,7 @@ export default function Community() {
   });
 
   // Fetch comments for selected post
-  const { data: comments = [] } = useQuery<Comment[]>({
+  const { data: comments = [], isError: commentsError } = useQuery<Comment[]>({
     queryKey: ['/api/community/posts', selectedPost, 'comments'],
     enabled: !!selectedPost,
   });
@@ -324,7 +360,7 @@ export default function Community() {
                       )}
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}
+                      {safeFormatDate(post.createdAt)}
                     </p>
                   </div>
                 </div>
@@ -361,6 +397,7 @@ export default function Community() {
                 <>
                   <Separator />
                   <CardContent className="pt-4 space-y-4">
+                  <CommentsErrorBoundary>
                     {/* Comment Input */}
                     <div className="space-y-3">
                       <Textarea
@@ -417,7 +454,7 @@ export default function Community() {
                                   <Badge variant="secondary" className="text-xs">Anonymous</Badge>
                                 )}
                                 <span className="text-xs text-muted-foreground">
-                                  {comment.createdAt ? formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true }) : ""}
+                                  {safeFormatDate(comment.createdAt)}
                                 </span>
                               </div>
                               <p className="text-sm mt-1">{comment.content}</p>
@@ -426,6 +463,7 @@ export default function Community() {
                         ))}
                       </div>
                     )}
+                  </CommentsErrorBoundary>
                   </CardContent>
                 </>
               )}
