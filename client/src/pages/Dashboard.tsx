@@ -244,9 +244,6 @@ export default function Dashboard() {
               <CommunityPost
                 key={post.id}
                 post={post}
-                onLike={(id) => console.log('Liked post:', id)}
-                onComment={(id, comment) => console.log('Comment on', id, ':', comment)}
-                onShare={(id) => console.log('Shared post:', id)}
               />
             ))}
           </div>

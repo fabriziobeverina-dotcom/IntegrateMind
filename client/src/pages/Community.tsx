@@ -309,7 +309,7 @@ export default function Community() {
                     </div>
                   ) : (
                     <UserAvatar
-                      avatarKey={post.author.avatar}
+                      avatarKey={post.author?.avatar}
                       name={getDisplayName(post.author, false)}
                       initials={getInitials(post.author, false)}
                     />
