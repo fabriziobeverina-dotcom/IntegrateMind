@@ -440,11 +440,11 @@ export default function Community() {
                       <div className="space-y-3 mt-4">
                         {comments.map((comment) => (
                           <div key={comment.id} className="flex gap-3" data-testid={`comment-${comment.id}`}>
-                            <Avatar className="h-8 w-8">
-                              <AvatarFallback className="text-xs">
-                                {comment.isAnonymous ? <UserCircle className="h-4 w-4" /> : getInitials(comment.author, comment.isAnonymous)}
-                              </AvatarFallback>
-                            </Avatar>
+                            <UserAvatar
+                              avatarKey={comment.isAnonymous ? null : comment.author?.avatar}
+                              name={comment.isAnonymous ? "Anonymous" : getDisplayName(comment.author, false)}
+                              size="sm"
+                            />
                             <div className="flex-1">
                               <div className="flex items-center gap-2">
                                 <span className="font-semibold text-sm">
