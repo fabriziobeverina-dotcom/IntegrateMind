@@ -1800,20 +1800,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Wellbeing level must be between 1 and 5" });
       }
 
-      const checkin = await storage.createWellbeingCheckin({
-        userId,
-        wellbeingLevel,
-        notes: notes || null,
-        feelingAboutDay: feelingAboutDay || null,
-        reachedIntention: reachedIntention || null,
-        dayTitle: dayTitle || null,
-        strongestSensation: strongestSensation || null,
-      });
+      // Upsert: update today's checkin if it exists (e.g. morning intention was set), otherwise create
+      const existing = await storage.getTodaysWellbeingCheckin(userId);
+      let checkin;
+      if (existing) {
+        checkin = await storage.updateWellbeingCheckin(existing.id, {
+          wellbeingLevel,
+          notes: notes || null,
+          feelingAboutDay: feelingAboutDay || null,
+          reachedIntention: reachedIntention || null,
+          dayTitle: dayTitle || null,
+          strongestSensation: strongestSensation || null,
+        });
+      } else {
+        checkin = await storage.createWellbeingCheckin({
+          userId,
+          wellbeingLevel,
+          notes: notes || null,
+          feelingAboutDay: feelingAboutDay || null,
+          reachedIntention: reachedIntention || null,
+          dayTitle: dayTitle || null,
+          strongestSensation: strongestSensation || null,
+        });
+      }
+
+      // Award seeds for the wellbeing check-in (only if just created, not updated repeatedly)
+      if (!existing) {
+        try { await storage.awardSeeds(userId, 'pulse_checkin', { targetId: `wellbeing:${checkin.id}` }); } catch (e) {}
+      }
 
       res.json(checkin);
     } catch (error) {
       console.error("Error creating wellbeing checkin:", error);
       res.status(500).json({ message: "Failed to create wellbeing checkin" });
+    }
+  });
+
+  // Morning intention — set or get today's intention
+  app.get('/api/wellbeing/morning-intention', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const checkin = await storage.getTodaysWellbeingCheckin(userId);
+      res.json({ intention: checkin?.morningIntention || null });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch morning intention" });
+    }
+  });
+
+  app.post('/api/wellbeing/morning-intention', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { intention } = req.body;
+      if (!intention || !intention.trim()) {
+        return res.status(400).json({ message: "Intention text is required" });
+      }
+
+      const existing = await storage.getTodaysWellbeingCheckin(userId);
+      let checkin;
+      if (existing) {
+        checkin = await storage.updateWellbeingCheckin(existing.id, { morningIntention: intention.trim() });
+      } else {
+        checkin = await storage.createWellbeingCheckin({
+          userId,
+          wellbeingLevel: 3, // neutral placeholder; updated at evening check-in
+          morningIntention: intention.trim(),
+        });
+      }
+      res.json({ intention: checkin.morningIntention });
+    } catch (error) {
+      console.error("Error saving morning intention:", error);
+      res.status(500).json({ message: "Failed to save morning intention" });
     }
   });
 

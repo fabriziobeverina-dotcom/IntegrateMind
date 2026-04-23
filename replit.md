@@ -103,6 +103,20 @@ The platform includes a progressive gamification system called **Seeds** that re
 
 **Design Rule:** Gamification UI hidden until first seeds earned (hasEarnedFirstSeeds). No leaderboards.
 
+### Morning Intention Feature
+
+**Dashboard Card:** A "Morning Intention" card appears on the Dashboard every day with a text input. Users type their intention for the day and tap "Set intention" to save it.
+
+**Storage:** Saves to `wellbeing_checkins.morning_intention` (nullable text column). If no checkin exists for today, creates a stub with `wellbeing_level = 3` (neutral placeholder). If a checkin exists (from a previous morning intention), updates it.
+
+**Evening link:** When the user opens the Evening Reflection step in WellbeingScale, their morning intention is shown as a quoted banner above the reflection questions — giving context for "Have you reached your daily intention?"
+
+**API Endpoints:**
+- `GET /api/wellbeing/morning-intention` — returns `{ intention: string | null }` for today
+- `POST /api/wellbeing/morning-intention` — saves intention (body: `{ intention: string }`)
+
+**Upsert fix:** `POST /api/wellbeing` now checks for an existing today's checkin and updates it instead of creating a duplicate row. This ensures the morning intention set earlier in the day is preserved when the evening check-in is submitted.
+
 ### Somatic Practice Push Notification & In-App Nudge
 
 **Push Notification Infrastructure:**

@@ -151,6 +151,8 @@ export interface IStorage {
 
   // Reminder scheduling
   getUsersWithRemindersAt(time: string): Promise<User[]>;
+  getUsersForMorningReminder(time: string, timezone: string): Promise<User[]>;
+  getUsersForEveningReminder(time: string, timezone: string): Promise<User[]>;
   
   // Integration prompts
   getIntegrationPrompts(): Promise<IntegrationPrompt[]>;
@@ -169,6 +171,7 @@ export interface IStorage {
   getUserWellbeingCheckins(userId: string, limit?: number): Promise<WellbeingCheckin[]>;
   getTodaysWellbeingCheckin(userId: string): Promise<WellbeingCheckin | undefined>;
   createWellbeingCheckin(checkin: InsertWellbeingCheckin): Promise<WellbeingCheckin>;
+  updateWellbeingCheckin(id: string, fields: Partial<Omit<WellbeingCheckin, 'id' | 'userId' | 'createdAt'>>): Promise<WellbeingCheckin>;
   
   // Dream journal
   getTodaysDreamJournal(userId: string): Promise<DreamJournal | undefined>;
@@ -843,6 +846,32 @@ export class DatabaseStorage implements IStorage {
         )
       );
   }
+
+  async getUsersForMorningReminder(time: string, timezone: string): Promise<User[]> {
+    return await this.db.select()
+      .from(users)
+      .where(
+        and(
+          eq(users.reminderEnabled, true),
+          eq(users.morningReminderEnabled, true),
+          eq(users.morningReminderTime, time),
+          eq(users.reminderTimezone, timezone)
+        )
+      );
+  }
+
+  async getUsersForEveningReminder(time: string, timezone: string): Promise<User[]> {
+    return await this.db.select()
+      .from(users)
+      .where(
+        and(
+          eq(users.reminderEnabled, true),
+          eq(users.eveningReminderEnabled, true),
+          eq(users.eveningReminderTime, time),
+          eq(users.reminderTimezone, timezone)
+        )
+      );
+  }
   
   // Integration prompts
   async getIntegrationPrompts(): Promise<IntegrationPrompt[]> {
@@ -990,6 +1019,14 @@ export class DatabaseStorage implements IStorage {
   
   async createWellbeingCheckin(checkin: InsertWellbeingCheckin): Promise<WellbeingCheckin> {
     const results = await this.db.insert(wellbeingCheckins).values(checkin).returning();
+    return results[0]!;
+  }
+
+  async updateWellbeingCheckin(id: string, fields: Partial<Omit<WellbeingCheckin, 'id' | 'userId' | 'createdAt'>>): Promise<WellbeingCheckin> {
+    const results = await this.db.update(wellbeingCheckins)
+      .set(fields)
+      .where(eq(wellbeingCheckins.id, id))
+      .returning();
     return results[0]!;
   }
 

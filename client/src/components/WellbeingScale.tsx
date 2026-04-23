@@ -13,6 +13,7 @@ interface WellbeingCheckin {
   userId: string;
   wellbeingLevel: number;
   notes: string | null;
+  morningIntention: string | null;
   feelingAboutDay: string | null;
   reachedIntention: string | null;
   dayTitle: string | null;
@@ -302,6 +303,13 @@ export function WellbeingScale() {
             </p>
           </div>
         </div>
+
+        {todaysCheckin?.morningIntention && (
+          <div className="rounded-lg bg-primary/5 border border-primary/20 px-3 py-2.5">
+            <p className="text-[10px] sm:text-xs text-muted-foreground mb-0.5">Your intention this morning</p>
+            <p className="text-xs sm:text-sm italic">"{todaysCheckin.morningIntention}"</p>
+          </div>
+        )}
 
         <div className="space-y-4">
           {reflectionQuestions.map((q) => {

@@ -62,117 +62,116 @@ interface ReminderNotification {
 
 const reminderTemplates = {
   journal: {
-    title: '📝 Journal Time',
-    body: 'Take a moment to reflect and write in your journal',
+    title: 'Good morning',
+    body: "Set your intention for today, then take a moment to journal.",
     url: '/journal'
   },
   progress: {
-    title: '📊 Progress Check-in',
-    body: 'How are you feeling today? Track your mood, sleep, and grounding',
+    title: 'Evening check-in',
+    body: "How was your day? Reflect and log your wellbeing before you rest.",
     url: '/progress'
   },
   practice: {
-    title: '🧘 Practice Time',
-    body: 'Time for your daily mindfulness practice',
+    title: 'Time for your practice',
+    body: 'Your daily mindfulness practice is waiting.',
     url: '/practices'
   }
 };
 
 export class ReminderScheduler {
   
-  // Get users who should receive reminders at the current time
-  async getUsersForCurrentTime(): Promise<User[]> {
+  // Get users who should receive morning or evening reminders right now
+  async getUsersForCurrentTime(): Promise<{ user: User; reminderType: 'journal' | 'progress' }[]> {
     try {
       const now = new Date();
-      const usersToNotify: User[] = [];
-      
-      // Get all users with reminders enabled (we need a new storage method for this)
-      // For now, we'll check common time zones by converting current UTC time
+      const results: { user: User; reminderType: 'journal' | 'progress' }[] = [];
+
       const commonTimezones = [
-        'UTC', 'America/New_York', 'America/Chicago', 'America/Denver', 
+        'UTC', 'America/New_York', 'America/Chicago', 'America/Denver',
         'America/Los_Angeles', 'Europe/London', 'Europe/Paris', 'Asia/Tokyo'
       ];
-      
+
       for (const timezone of commonTimezones) {
         try {
-          // Convert current UTC time to the timezone
           const timeInZone = new Intl.DateTimeFormat('en-US', {
             timeZone: timezone,
             hour: '2-digit',
             minute: '2-digit',
             hour12: false
           }).format(now);
-          
+
           console.log(`Checking timezone ${timezone} at ${timeInZone}`);
-          
-          // Get users who have reminders scheduled for this time in this timezone
-          const usersInTimezone = await storage.getUsersWithRemindersAt(timeInZone);
-          
-          // Filter to only users who actually have this timezone set
-          const matchingUsers = usersInTimezone.filter(user => 
-            user.reminderTimezone === timezone && user.reminderEnabled
-          );
-          
-          usersToNotify.push(...matchingUsers);
-          
+
+          // Morning reminders
+          const morningUsers = await storage.getUsersForMorningReminder(timeInZone, timezone);
+          for (const user of morningUsers) {
+            results.push({ user, reminderType: 'journal' });
+          }
+
+          // Evening reminders
+          const eveningUsers = await storage.getUsersForEveningReminder(timeInZone, timezone);
+          for (const user of eveningUsers) {
+            results.push({ user, reminderType: 'progress' });
+          }
+
         } catch (timezoneError) {
           console.error(`Error processing timezone ${timezone}:`, timezoneError);
         }
       }
-      
-      console.log(`Found ${usersToNotify.length} users total for notifications`);
-      return usersToNotify;
-      
+
+      console.log(`Found ${results.length} users total for notifications`);
+      return results;
+
     } catch (error) {
       console.error('Error getting users for current time:', error);
       return [];
     }
   }
-  
-  // Send push notification to a user's subscriptions
+
+  // Send push notification to a user using the stored JSONB subscription
   async sendNotificationToUser(user: User, reminderType: 'journal' | 'progress' | 'practice'): Promise<void> {
     try {
-      const subscriptions = await storage.getUserPushSubscriptions(user.id);
-      
-      if (subscriptions.length === 0) {
-        console.log(`No active subscriptions for user ${user.id}`);
+      if (!VAPID_CONFIGURED) return;
+
+      const pushSub = (user as any).pushSubscription as {
+        endpoint: string;
+        keys: { p256dh: string; auth: string };
+      } | null;
+
+      if (!pushSub?.endpoint) {
+        console.log(`No push subscription for user ${user.id}`);
         return;
       }
-      
+
       const template = reminderTemplates[reminderType];
-      const notificationPayload: ReminderNotification = {
+      const payload = JSON.stringify({
         title: template.title,
         body: template.body,
         url: template.url,
+        tag: `reminder-${reminderType}`,
         reminderType,
-        icon: '/favicon.ico'
-      };
-      
-      // Send to all user's active subscriptions
-      const sendPromises = subscriptions.map(async (subscription) => {
-        try {
-          await this.sendPushNotification(subscription, notificationPayload);
-          console.log(`Notification sent to subscription ${subscription.id}`);
-          
-          // Record successful delivery
-          await this.recordDelivery(user.id, reminderType, 'sent');
-          
-        } catch (error: any) {
-          console.error(`Failed to send notification to subscription ${subscription.id}:`, error);
-          
-          // Record failed delivery
-          await this.recordDelivery(user.id, reminderType, 'failed', error?.message || 'Unknown error');
-          
-          // If the subscription is invalid, deactivate it
-          if (error?.statusCode === 410) {
-            console.log(`Deactivating invalid subscription ${subscription.id}`);
-            // Could add a method to deactivate specific subscription
-          }
-        }
+        icon: '/icon-192.png',
       });
-      
-      await Promise.all(sendPromises);
-      
+
+      try {
+        await webpush.sendNotification(
+          { endpoint: pushSub.endpoint, keys: { p256dh: pushSub.keys.p256dh, auth: pushSub.keys.auth } },
+          payload,
+          {
+            TTL: 24 * 60 * 60,
+            urgency: 'normal',
+            vapidDetails: { subject: VAPID_EMAIL, publicKey: VAPID_PUBLIC_KEY!, privateKey: VAPID_PRIVATE_KEY! }
+          }
+        );
+        await storage.updateUser(user.id, { lastNotificationSentAt: new Date() } as any);
+        console.log(`[Reminder] Sent ${reminderType} notification to user ${user.id}`);
+      } catch (err: any) {
+        console.error(`[Reminder] Push failed for user ${user.id}:`, err?.message);
+        if (err?.statusCode === 410 || err?.statusCode === 404) {
+          await storage.updateUser(user.id, { pushSubscription: null } as any);
+        }
+      }
+
     } catch (error) {
       console.error(`Error sending notification to user ${user.id}:`, error);
     }
@@ -234,55 +233,44 @@ export class ReminderScheduler {
   
   // Send test notification
   async sendTestNotification(userId: string): Promise<void> {
-    try {
-      const user = await storage.getUser(userId);
-      if (!user) {
-        throw new Error('User not found');
-      }
-      
-      const subscriptions = await storage.getUserPushSubscriptions(userId);
-      if (subscriptions.length === 0) {
-        throw new Error('No active subscriptions found');
-      }
-      
-      const testNotification: ReminderNotification = {
-        title: '🌱 Integration Compass Test',
-        body: 'This is a test notification! Your daily reminders will look like this.',
-        url: '/',
-        reminderType: 'journal',
-        icon: '/favicon.ico'
-      };
-      
-      // Send to the first active subscription
-      await this.sendPushNotification(subscriptions[0], testNotification);
-      console.log(`Test notification sent to user ${userId}`);
-      
-    } catch (error) {
-      console.error(`Error sending test notification to user ${userId}:`, error);
-      throw error;
-    }
+    if (!VAPID_CONFIGURED) throw new Error('Push notifications not configured');
+
+    const user = await storage.getUser(userId);
+    if (!user) throw new Error('User not found');
+
+    const pushSub = (user as any).pushSubscription as {
+      endpoint: string; keys: { p256dh: string; auth: string };
+    } | null;
+    if (!pushSub?.endpoint) throw new Error('No active push subscription found');
+
+    const payload = JSON.stringify({
+      title: 'Integration Compass',
+      body: 'This is a test notification — your reminders will look like this.',
+      url: '/',
+      tag: 'test',
+      icon: '/icon-192.png',
+    });
+
+    await webpush.sendNotification(
+      { endpoint: pushSub.endpoint, keys: pushSub.keys },
+      payload,
+      { TTL: 3600, urgency: 'normal', vapidDetails: { subject: VAPID_EMAIL, publicKey: VAPID_PUBLIC_KEY!, privateKey: VAPID_PRIVATE_KEY! } }
+    );
+    console.log(`Test notification sent to user ${userId}`);
   }
   
   // Process all reminders for current time (called by scheduler)
   async processCurrentReminders(): Promise<void> {
     console.log('Processing reminders for current time...');
-    
+
     try {
-      const users = await this.getUsersForCurrentTime();
-      
-      for (const user of users) {
-        if (!user.reminderEnabled || !user.reminderTypes?.length) {
-          continue;
-        }
-        
-        // Send notifications for each enabled reminder type
-        for (const reminderType of user.reminderTypes) {
-          if (['journal', 'progress', 'practice'].includes(reminderType)) {
-            await this.sendNotificationToUser(user, reminderType as 'journal' | 'progress' | 'practice');
-          }
-        }
+      const entries = await this.getUsersForCurrentTime();
+
+      for (const { user, reminderType } of entries) {
+        if (!user.reminderEnabled) continue;
+        await this.sendNotificationToUser(user, reminderType);
       }
-      
+
     } catch (error) {
       console.error('Error processing current reminders:', error);
     }

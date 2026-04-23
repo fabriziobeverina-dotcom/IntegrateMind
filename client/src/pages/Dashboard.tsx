@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useLocation, Link } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import { DailyPrompt } from "@/components/DailyPrompt";
 import { WellbeingScale } from "@/components/WellbeingScale";
@@ -12,7 +13,8 @@ import { CommunityPost } from "@/components/CommunityPost";
 import { PulseCheckInterstitial } from "@/components/PulseCheckInterstitial";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Plus, Compass, MessageCircle, ExternalLink } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Plus, Compass, MessageCircle, ExternalLink, Sunrise, Check } from "lucide-react";
 import { PhaseIndicator } from "@/components/PhaseIndicator";
 import KillTheShamanOverlay, { useKillTheShamanEgg } from "@/components/KillTheShamanEgg";
 import logoImage from "@assets/pao_logo_1775666029285.jpg";
@@ -23,8 +25,27 @@ export default function Dashboard() {
   const [, setLocation] = useLocation();
   const [selectedMetric, setSelectedMetric] = useState<'mood' | 'sleep' | 'grounding'>('mood');
   const [pulseCheckDismissed, setPulseCheckDismissed] = useState(false);
+  const [intentionInput, setIntentionInput] = useState('');
   const { user } = useAuth();
   const { open: eggOpen, close: closeEgg, eggTrigger } = useKillTheShamanEgg();
+
+  // Morning intention
+  const { data: intentionData } = useQuery<{ intention: string | null }>({
+    queryKey: ['/api/wellbeing/morning-intention'],
+  });
+  const savedIntention = intentionData?.intention ?? null;
+
+  const setIntentionMutation = useMutation({
+    mutationFn: async (intention: string) => {
+      const res = await apiRequest('POST', '/api/wellbeing/morning-intention', { intention });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/wellbeing/morning-intention'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/wellbeing/today'] });
+      setIntentionInput('');
+    },
+  });
 
   // Pulse check and stabilization status
   const { data: pulseStatus } = useQuery<{
@@ -155,6 +176,62 @@ export default function Dashboard() {
           </Link>
         </Card>
       </div>
+
+      {/* Morning Intention Card */}
+      <Card className="p-4 sm:p-5 w-full min-w-0">
+        <div className="flex items-start gap-3 min-w-0">
+          <div className="p-1.5 rounded-lg bg-amber-500/10 flex-shrink-0">
+            <Sunrise className="h-4 w-4 sm:h-5 sm:w-5 text-amber-600 dark:text-amber-400" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-sm sm:text-base" data-testid="text-morning-intention-title">
+              Morning Intention
+            </h3>
+            {savedIntention ? (
+              <div className="mt-2 space-y-2">
+                <div className="flex items-start gap-2">
+                  <Check className="h-3.5 w-3.5 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
+                  <p className="text-xs sm:text-sm italic text-foreground" data-testid="text-saved-intention">
+                    "{savedIntention}"
+                  </p>
+                </div>
+                <button
+                  className="text-[10px] sm:text-xs text-muted-foreground underline underline-offset-2"
+                  onClick={() => setIntentionInput(savedIntention)}
+                  data-testid="button-edit-intention"
+                >
+                  Edit intention
+                </button>
+              </div>
+            ) : (
+              <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+                What do you want to focus on today?
+              </p>
+            )}
+          </div>
+        </div>
+
+        {(!savedIntention || intentionInput) && (
+          <div className="mt-3 space-y-2">
+            <Textarea
+              placeholder="e.g. Stay present, be kind to myself, finish one creative thing…"
+              value={intentionInput}
+              onChange={(e) => setIntentionInput(e.target.value)}
+              rows={2}
+              className="resize-none text-xs sm:text-sm"
+              data-testid="input-morning-intention"
+            />
+            <Button
+              size="sm"
+              disabled={!intentionInput.trim() || setIntentionMutation.isPending}
+              onClick={() => setIntentionMutation.mutate(intentionInput.trim())}
+              data-testid="button-save-intention"
+            >
+              {setIntentionMutation.isPending ? "Saving…" : savedIntention ? "Update intention" : "Set intention"}
+            </Button>
+          </div>
+        )}
+      </Card>
 
       {/* Daily Prompt Section */}
       <div className="space-y-3 sm:space-y-4 w-full min-w-0">

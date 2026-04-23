@@ -272,6 +272,7 @@ export const wellbeingCheckins = pgTable("wellbeing_checkins", {
   wellbeingLevel: integer("wellbeing_level").notNull(), // 1-5 scale (1=sad, 2=low, 3=neutral, 4=good, 5=euphoric)
   notes: text("notes"),
   feelingAboutDay: text("feeling_about_day"),
+  morningIntention: text("morning_intention"),
   reachedIntention: text("reached_intention"),
   dayTitle: text("day_title"),
   strongestSensation: text("strongest_sensation"),
