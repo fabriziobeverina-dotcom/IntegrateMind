@@ -116,7 +116,20 @@ function buildSummary(row: WellbeingRow): string {
 
   // --- Composite context ---
   if (parts.length === 0) {
-    return `${firstName} has been flagged based on a combination of signals that individually fall within our monitoring criteria. Review the details below for the specific data points.`;
+    const pulseNote = pulse
+      ? `Their most recent pulse check recorded an emotional score of ${pulse.q1}/5, a physical grounding score of ${pulse.q2}/5, and a connection score of ${pulse.q3}/5 (total: ${pulse.composite}/15).`
+      : "No pulse check has been completed yet.";
+    const journalNote =
+      row.daysSinceJournal === null
+        ? "They have never written a journal entry."
+        : row.daysSinceJournal === 0
+          ? "They wrote a journal entry today."
+          : `Their last journal entry was ${row.daysSinceJournal} day${row.daysSinceJournal === 1 ? "" : "s"} ago.`;
+    const statusNote =
+      row.alertStatus === "triggered"
+        ? `The system moved ${firstName} to Triggered status, which may have occurred during a previous check when the data showed a more acute pattern. The signals may have since shifted — review the full detail below and use your facilitator judgement.`
+        : `The system moved ${firstName} to Watching status, indicating early-stage signals were present at the time of detection. The situation warrants observation even if the individual metrics look borderline now.`;
+    return `${pulseNote} ${journalNote} ${statusNote}`;
   }
 
   const statusContext =
