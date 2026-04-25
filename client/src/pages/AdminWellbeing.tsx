@@ -196,7 +196,7 @@ function FlagReportDialog({
     const subject = encodeURIComponent(`Checking in — Integration Compass`);
     const body = encodeURIComponent(buildEmailBody(row));
     const to = row.email ?? "";
-    window.open(`mailto:${to}?subject=${subject}&body=${body}`, "_blank");
+    window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
   };
 
   return (
