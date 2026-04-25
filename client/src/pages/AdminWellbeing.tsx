@@ -74,6 +74,59 @@ const PULSE_QUESTIONS = [
   },
 ];
 
+function buildSummary(row: WellbeingRow): string {
+  const firstName = row.displayName.split(" ")[0];
+  const flags = Array.isArray(row.flags) ? (row.flags as Array<{ name: string }>) : [];
+  const pulse = row.lastPulse;
+  const parts: string[] = [];
+
+  // --- Pulse-based reasons ---
+  if (pulse) {
+    const atMinimum = (["q1", "q2", "q3"] as const).filter(k => pulse[k] === 1);
+    const veryLow = (["q1", "q2", "q3"] as const).filter(k => pulse[k] <= 2);
+    const labelMap: Record<string, string> = { q1: "emotional state", q2: "physical grounding", q3: "sense of connection" };
+
+    if (atMinimum.length > 0) {
+      const labels = atMinimum.map(k => labelMap[k]).join(" and ");
+      parts.push(`${firstName} scored 1 out of 5 on ${labels} in their most recent pulse check — the lowest possible score, which automatically triggers a review under our monitoring criteria.`);
+    } else if (veryLow.length >= 2) {
+      const labels = veryLow.map(k => labelMap[k]).join(" and ");
+      parts.push(`${firstName} scored 2 or below on ${labels} in their most recent pulse check (total: ${pulse.composite}/15). Our threshold for concern is two or more very low scores (≤ 2/5), which this check-in crossed.`);
+    } else if (pulse.composite <= 6) {
+      parts.push(`${firstName}'s overall pulse check score was ${pulse.composite} out of 15 — below the threshold of 6 that indicates a need for closer attention.`);
+    }
+
+    if (row.scoreDelta !== null && row.scoreDelta <= -5) {
+      parts.push(`Their score also dropped ${Math.abs(row.scoreDelta)} points compared to their previous check-in, which meets our criterion for a sudden significant decline (≥ 5 points).`);
+    }
+  }
+
+  // --- Journal-based flags ---
+  const flagSentences: Record<string, string> = {
+    journaling_dropout: `${firstName} had been journaling at least 3 times in the prior week but then made no entries for 4 or more consecutive days. Our system flags this pattern as a meaningful drop in engagement.`,
+    entry_length_collapse: `The length of ${firstName}'s journal entries dropped sharply — from an average of 80 or more words to fewer than 30 words over the most recent 3 days. This collapse in depth is a recognised signal of possible emotional withdrawal.`,
+    obsessive_repetition: `Analysis of ${firstName}'s last 5 journal entries found that a single word or theme accounts for more than 40% of all written content. This level of repetition may reflect a looping thought pattern or unresolved fixation.`,
+    streak_break: `${firstName} had maintained a journaling streak of 7 or more consecutive days and then stopped. While a missed day can be ordinary, a streak break after consistent engagement is worth noting in the context of integration support.`,
+  };
+
+  for (const flag of flags) {
+    const sentence = flagSentences[flag.name];
+    if (sentence) parts.push(sentence);
+  }
+
+  // --- Composite context ---
+  if (parts.length === 0) {
+    return `${firstName} has been flagged based on a combination of signals that individually fall within our monitoring criteria. Review the details below for the specific data points.`;
+  }
+
+  const statusContext =
+    row.alertStatus === "triggered"
+      ? `Based on the above, the system has automatically moved ${firstName} to Triggered status, meaning facilitator follow-up is recommended.`
+      : `Based on the above, the system has moved ${firstName} to Watching status. No immediate action is required but the situation warrants ongoing observation.`;
+
+  return parts.join(" ") + " " + statusContext;
+}
+
 function pulseReasons(pulse: WellbeingRow["lastPulse"], delta: number | null): string[] {
   if (!pulse) return [];
   const reasons: string[] = [];
@@ -229,6 +282,12 @@ function FlagReportDialog({
             <p className="text-xs text-muted-foreground mt-2">
               This report is only visible to facilitators. The participant does not see these flags.
             </p>
+          </div>
+
+          {/* Narrative summary */}
+          <div className="space-y-1.5">
+            <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Why this person was flagged</p>
+            <p className="text-sm leading-relaxed">{buildSummary(row)}</p>
           </div>
 
           {/* Pulse check scores */}
