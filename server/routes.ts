@@ -2183,6 +2183,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return {
           userId: user.id,
           displayName: [user.firstName, user.lastName].filter(Boolean).join(' ') || user.name || 'Anonymous',
+          email: user.email ?? null,
           daysSinceJournal,
           lastPulse,
           scoreDelta: (lastPulse && prevPulse) ? lastPulse.composite - prevPulse.composite : null,
@@ -2196,6 +2197,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching admin wellbeing:", error);
       res.status(500).json({ message: "Failed to fetch wellbeing data" });
+    }
+  });
+
+  // Admin — save facilitator note without resolving
+  app.post('/api/admin/wellbeing/:userId/note', isAdmin, async (req: any, res) => {
+    try {
+      const { userId } = req.params;
+      const { note } = req.body;
+      if (typeof note !== 'string') return res.status(400).json({ message: "note is required" });
+      await storage.upsertUserWellbeing(userId, { facilitatorNote: note });
+      res.json({ ok: true });
+    } catch (error) {
+      console.error("Error saving facilitator note:", error);
+      res.status(500).json({ message: "Failed to save note" });
     }
   });
 

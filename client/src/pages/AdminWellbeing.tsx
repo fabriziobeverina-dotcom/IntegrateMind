@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -9,12 +9,16 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { AlertTriangle, Eye, CheckCircle2, Flag, TrendingDown, BookOpen, Repeat2, ZapOff, Flame, Activity } from "lucide-react";
+import {
+  AlertTriangle, Eye, CheckCircle2, Flag, TrendingDown,
+  BookOpen, Repeat2, Flame, Activity, Mail, Save, Info,
+} from "lucide-react";
 import { format } from "date-fns";
 
 interface WellbeingRow {
   userId: string;
   displayName: string;
+  email: string | null;
   daysSinceJournal: number | null;
   lastPulse: { q1: number; q2: number; q3: number; composite: number; date: string } | null;
   scoreDelta: number | null;
@@ -35,7 +39,7 @@ const FLAG_DESCRIPTIONS: Record<string, string> = {
   journaling_dropout:
     "This person was journaling 3 or more times in the previous week, then stopped completely for 4 or more consecutive days — a significant behavioral change.",
   entry_length_collapse:
-    "Their journal entries previously averaged 80+ words. Over the last 3 days, the average has dropped below 30 words — suggesting withdrawal or disengagement.",
+    "Their journal entries previously averaged 80+ words. Over the last 3 days the average has dropped below 30 words — suggesting withdrawal or disengagement.",
   obsessive_repetition:
     "One word or theme dominates more than 40% of content across their last 5 journal entries — a possible sign of fixation or looping thought patterns.",
   streak_break:
@@ -49,15 +53,36 @@ const FLAG_ICONS: Record<string, typeof Flag> = {
   streak_break: Flame,
 };
 
+const PULSE_QUESTIONS = [
+  {
+    key: "q1",
+    label: "Emotional",
+    description:
+      "How emotionally regulated and stable this person has been feeling. A score of 1–2 suggests they may be feeling overwhelmed, numb, or in emotional distress.",
+  },
+  {
+    key: "q2",
+    label: "Body",
+    description:
+      "How present and connected they feel in their physical body — sleep, appetite, somatic grounding. Low scores can indicate physical symptoms of dysregulation.",
+  },
+  {
+    key: "q3",
+    label: "Connection",
+    description:
+      "How supported and connected they feel to others. A low score may indicate social isolation or difficulty reaching out — important context for follow-up.",
+  },
+];
+
 function pulseReasons(pulse: WellbeingRow["lastPulse"], delta: number | null): string[] {
   if (!pulse) return [];
   const reasons: string[] = [];
-  if (pulse.q1 === 1) reasons.push("Q1 (emotional state) answered at minimum (1/5)");
-  if (pulse.q2 === 1) reasons.push("Q2 (body / grounding) answered at minimum (1/5)");
-  if (pulse.q3 === 1) reasons.push("Q3 (support / connection) answered at minimum (1/5)");
+  if (pulse.q1 === 1) reasons.push("Emotional score at minimum (1/5)");
+  if (pulse.q2 === 1) reasons.push("Body score at minimum (1/5)");
+  if (pulse.q3 === 1) reasons.push("Connection score at minimum (1/5)");
   const lowCount = [pulse.q1, pulse.q2, pulse.q3].filter(q => q <= 2).length;
   if (lowCount >= 2 && pulse.q1 !== 1 && pulse.q2 !== 1 && pulse.q3 !== 1) {
-    reasons.push(`${lowCount} of 3 answers were very low (≤ 2/5)`);
+    reasons.push(`${lowCount} of 3 scores were very low (≤ 2/5)`);
   }
   if (pulse.composite <= 6 && reasons.length === 0) {
     reasons.push(`Overall score very low (${pulse.composite}/15)`);
@@ -66,6 +91,28 @@ function pulseReasons(pulse: WellbeingRow["lastPulse"], delta: number | null): s
     reasons.push(`Sharp decline of ${Math.abs(delta)} points from previous check-in`);
   }
   return reasons;
+}
+
+function buildEmailBody(row: WellbeingRow): string {
+  const flags = Array.isArray(row.flags) ? (row.flags as Array<{ name: string }>) : [];
+  const flagLines = flags.map(f => `- ${FLAG_LABELS[f.name] ?? f.name}`).join("\n");
+  const pulseInfo = row.lastPulse
+    ? `Pulse check scores — Emotional: ${row.lastPulse.q1}/5, Body: ${row.lastPulse.q2}/5, Connection: ${row.lastPulse.q3}/5 (Total: ${row.lastPulse.composite}/15)`
+    : "";
+  return [
+    `Hi ${row.displayName.split(" ")[0]},`,
+    "",
+    "I wanted to reach out and check in with you personally. I noticed some signals in your Integration Compass activity and wanted to make sure you're doing okay.",
+    "",
+    pulseInfo,
+    flagLines ? `Signals detected:\n${flagLines}` : "",
+    "",
+    "Please know that support is available. Feel free to reply to this email or reach out directly whenever you're ready.",
+    "",
+    "With care,",
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 function StatusBadge({
@@ -128,16 +175,33 @@ function FlagReportDialog({
   row: WellbeingRow | null;
   onClose: () => void;
 }) {
+  const { toast } = useToast();
+  const [note, setNote] = useState(row?.facilitatorNote ?? "");
+
+  const noteMutation = useMutation({
+    mutationFn: (note: string) =>
+      apiRequest("POST", `/api/admin/wellbeing/${row!.userId}/note`, { note }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/wellbeing'] });
+      toast({ title: "Note saved" });
+    },
+  });
+
   if (!row) return null;
   const pulse = row.lastPulse;
   const reasons = pulseReasons(pulse, row.scoreDelta);
   const flags = Array.isArray(row.flags) ? (row.flags as Array<{ name: string; setAt: string }>) : [];
-  const hasJournalFlags = flags.length > 0;
-  const hasPulseAlert = reasons.length > 0;
+
+  const handleEmail = () => {
+    const subject = encodeURIComponent(`Checking in — Integration Compass`);
+    const body = encodeURIComponent(buildEmailBody(row));
+    const to = row.email ?? "";
+    window.open(`mailto:${to}?subject=${subject}&body=${body}`, "_blank");
+  };
 
   return (
     <Dialog open={!!row} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-lg" data-testid="dialog-flag-report">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto" data-testid="dialog-flag-report">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <AlertTriangle className="h-4 w-4 text-red-500" />
@@ -147,7 +211,7 @@ function FlagReportDialog({
 
         <div className="space-y-5 py-1">
           {/* Alert summary */}
-          <div className="rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 px-4 py-3 space-y-1">
+          <div className="rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 px-4 py-3">
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <StatusBadge status={row.alertStatus} />
               {row.alertTriggeredAt && (
@@ -156,18 +220,20 @@ function FlagReportDialog({
                 </span>
               )}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              The reasons detected are listed below. This view is only visible to facilitators.
+            <p className="text-xs text-muted-foreground mt-2">
+              This report is only visible to facilitators. The participant does not see these flags.
             </p>
           </div>
 
-          {/* Pulse check findings */}
+          {/* Pulse check scores */}
           {pulse && (
-            <div className="space-y-2">
+            <div className="space-y-3">
               <div className="flex items-center gap-1.5 text-sm font-medium">
                 <Activity className="h-4 w-4 text-primary" />
-                Pulse check score
+                Pulse check scores
               </div>
+
+              {/* Score grid */}
               <div className="grid grid-cols-4 gap-2 text-center">
                 {[
                   { label: "Emotional", value: pulse.q1 },
@@ -188,6 +254,31 @@ function FlagReportDialog({
                 ))}
               </div>
 
+              {/* Score explanations */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-1 text-[11px] text-muted-foreground uppercase tracking-wide font-medium">
+                  <Info className="h-3 w-3" />
+                  What each score measures
+                </div>
+                {PULSE_QUESTIONS.map((q) => {
+                  const score = pulse[q.key as "q1" | "q2" | "q3"];
+                  return (
+                    <div key={q.key} className="rounded-lg bg-muted/30 px-3 py-2 space-y-0.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-medium">{q.label}</span>
+                        <span className={`text-xs font-semibold ${
+                          score <= 2 ? "text-red-600 dark:text-red-400" : "text-muted-foreground"
+                        }`}>
+                          {score}/5
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-relaxed">{q.description}</p>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Score delta */}
               {row.scoreDelta !== null && (
                 <p className="text-xs text-muted-foreground">
                   Change from previous check-in:{" "}
@@ -197,6 +288,7 @@ function FlagReportDialog({
                 </p>
               )}
 
+              {/* Trigger reasons */}
               {reasons.length > 0 && (
                 <div className="space-y-1.5 pt-1">
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">What triggered the alert</p>
@@ -212,7 +304,7 @@ function FlagReportDialog({
           )}
 
           {/* Journal behaviour flags */}
-          {hasJournalFlags && (
+          {flags.length > 0 && (
             <div className="space-y-2">
               <div className="flex items-center gap-1.5 text-sm font-medium">
                 <Flag className="h-4 w-4 text-amber-500" />
@@ -222,7 +314,10 @@ function FlagReportDialog({
                 {flags.map((f) => {
                   const Icon = FLAG_ICONS[f.name] ?? Flag;
                   return (
-                    <div key={f.name} className="rounded-lg border bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/40 px-3 py-2.5 space-y-1">
+                    <div
+                      key={f.name}
+                      className="rounded-lg border bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/40 px-3 py-2.5 space-y-1"
+                    >
                       <div className="flex items-center justify-between gap-2 flex-wrap">
                         <div className="flex items-center gap-1.5">
                           <Icon className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
@@ -242,7 +337,7 @@ function FlagReportDialog({
             </div>
           )}
 
-          {/* Journal activity */}
+          {/* Last journal activity */}
           <div className="rounded-lg bg-muted/40 px-3 py-2.5">
             <p className="text-xs text-muted-foreground">
               Last journal entry:{" "}
@@ -256,15 +351,57 @@ function FlagReportDialog({
             </p>
           </div>
 
-          {/* Facilitator note if present */}
-          {row.facilitatorNote && (
-            <div className="rounded-lg bg-muted/40 px-3 py-2.5">
-              <p className="text-xs text-muted-foreground mb-0.5">Previous facilitator note</p>
-              <p className="text-xs italic">{row.facilitatorNote}</p>
+          {/* Facilitator note */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-1.5 text-sm font-medium">
+              <Save className="h-4 w-4 text-primary" />
+              Facilitator note
             </div>
-          )}
+            <Textarea
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="e.g. Followed up via WhatsApp on Apr 25 — they mentioned feeling isolated after returning home from retreat."
+              rows={3}
+              className="resize-none text-xs"
+              data-testid="input-facilitator-note"
+            />
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={note === (row.facilitatorNote ?? "") || noteMutation.isPending}
+              onClick={() => noteMutation.mutate(note)}
+              data-testid="button-save-note"
+            >
+              <Save className="h-3.5 w-3.5 mr-1.5" />
+              {noteMutation.isPending ? "Saving…" : "Save note"}
+            </Button>
+          </div>
 
-          <Button variant="outline" className="w-full" onClick={onClose}>
+          {/* Email button */}
+          <div className="rounded-lg border px-3 py-3 space-y-1.5">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div>
+                <p className="text-xs font-medium">Send a check-in email</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  Opens your email client with a pre-filled message to {row.displayName.split(" ")[0]}.
+                </p>
+              </div>
+              <Button
+                size="sm"
+                onClick={handleEmail}
+                disabled={!row.email}
+                data-testid="button-send-email"
+              >
+                <Mail className="h-3.5 w-3.5 mr-1.5" />
+                Open email
+              </Button>
+            </div>
+            {!row.email && (
+              <p className="text-[11px] text-red-500 dark:text-red-400">No email address on record for this user.</p>
+            )}
+          </div>
+
+          <Button variant="outline" className="w-full" onClick={onClose} data-testid="button-close-report">
             Close
           </Button>
         </div>
@@ -344,7 +481,6 @@ export default function AdminWellbeing() {
             >
               <CardContent className="p-4">
                 <div className="flex flex-wrap items-start gap-4">
-                  {/* Name + status */}
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2 mb-2">
                       <span className="font-medium">{row.displayName}</span>
@@ -363,7 +499,6 @@ export default function AdminWellbeing() {
                       )}
                     </div>
 
-                    {/* Metrics row */}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
                       <div>
                         <p className="text-xs text-muted-foreground mb-0.5">Last journal</p>
@@ -375,7 +510,6 @@ export default function AdminWellbeing() {
                               : `${row.daysSinceJournal}d ago`}
                         </p>
                       </div>
-
                       <div>
                         <p className="text-xs text-muted-foreground mb-0.5">Last pulse</p>
                         {row.lastPulse ? (
@@ -389,12 +523,10 @@ export default function AdminWellbeing() {
                           <p className="text-muted-foreground">None yet</p>
                         )}
                       </div>
-
                       <div>
                         <p className="text-xs text-muted-foreground mb-0.5">Score change</p>
                         <ScoreDelta delta={row.scoreDelta} />
                       </div>
-
                       <div>
                         <p className="text-xs text-muted-foreground mb-0.5">Alert since</p>
                         <p className="font-medium">
@@ -405,7 +537,6 @@ export default function AdminWellbeing() {
                       </div>
                     </div>
 
-                    {/* Active flags */}
                     {Array.isArray(row.flags) && row.flags.length > 0 && (
                       <div className="flex flex-wrap gap-1.5 mt-3">
                         {(row.flags as Array<{ name: string }>).map((f) => (
@@ -420,7 +551,6 @@ export default function AdminWellbeing() {
                       </div>
                     )}
 
-                    {/* Facilitator note */}
                     {row.facilitatorNote && (
                       <p className="mt-2 text-xs text-muted-foreground italic">
                         Note: {row.facilitatorNote}
@@ -428,7 +558,6 @@ export default function AdminWellbeing() {
                     )}
                   </div>
 
-                  {/* Action */}
                   {(row.alertStatus === "triggered" || row.alertStatus === "watching") && (
                     <Button
                       size="sm"
@@ -449,7 +578,9 @@ export default function AdminWellbeing() {
       )}
 
       {/* Flag report dialog */}
-      <FlagReportDialog row={reportUser} onClose={() => setReportUser(null)} />
+      {reportUser && (
+        <FlagReportDialog key={reportUser.userId} row={reportUser} onClose={() => setReportUser(null)} />
+      )}
 
       {/* Resolve dialog */}
       <Dialog open={!!resolvingUser} onOpenChange={(o) => { if (!o) setResolvingUser(null); }}>
@@ -471,9 +602,7 @@ export default function AdminWellbeing() {
               data-testid="input-resolve-note"
             />
             <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={() => setResolvingUser(null)}>
-                Cancel
-              </Button>
+              <Button variant="outline" onClick={() => setResolvingUser(null)}>Cancel</Button>
               <Button
                 onClick={() => resolveMutation.mutate({ userId: resolvingUser!.userId, note: resolveNote })}
                 disabled={resolveMutation.isPending}
