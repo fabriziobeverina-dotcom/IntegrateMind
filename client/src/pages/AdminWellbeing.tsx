@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { AlertTriangle, Eye, CheckCircle2, Clock, Flag } from "lucide-react";
+import { AlertTriangle, Eye, CheckCircle2, Flag, TrendingDown, BookOpen, Repeat2, ZapOff, Flame, Activity } from "lucide-react";
 import { format } from "date-fns";
 
 interface WellbeingRow {
@@ -31,10 +31,57 @@ const FLAG_LABELS: Record<string, string> = {
   streak_break: "Streak broken",
 };
 
-function StatusBadge({ status }: { status: WellbeingRow["alertStatus"] }) {
+const FLAG_DESCRIPTIONS: Record<string, string> = {
+  journaling_dropout:
+    "This person was journaling 3 or more times in the previous week, then stopped completely for 4 or more consecutive days — a significant behavioral change.",
+  entry_length_collapse:
+    "Their journal entries previously averaged 80+ words. Over the last 3 days, the average has dropped below 30 words — suggesting withdrawal or disengagement.",
+  obsessive_repetition:
+    "One word or theme dominates more than 40% of content across their last 5 journal entries — a possible sign of fixation or looping thought patterns.",
+  streak_break:
+    "They maintained a journaling streak of 7 or more consecutive days, then missed today — breaking an established pattern of engagement.",
+};
+
+const FLAG_ICONS: Record<string, typeof Flag> = {
+  journaling_dropout: BookOpen,
+  entry_length_collapse: TrendingDown,
+  obsessive_repetition: Repeat2,
+  streak_break: Flame,
+};
+
+function pulseReasons(pulse: WellbeingRow["lastPulse"], delta: number | null): string[] {
+  if (!pulse) return [];
+  const reasons: string[] = [];
+  if (pulse.q1 === 1) reasons.push("Q1 (emotional state) answered at minimum (1/5)");
+  if (pulse.q2 === 1) reasons.push("Q2 (body / grounding) answered at minimum (1/5)");
+  if (pulse.q3 === 1) reasons.push("Q3 (support / connection) answered at minimum (1/5)");
+  const lowCount = [pulse.q1, pulse.q2, pulse.q3].filter(q => q <= 2).length;
+  if (lowCount >= 2 && pulse.q1 !== 1 && pulse.q2 !== 1 && pulse.q3 !== 1) {
+    reasons.push(`${lowCount} of 3 answers were very low (≤ 2/5)`);
+  }
+  if (pulse.composite <= 6 && reasons.length === 0) {
+    reasons.push(`Overall score very low (${pulse.composite}/15)`);
+  }
+  if (delta !== null && delta <= -5) {
+    reasons.push(`Sharp decline of ${Math.abs(delta)} points from previous check-in`);
+  }
+  return reasons;
+}
+
+function StatusBadge({
+  status,
+  onClick,
+}: {
+  status: WellbeingRow["alertStatus"];
+  onClick?: () => void;
+}) {
   if (status === "triggered") {
     return (
-      <Badge className="bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200 gap-1">
+      <Badge
+        className="bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200 gap-1 cursor-pointer"
+        onClick={onClick}
+        data-testid="badge-triggered"
+      >
         <AlertTriangle className="h-3 w-3" />
         Triggered
       </Badge>
@@ -42,7 +89,11 @@ function StatusBadge({ status }: { status: WellbeingRow["alertStatus"] }) {
   }
   if (status === "watching") {
     return (
-      <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200 gap-1">
+      <Badge
+        className="bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200 gap-1 cursor-pointer"
+        onClick={onClick}
+        data-testid="badge-watching"
+      >
         <Eye className="h-3 w-3" />
         Watching
       </Badge>
@@ -70,10 +121,163 @@ function ScoreDelta({ delta }: { delta: number | null }) {
   return <span className="text-muted-foreground text-sm">0</span>;
 }
 
+function FlagReportDialog({
+  row,
+  onClose,
+}: {
+  row: WellbeingRow | null;
+  onClose: () => void;
+}) {
+  if (!row) return null;
+  const pulse = row.lastPulse;
+  const reasons = pulseReasons(pulse, row.scoreDelta);
+  const flags = Array.isArray(row.flags) ? (row.flags as Array<{ name: string; setAt: string }>) : [];
+  const hasJournalFlags = flags.length > 0;
+  const hasPulseAlert = reasons.length > 0;
+
+  return (
+    <Dialog open={!!row} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-lg" data-testid="dialog-flag-report">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-red-500" />
+            Flag report — {row.displayName}
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-5 py-1">
+          {/* Alert summary */}
+          <div className="rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 px-4 py-3 space-y-1">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <StatusBadge status={row.alertStatus} />
+              {row.alertTriggeredAt && (
+                <span className="text-xs text-muted-foreground">
+                  Since {format(new Date(row.alertTriggeredAt), "MMM d, yyyy")}
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              The reasons detected are listed below. This view is only visible to facilitators.
+            </p>
+          </div>
+
+          {/* Pulse check findings */}
+          {pulse && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-1.5 text-sm font-medium">
+                <Activity className="h-4 w-4 text-primary" />
+                Pulse check score
+              </div>
+              <div className="grid grid-cols-4 gap-2 text-center">
+                {[
+                  { label: "Emotional", value: pulse.q1 },
+                  { label: "Body", value: pulse.q2 },
+                  { label: "Connection", value: pulse.q3 },
+                  { label: "Total", value: `${pulse.composite}/15` },
+                ].map((item) => (
+                  <div key={item.label} className="rounded-lg bg-muted/50 py-2 px-1">
+                    <p className="text-xs text-muted-foreground">{item.label}</p>
+                    <p className={`font-semibold text-sm mt-0.5 ${
+                      typeof item.value === "number" && item.value <= 2
+                        ? "text-red-600 dark:text-red-400"
+                        : "text-foreground"
+                    }`}>
+                      {item.value}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              {row.scoreDelta !== null && (
+                <p className="text-xs text-muted-foreground">
+                  Change from previous check-in:{" "}
+                  <span className={row.scoreDelta <= -5 ? "text-red-600 dark:text-red-400 font-medium" : ""}>
+                    {row.scoreDelta > 0 ? "+" : ""}{row.scoreDelta} points
+                  </span>
+                </p>
+              )}
+
+              {reasons.length > 0 && (
+                <div className="space-y-1.5 pt-1">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">What triggered the alert</p>
+                  {reasons.map((reason, i) => (
+                    <div key={i} className="flex items-start gap-2 text-xs">
+                      <AlertTriangle className="h-3 w-3 text-red-500 mt-0.5 flex-shrink-0" />
+                      <span>{reason}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Journal behaviour flags */}
+          {hasJournalFlags && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-1.5 text-sm font-medium">
+                <Flag className="h-4 w-4 text-amber-500" />
+                Journal behaviour signals
+              </div>
+              <div className="space-y-2">
+                {flags.map((f) => {
+                  const Icon = FLAG_ICONS[f.name] ?? Flag;
+                  return (
+                    <div key={f.name} className="rounded-lg border bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/40 px-3 py-2.5 space-y-1">
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <div className="flex items-center gap-1.5">
+                          <Icon className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                          <span className="text-xs font-medium">{FLAG_LABELS[f.name] ?? f.name}</span>
+                        </div>
+                        <span className="text-[10px] text-muted-foreground">
+                          Detected {format(new Date(f.setAt), "MMM d, yyyy")}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        {FLAG_DESCRIPTIONS[f.name] ?? "Unusual pattern detected in journal behaviour."}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Journal activity */}
+          <div className="rounded-lg bg-muted/40 px-3 py-2.5">
+            <p className="text-xs text-muted-foreground">
+              Last journal entry:{" "}
+              <span className="text-foreground font-medium">
+                {row.daysSinceJournal === null
+                  ? "Never written"
+                  : row.daysSinceJournal === 0
+                    ? "Today"
+                    : `${row.daysSinceJournal} day${row.daysSinceJournal === 1 ? "" : "s"} ago`}
+              </span>
+            </p>
+          </div>
+
+          {/* Facilitator note if present */}
+          {row.facilitatorNote && (
+            <div className="rounded-lg bg-muted/40 px-3 py-2.5">
+              <p className="text-xs text-muted-foreground mb-0.5">Previous facilitator note</p>
+              <p className="text-xs italic">{row.facilitatorNote}</p>
+            </div>
+          )}
+
+          <Button variant="outline" className="w-full" onClick={onClose}>
+            Close
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function AdminWellbeing() {
   const { toast } = useToast();
   const [showOnlyTriggered, setShowOnlyTriggered] = useState(true);
   const [resolvingUser, setResolvingUser] = useState<WellbeingRow | null>(null);
+  const [reportUser, setReportUser] = useState<WellbeingRow | null>(null);
   const [resolveNote, setResolveNote] = useState("");
 
   const { data: rows = [], isLoading } = useQuery<WellbeingRow[]>({
@@ -144,7 +348,19 @@ export default function AdminWellbeing() {
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2 mb-2">
                       <span className="font-medium">{row.displayName}</span>
-                      <StatusBadge status={row.alertStatus} />
+                      <StatusBadge
+                        status={row.alertStatus}
+                        onClick={() => (row.alertStatus === "triggered" || row.alertStatus === "watching") && setReportUser(row)}
+                      />
+                      {(row.alertStatus === "triggered" || row.alertStatus === "watching") && (
+                        <button
+                          className="text-[10px] text-muted-foreground underline underline-offset-2"
+                          onClick={() => setReportUser(row)}
+                          data-testid={`button-view-report-${row.userId}`}
+                        >
+                          View report
+                        </button>
+                      )}
                     </div>
 
                     {/* Metrics row */}
@@ -231,6 +447,9 @@ export default function AdminWellbeing() {
           ))}
         </div>
       )}
+
+      {/* Flag report dialog */}
+      <FlagReportDialog row={reportUser} onClose={() => setReportUser(null)} />
 
       {/* Resolve dialog */}
       <Dialog open={!!resolvingUser} onOpenChange={(o) => { if (!o) setResolvingUser(null); }}>
