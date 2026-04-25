@@ -192,11 +192,17 @@ function FlagReportDialog({
   const reasons = pulseReasons(pulse, row.scoreDelta);
   const flags = Array.isArray(row.flags) ? (row.flags as Array<{ name: string; setAt: string }>) : [];
 
+  const [showEmailDraft, setShowEmailDraft] = useState(false);
+
   const handleEmail = () => {
     const subject = encodeURIComponent(`Checking in — Integration Compass`);
     const body = encodeURIComponent(buildEmailBody(row));
     const to = row.email ?? "";
-    window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
+    // Try mailto link; also show draft in case browser has no mail handler
+    const a = document.createElement("a");
+    a.href = `mailto:${to}?subject=${subject}&body=${body}`;
+    a.click();
+    setShowEmailDraft(true);
   };
 
   return (
@@ -377,13 +383,13 @@ function FlagReportDialog({
             </Button>
           </div>
 
-          {/* Email button */}
-          <div className="rounded-lg border px-3 py-3 space-y-1.5">
+          {/* Email section */}
+          <div className="rounded-lg border px-3 py-3 space-y-3">
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <div>
                 <p className="text-xs font-medium">Send a check-in email</p>
                 <p className="text-[11px] text-muted-foreground mt-0.5">
-                  Opens your email client with a pre-filled message to {row.displayName.split(" ")[0]}.
+                  {row.email ? `To: ${row.email}` : "No email address on record."}
                 </p>
               </div>
               <Button
@@ -396,8 +402,37 @@ function FlagReportDialog({
                 Open email
               </Button>
             </div>
-            {!row.email && (
-              <p className="text-[11px] text-red-500 dark:text-red-400">No email address on record for this user.</p>
+
+            {showEmailDraft && (
+              <div className="space-y-2">
+                <p className="text-[11px] text-muted-foreground">
+                  If your email app didn't open, copy the message below and paste it manually:
+                </p>
+                <div className="rounded-md bg-muted/50 px-3 py-2.5 space-y-1">
+                  <p className="text-[11px] text-muted-foreground">
+                    <span className="font-medium">To:</span> {row.email}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">
+                    <span className="font-medium">Subject:</span> Checking in — Integration Compass
+                  </p>
+                </div>
+                <div className="relative">
+                  <pre className="text-xs whitespace-pre-wrap bg-muted/50 rounded-md px-3 py-2.5 leading-relaxed font-sans">
+                    {buildEmailBody(row)}
+                  </pre>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="mt-1.5 w-full"
+                    onClick={() => {
+                      navigator.clipboard.writeText(buildEmailBody(row));
+                    }}
+                    data-testid="button-copy-email"
+                  >
+                    Copy message
+                  </Button>
+                </div>
+              </div>
             )}
           </div>
 
