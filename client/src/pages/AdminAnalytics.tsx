@@ -75,7 +75,30 @@ function formatDate(s: string | null) {
 export default function AdminAnalytics() {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [exportingUserId, setExportingUserId] = useState<string | null>(null);
   const { toast } = useToast();
+
+  const handleDownloadUserText = async (u: UserData, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setExportingUserId(u.id);
+    try {
+      const res = await fetch(`/api/admin/users/${u.id}/export-text`, { credentials: 'include' });
+      if (!res.ok) throw new Error('Export failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `export-${displayName(u).replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().split('T')[0]}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      toast({ title: 'Export failed', description: 'Could not download the file.', variant: 'destructive' });
+    } finally {
+      setExportingUserId(null);
+    }
+  };
 
   const handleExportCsv = async () => {
     setExporting(true);
@@ -198,15 +221,28 @@ export default function AdminAnalytics() {
                       )}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={(e) => { e.stopPropagation(); setSelectedUserId(u.id); }}
-                        data-testid={`button-view-analytics-${u.id}`}
-                      >
-                        <User className="h-3.5 w-3.5 mr-1.5" />
-                        View
-                      </Button>
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => { e.stopPropagation(); setSelectedUserId(u.id); }}
+                          data-testid={`button-view-analytics-${u.id}`}
+                        >
+                          <User className="h-3.5 w-3.5 mr-1.5" />
+                          View
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => handleDownloadUserText(u, e)}
+                          disabled={exportingUserId === u.id}
+                          data-testid={`button-download-text-${u.id}`}
+                          title="Download all text written by this user"
+                        >
+                          <Download className="h-3.5 w-3.5 mr-1.5" />
+                          {exportingUserId === u.id ? "…" : "Export"}
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

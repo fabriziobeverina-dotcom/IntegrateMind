@@ -1082,6 +1082,120 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin — export all text written by a single user as a .txt file
+  app.get('/api/admin/users/:userId/export-text', isAdmin, async (req: any, res) => {
+    try {
+      const { userId } = req.params;
+      const user = await storage.getUser(userId);
+      if (!user) return res.status(404).json({ message: "User not found" });
+
+      const [journals, promptResponses, promptProgress, wellbeing, dreams, posts] = await Promise.all([
+        storage.getUserJournalEntries(userId, 999),
+        storage.getAllUserPromptResponses(userId),
+        storage.getUserPromptProgress(userId),
+        storage.getUserWellbeingCheckins(userId, 999),
+        storage.getUserDreamJournals(userId, 999),
+        storage.getUserCommunityPosts(userId),
+      ]);
+
+      const name = [user.firstName, user.lastName].filter(Boolean).join(' ') || user.name || user.email || userId;
+      const hr = (char = '─') => char.repeat(60);
+      const fmtDate = (d: any) => d ? new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '';
+      const section = (title: string) => `\n${hr()}\n${title}\n${hr()}\n`;
+
+      let out = '';
+      out += `INTEGRATION COMPASS — FULL TEXT EXPORT\n`;
+      out += `${hr('=')}\n`;
+      out += `User:     ${name}\n`;
+      out += `Email:    ${user.email}\n`;
+      out += `Exported: ${new Date().toLocaleString('en-US')}\n`;
+      out += `${hr('=')}\n`;
+
+      // ── Journal Entries ──────────────────────────────────────────
+      if (journals.length) {
+        out += section(`JOURNAL ENTRIES  (${journals.length} total)`);
+        for (const e of journals) {
+          out += `\n[${fmtDate(e.createdAt)}]`;
+          if (e.title) out += `  ${e.title}`;
+          out += `\n${e.content}\n`;
+        }
+      }
+
+      // ── Daily Prompt Responses ───────────────────────────────────
+      if (promptResponses.length) {
+        out += section(`DAILY PROMPT RESPONSES  (${promptResponses.length} total)`);
+        for (const r of promptResponses) {
+          out += `\n[${fmtDate(r.createdAt)}]\n${r.response}\n`;
+        }
+      }
+
+      // ── Integration Prompt Progress ──────────────────────────────
+      if (promptProgress.length) {
+        out += section(`INTEGRATION PROMPT RESPONSES  (${promptProgress.length} total)`);
+        for (const p of promptProgress) {
+          out += `\n[${fmtDate(p.completedAt)}]\n${p.response}\n`;
+        }
+      }
+
+      // ── Evening Reflections (Wellbeing check-ins) ────────────────
+      const withText = wellbeing.filter(w =>
+        w.notes || w.feelingAboutDay || w.reachedIntention || w.dayTitle || w.strongestSensation || w.morningIntention
+      );
+      if (withText.length) {
+        out += section(`EVENING REFLECTIONS  (${withText.length} with written content)`);
+        for (const w of withText) {
+          out += `\n[${fmtDate(w.createdAt)}]  Mood: ${w.wellbeingLevel}/5\n`;
+          if (w.morningIntention)  out += `  Morning intention: ${w.morningIntention}\n`;
+          if (w.dayTitle)          out += `  Day title: ${w.dayTitle}\n`;
+          if (w.feelingAboutDay)   out += `  Feeling about today: ${w.feelingAboutDay}\n`;
+          if (w.strongestSensation) out += `  Strongest sensation: ${w.strongestSensation}\n`;
+          if (w.reachedIntention)  out += `  Reached intention: ${w.reachedIntention}\n`;
+          if (w.notes)             out += `  Notes: ${w.notes}\n`;
+        }
+      }
+
+      // ── Dream Journal ────────────────────────────────────────────
+      const dreamsWithText = dreams.filter(d =>
+        d.dreamTitle || d.dreamImages || d.dreamPresent || d.dreamEmotion ||
+        d.dreamBody || d.dreamSpeak || d.dreamConnect || d.dreamInviting
+      );
+      if (dreamsWithText.length) {
+        out += section(`DREAM JOURNAL  (${dreamsWithText.length} entries)`);
+        for (const d of dreamsWithText) {
+          out += `\n[${fmtDate(d.createdAt)}]`;
+          if (d.dreamTitle)    out += `  ${d.dreamTitle}`;
+          out += '\n';
+          if (d.dreamImages)   out += `  Images / symbols: ${d.dreamImages}\n`;
+          if (d.dreamPresent)  out += `  Present tense retelling: ${d.dreamPresent}\n`;
+          if (d.dreamEmotion)  out += `  Emotion: ${d.dreamEmotion}\n`;
+          if (d.dreamBody)     out += `  Body sensation: ${d.dreamBody}\n`;
+          if (d.dreamSpeak)    out += `  What the dream speaks: ${d.dreamSpeak}\n`;
+          if (d.dreamConnect)  out += `  Connection to journey: ${d.dreamConnect}\n`;
+          if (d.dreamInviting) out += `  Inviting: ${d.dreamInviting}\n`;
+        }
+      }
+
+      // ── Community Posts ──────────────────────────────────────────
+      if (posts.length) {
+        out += section(`COMMUNITY POSTS  (${posts.length} total)`);
+        for (const p of posts) {
+          out += `\n[${fmtDate(p.createdAt)}]\n${p.content}\n`;
+        }
+      }
+
+      out += `\n${hr('=')}\nEnd of export\n`;
+
+      const filename = `export-${name.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().split('T')[0]}.txt`;
+      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Cache-Control', 'no-cache');
+      res.send(out);
+    } catch (error) {
+      console.error("Error exporting user text:", error);
+      res.status(500).json({ message: "Failed to export user text" });
+    }
+  });
+
   // User content consumption routes
   app.get('/api/readings', isAuthenticated, async (req: any, res) => {
     try {

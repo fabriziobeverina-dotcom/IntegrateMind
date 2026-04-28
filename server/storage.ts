@@ -139,6 +139,7 @@ export interface IStorage {
   // Daily prompts
   getTodaysPrompt(): Promise<DailyPrompt | undefined>;
   getUserPromptResponse(userId: string, promptId: string): Promise<PromptResponse | undefined>;
+  getAllUserPromptResponses(userId: string): Promise<PromptResponse[]>;
   createPromptResponse(response: InsertPromptResponse): Promise<PromptResponse>;
   
   // Push notification subscriptions
@@ -636,6 +637,13 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
   
+  async getAllUserPromptResponses(userId: string): Promise<PromptResponse[]> {
+    return await this.db.select()
+      .from(promptResponses)
+      .where(eq(promptResponses.userId, userId))
+      .orderBy(desc(promptResponses.createdAt));
+  }
+
   async createPromptResponse(response: InsertPromptResponse): Promise<PromptResponse> {
     const result = await this.db.insert(promptResponses).values(response).returning();
     return result[0];
