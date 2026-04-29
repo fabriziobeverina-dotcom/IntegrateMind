@@ -2223,7 +2223,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       const { 
         reminderEnabled, morningReminderEnabled, morningReminderTime,
-        eveningReminderEnabled, eveningReminderTime
+        eveningReminderEnabled, eveningReminderTime, reminderTimezone
       } = req.body;
 
       const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
@@ -2234,7 +2234,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid evening reminder time format" });
       }
 
-      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      // Use timezone sent from the browser — never Intl on the server (server timezone != user timezone)
+      const timezone = (typeof reminderTimezone === 'string' && reminderTimezone.length > 0)
+        ? reminderTimezone
+        : 'UTC';
 
       // Only set journeyStartDate when completing onboarding for the first time
       const existingUser = await storage.getUser(userId);

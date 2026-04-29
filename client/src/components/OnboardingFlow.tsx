@@ -28,6 +28,8 @@ export function OnboardingFlow() {
   });
   const [permissionStatus, setPermissionStatus] = useState<NotificationPermission | null>(null);
 
+  const browserTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
   const completeOnboarding = useMutation({
     mutationFn: async (data: {
       reminderEnabled: boolean;
@@ -35,6 +37,7 @@ export function OnboardingFlow() {
       morningReminderTime: string;
       eveningReminderEnabled: boolean;
       eveningReminderTime: string;
+      reminderTimezone: string;
     }) => {
       return apiRequest("POST", "/api/settings/complete-onboarding", data);
     },
@@ -51,6 +54,7 @@ export function OnboardingFlow() {
       morningReminderTime: state.morningTime,
       eveningReminderEnabled: state.notificationsEnabled && state.eveningEnabled,
       eveningReminderTime: state.eveningTime,
+      reminderTimezone: browserTimezone,
     });
     setStep("done");
   }
@@ -62,6 +66,7 @@ export function OnboardingFlow() {
       morningReminderTime: state.morningTime,
       eveningReminderEnabled: false,
       eveningReminderTime: state.eveningTime,
+      reminderTimezone: browserTimezone,
     });
     setState(s => ({ ...s, notificationsEnabled: false }));
     setStep("done");

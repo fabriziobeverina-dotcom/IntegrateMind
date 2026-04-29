@@ -86,21 +86,25 @@ export class ReminderScheduler {
       const now = new Date();
       const results: { user: User; reminderType: 'journal' | 'progress' }[] = [];
 
-      const commonTimezones = [
-        'UTC', 'America/New_York', 'America/Chicago', 'America/Denver',
-        'America/Los_Angeles', 'Europe/London', 'Europe/Paris', 'Asia/Tokyo'
-      ];
+      // Fetch all distinct timezones actually stored in the database, plus UTC as fallback
+      let timezones = await storage.getDistinctReminderTimezones();
+      if (!timezones.includes('UTC')) timezones = ['UTC', ...timezones];
 
-      for (const timezone of commonTimezones) {
+      for (const timezone of timezones) {
         try {
-          const timeInZone = new Intl.DateTimeFormat('en-US', {
+          // Validate the timezone is supported before using it
+          Intl.DateTimeFormat('en-US', { timeZone: timezone });
+
+          const parts = new Intl.DateTimeFormat('en-US', {
             timeZone: timezone,
             hour: '2-digit',
             minute: '2-digit',
             hour12: false
-          }).format(now);
+          }).formatToParts(now);
 
-          console.log(`Checking timezone ${timezone} at ${timeInZone}`);
+          const hour = parts.find(p => p.type === 'hour')?.value ?? '00';
+          const minute = parts.find(p => p.type === 'minute')?.value ?? '00';
+          const timeInZone = `${hour}:${minute}`;
 
           // Morning reminders
           const morningUsers = await storage.getUsersForMorningReminder(timeInZone, timezone);
@@ -119,7 +123,9 @@ export class ReminderScheduler {
         }
       }
 
-      console.log(`Found ${results.length} users total for notifications`);
+      if (results.length > 0) {
+        console.log(`Found ${results.length} users for notifications`);
+      }
       return results;
 
     } catch (error) {

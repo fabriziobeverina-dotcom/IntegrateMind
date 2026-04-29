@@ -1,6 +1,6 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
-import { eq, desc, and, gte, lte, sql } from "drizzle-orm";
+import { eq, desc, and, gte, lte, sql, isNotNull } from "drizzle-orm";
 import { 
   type User,
   type InsertUser,
@@ -154,6 +154,7 @@ export interface IStorage {
   getUsersWithRemindersAt(time: string): Promise<User[]>;
   getUsersForMorningReminder(time: string, timezone: string): Promise<User[]>;
   getUsersForEveningReminder(time: string, timezone: string): Promise<User[]>;
+  getDistinctReminderTimezones(): Promise<string[]>;
   
   // Integration prompts
   getIntegrationPrompts(): Promise<IntegrationPrompt[]>;
@@ -880,7 +881,22 @@ export class DatabaseStorage implements IStorage {
         )
       );
   }
-  
+
+  async getDistinctReminderTimezones(): Promise<string[]> {
+    const result = await this.db
+      .selectDistinct({ timezone: users.reminderTimezone })
+      .from(users)
+      .where(
+        and(
+          eq(users.reminderEnabled, true),
+          isNotNull(users.reminderTimezone)
+        )
+      );
+    return result
+      .map(r => r.timezone)
+      .filter((tz): tz is string => typeof tz === 'string' && tz.length > 0);
+  }
+
   // Integration prompts
   async getIntegrationPrompts(): Promise<IntegrationPrompt[]> {
     return await this.db.select()

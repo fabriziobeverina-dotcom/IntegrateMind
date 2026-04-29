@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 interface ReminderSettings {
   reminderEnabled: boolean;
@@ -77,6 +78,7 @@ export function NotificationScheduler() {
   const lastEveningNotification = useRef<string>('');
   const lastDreamNotification = useRef<string>('');
   const lastCreativeNotification = useRef<string>('');
+  const timezoneSynced = useRef(false);
 
   const { data: settings } = useQuery<ReminderSettings>({
     queryKey: ['/api/settings/reminders'],
@@ -88,6 +90,22 @@ export function NotificationScheduler() {
     refetchInterval: 60000,
     staleTime: 30000,
   });
+
+  // Silently sync the browser timezone to the server whenever it differs from what's stored
+  useEffect(() => {
+    if (!settings || timezoneSynced.current) return;
+    const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (settings.reminderTimezone && settings.reminderTimezone === browserTz) return;
+    timezoneSynced.current = true;
+    apiRequest('PUT', '/api/settings/reminders', {
+      reminderEnabled: settings.reminderEnabled,
+      reminderTimezone: browserTz,
+      morningReminderEnabled: settings.morningReminderEnabled,
+      morningReminderTime: settings.morningReminderTime,
+      eveningReminderEnabled: settings.eveningReminderEnabled,
+      eveningReminderTime: settings.eveningReminderTime,
+    }).catch(() => { /* silent — best effort */ });
+  }, [settings]);
 
   const checkAndNotify = useCallback(() => {
     if (!settings) return;

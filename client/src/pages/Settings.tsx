@@ -327,7 +327,20 @@ export default function Settings() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              <Label className="text-sm">Your timezone</Label>
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <Label className="text-sm">Your timezone</Label>
+                <button
+                  type="button"
+                  className="text-xs text-primary underline-offset-2 hover:underline"
+                  onClick={() => {
+                    const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                    setLocalSettings(s => ({ ...s, reminderTimezone: detected }));
+                  }}
+                  data-testid="button-detect-timezone"
+                >
+                  Detect from device
+                </button>
+              </div>
               <Select 
                 value={localSettings.reminderTimezone} 
                 onValueChange={(value) => setLocalSettings(s => ({ ...s, reminderTimezone: value }))}
@@ -336,6 +349,16 @@ export default function Settings() {
                   <SelectValue placeholder="Select timezone" />
                 </SelectTrigger>
                 <SelectContent className="h-48 overflow-y-auto">
+                  {/* Always include the browser's actual timezone even if not in the list */}
+                  {(() => {
+                    const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                    const inList = commonTimezones.some(t => t.value === browserTz);
+                    return !inList ? (
+                      <SelectItem key={browserTz} value={browserTz}>
+                        {browserTz} (your device)
+                      </SelectItem>
+                    ) : null;
+                  })()}
                   {commonTimezones.map((tz) => (
                     <SelectItem key={tz.value} value={tz.value}>
                       {tz.label}
