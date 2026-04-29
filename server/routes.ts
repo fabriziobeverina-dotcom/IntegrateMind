@@ -1088,6 +1088,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { userId } = req.params;
       const user = await storage.getUser(userId);
       if (!user) return res.status(404).json({ message: "User not found" });
+      if (user.facilitatorConsent !== true) {
+        return res.status(403).json({ message: "User has not consented to facilitator access" });
+      }
 
       const [journals, promptResponses, promptProgress, wellbeing, dreams, posts] = await Promise.all([
         storage.getUserJournalEntries(userId, 999),
@@ -1783,6 +1786,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Mark push permission screen as shown (called whether user accepts or declines)
+  // Facilitator consent — save the user's choice
+  app.post('/api/user/facilitator-consent', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { consent } = req.body;
+      if (typeof consent !== 'boolean') {
+        return res.status(400).json({ message: "consent must be a boolean" });
+      }
+      await storage.updateUser(userId, { facilitatorConsent: consent } as any);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error saving facilitator consent:", error);
+      res.status(500).json({ message: "Failed to save consent" });
+    }
+  });
+
   app.post('/api/push/permission-asked', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;

@@ -37,6 +37,7 @@ import { NotificationScheduler } from "@/components/NotificationScheduler";
 import { OnboardingFlow } from "@/components/OnboardingFlow";
 import { CeremonyOnboarding } from "@/components/CeremonyOnboarding";
 import { PushPermissionScreen } from "@/components/PushPermissionScreen";
+import { FacilitatorConsentScreen } from "@/components/FacilitatorConsentScreen";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { SeedsAwardOverlay, BadgeUnlockOverlay } from "@/components/SeedsAward";
 import { PhaseTransitionInterstitial } from "@/components/PhaseIndicator";
@@ -117,6 +118,11 @@ function AppContent() {
     (user as any)?.onboardingCeremonyComplete &&
     !(user as any)?.pushPermissionAsked &&
     isPushSupported();
+  const showConsentScreen =
+    (user as any)?.onboardingComplete &&
+    (user as any)?.onboardingCeremonyComplete &&
+    ((user as any)?.pushPermissionAsked || !isPushSupported()) &&
+    (user as any)?.facilitatorConsent === null;
 
   return (
     <ThemeProvider>
@@ -152,7 +158,10 @@ function AppContent() {
         {!showOnboarding && !showCeremonyOnboarding && showPushPermission && (
           <PushPermissionScreen onDone={() => {}} />
         )}
-        {!showOnboarding && !showCeremonyOnboarding && !showPushPermission && <PhaseTransitionInterstitial />}
+        {!showOnboarding && !showCeremonyOnboarding && !showPushPermission && showConsentScreen && (
+          <FacilitatorConsentScreen />
+        )}
+        {!showOnboarding && !showCeremonyOnboarding && !showPushPermission && !showConsentScreen && <PhaseTransitionInterstitial />}
         <InstallPrompt />
       </SidebarProvider>
     </ThemeProvider>

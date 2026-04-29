@@ -58,6 +58,8 @@ export const users = pgTable("users", {
   somaticNudgeShownAt: timestamp("somatic_nudge_shown_at"), // nullable
   somaticPracticeCompleted: boolean("somatic_practice_completed").default(false),
   lastNotificationSentAt: timestamp("last_notification_sent_at"), // nullable
+  // Facilitator content-sharing consent
+  facilitatorConsent: boolean("facilitator_consent"), // null = not yet asked, true = consented, false = declined
 });
 
 // Journal entries table

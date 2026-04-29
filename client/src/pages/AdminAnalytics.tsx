@@ -28,6 +28,7 @@ interface UserData {
   username: string | null;
   createdAt: string | null;
   isAdmin: boolean;
+  facilitatorConsent: boolean | null;
 }
 
 interface UserStats {
@@ -235,9 +236,15 @@ export default function AdminAnalytics() {
                           variant="outline"
                           size="sm"
                           onClick={(e) => handleDownloadUserText(u, e)}
-                          disabled={exportingUserId === u.id}
+                          disabled={exportingUserId === u.id || u.facilitatorConsent !== true}
                           data-testid={`button-download-text-${u.id}`}
-                          title="Download all text written by this user"
+                          title={
+                            u.facilitatorConsent === true
+                              ? "Download all text written by this user"
+                              : u.facilitatorConsent === false
+                              ? "User has not given consent for facilitator access"
+                              : "User has not yet responded to the consent prompt"
+                          }
                         >
                           <Download className="h-3.5 w-3.5 mr-1.5" />
                           {exportingUserId === u.id ? "…" : "Export"}
