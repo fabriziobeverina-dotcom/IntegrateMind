@@ -75,17 +75,20 @@ const dreamQuestions = [
 
 type DreamKey = typeof dreamQuestions[number]["key"];
 
+const emptyAnswers: Record<DreamKey, string> = {
+  dreamTitle: "",
+  dreamImages: "",
+  dreamPresent: "",
+  dreamEmotion: "",
+  dreamBody: "",
+  dreamSpeak: "",
+  dreamConnect: "",
+  dreamInviting: "",
+};
+
 export function DreamJournal() {
-  const [answers, setAnswers] = useState<Record<DreamKey, string>>({
-    dreamTitle: "",
-    dreamImages: "",
-    dreamPresent: "",
-    dreamEmotion: "",
-    dreamBody: "",
-    dreamSpeak: "",
-    dreamConnect: "",
-    dreamInviting: "",
-  });
+  const [answers, setAnswers] = useState<Record<DreamKey, string>>(emptyAnswers);
+  const [addingNew, setAddingNew] = useState(false);
   const { toast } = useToast();
 
   const { data: todaysEntry, isLoading } = useQuery<DreamEntry | null>({
@@ -107,6 +110,8 @@ export function DreamJournal() {
         title: "Dream journal saved",
         description: "Your dream has been captured. These insights may unfold over time.",
       });
+      setAnswers(emptyAnswers);
+      setAddingNew(false);
       queryClient.invalidateQueries({ queryKey: ['/api/dreams'] });
       queryClient.invalidateQueries({ queryKey: ['/api/dreams/today'] });
     },
@@ -142,7 +147,8 @@ export function DreamJournal() {
     );
   }
 
-  if (todaysEntry || saveMutation.isSuccess) {
+  // Show the most recent saved entry with an "add another" option
+  if (todaysEntry && !addingNew) {
     const entry = todaysEntry;
     return (
       <Card className="p-3 sm:p-4 md:p-6 space-y-3 sm:space-y-4 w-full overflow-hidden">
@@ -153,39 +159,41 @@ export function DreamJournal() {
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-sm sm:text-base md:text-lg truncate" data-testid="text-dream-title">Dream Journal</h3>
             <p className="text-xs sm:text-sm text-muted-foreground">
-              Today's dream has been recorded
+              Dream recorded today
             </p>
           </div>
         </div>
 
-        {entry && (
-          <div className="space-y-2 pt-1">
-            {entry.dreamTitle && (
-              <div className="bg-muted/50 rounded-lg p-2.5 sm:p-3">
-                <p className="text-[10px] sm:text-xs text-muted-foreground mb-0.5">Dream title</p>
-                <p className="text-xs sm:text-sm font-medium italic" data-testid="text-dream-saved-title">"{entry.dreamTitle}"</p>
-              </div>
-            )}
-            {entry.dreamEmotion && (
-              <div className="bg-muted/50 rounded-lg p-2.5 sm:p-3">
-                <p className="text-[10px] sm:text-xs text-muted-foreground mb-0.5">Emotional feeling</p>
-                <p className="text-xs sm:text-sm" data-testid="text-dream-saved-emotion">{entry.dreamEmotion}</p>
-              </div>
-            )}
-            {entry.dreamInviting && (
-              <div className="bg-muted/50 rounded-lg p-2.5 sm:p-3">
-                <p className="text-[10px] sm:text-xs text-muted-foreground mb-0.5">This dream is inviting me to...</p>
-                <p className="text-xs sm:text-sm" data-testid="text-dream-saved-inviting">{entry.dreamInviting}</p>
-              </div>
-            )}
-          </div>
-        )}
-
-        <div className="text-center py-1 sm:py-2">
-          <p className="text-xs sm:text-sm text-muted-foreground">
-            Next dream journal: check back on the next dream day
-          </p>
+        <div className="space-y-2 pt-1">
+          {entry.dreamTitle && (
+            <div className="bg-muted/50 rounded-lg p-2.5 sm:p-3">
+              <p className="text-[10px] sm:text-xs text-muted-foreground mb-0.5">Dream title</p>
+              <p className="text-xs sm:text-sm font-medium italic" data-testid="text-dream-saved-title">"{entry.dreamTitle}"</p>
+            </div>
+          )}
+          {entry.dreamEmotion && (
+            <div className="bg-muted/50 rounded-lg p-2.5 sm:p-3">
+              <p className="text-[10px] sm:text-xs text-muted-foreground mb-0.5">Emotional feeling</p>
+              <p className="text-xs sm:text-sm" data-testid="text-dream-saved-emotion">{entry.dreamEmotion}</p>
+            </div>
+          )}
+          {entry.dreamInviting && (
+            <div className="bg-muted/50 rounded-lg p-2.5 sm:p-3">
+              <p className="text-[10px] sm:text-xs text-muted-foreground mb-0.5">This dream is inviting me to...</p>
+              <p className="text-xs sm:text-sm" data-testid="text-dream-saved-inviting">{entry.dreamInviting}</p>
+            </div>
+          )}
         </div>
+
+        <Button
+          variant="outline"
+          className="w-full gap-2"
+          onClick={() => setAddingNew(true)}
+          data-testid="button-add-another-dream"
+        >
+          <Moon className="h-4 w-4" />
+          Record another dream
+        </Button>
       </Card>
     );
   }
@@ -229,19 +237,32 @@ export function DreamJournal() {
         })}
       </div>
 
-      <Button
-        onClick={handleSubmit}
-        disabled={saveMutation.isPending}
-        className="w-full gap-2"
-        data-testid="button-save-dream"
-      >
-        {saveMutation.isPending ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <Send className="h-4 w-4" />
+      <div className="flex flex-col gap-2">
+        <Button
+          onClick={handleSubmit}
+          disabled={saveMutation.isPending}
+          className="w-full gap-2"
+          data-testid="button-save-dream"
+        >
+          {saveMutation.isPending ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Send className="h-4 w-4" />
+          )}
+          {saveMutation.isPending ? "Saving..." : "Save Dream Journal"}
+        </Button>
+        {addingNew && (
+          <Button
+            variant="ghost"
+            className="w-full text-muted-foreground"
+            onClick={() => { setAddingNew(false); setAnswers(emptyAnswers); }}
+            disabled={saveMutation.isPending}
+            data-testid="button-cancel-new-dream"
+          >
+            Cancel
+          </Button>
         )}
-        {saveMutation.isPending ? "Saving..." : "Save Dream Journal"}
-      </Button>
+      </div>
     </Card>
   );
 }

@@ -5,7 +5,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/useAuth";
 import { DailyPrompt } from "@/components/DailyPrompt";
 import { WellbeingScale } from "@/components/WellbeingScale";
-import { DreamJournal, isDreamDay } from "@/components/DreamJournal";
+import { DreamJournal } from "@/components/DreamJournal";
 import { CreativeExpression, isCreativeExpressionDay } from "@/components/CreativeExpression";
 import { StreakTracker } from "@/components/StreakTracker";
 import { ProgressChart } from "@/components/ProgressChart";
