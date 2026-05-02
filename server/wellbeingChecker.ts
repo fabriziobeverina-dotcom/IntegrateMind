@@ -136,6 +136,16 @@ function shouldTriggerFromPulse(record: PulseRecord, previous: PulseRecord | nul
   return false;
 }
 
+// ─── Improvement detection ────────────────────────────────────────────────────
+// Returns true if the last 3 pulse records all show healthy scores:
+// no individual score at crisis level (1/5), composite >= 9 (avg 3+ per dimension).
+
+function isImprovingTrend(history: PulseRecord[]): boolean {
+  if (history.length < 3) return false;
+  const recent = history.slice(-3);
+  return recent.every(r => r.q1 > 1 && r.q2 > 1 && r.q3 > 1 && r.composite >= 9);
+}
+
 // ─── Main daily check ─────────────────────────────────────────────────────────
 
 export async function runDailyWellbeingCheck(): Promise<void> {
@@ -159,6 +169,24 @@ export async function runDailyWellbeingCheck(): Promise<void> {
 
         // Reduce stabilizationDaysRemaining by 1 each day if active
         const stabilizationDaysRemaining = Math.max(0, (wb?.stabilizationDaysRemaining ?? 0) - 1);
+
+        // ── Dynamic auto-downgrade based on improving pulse trend ──────────────
+        const pulseHistory = (wb?.pulseHistory ?? []) as PulseRecord[];
+        const improving = isImprovingTrend(pulseHistory);
+
+        // 'triggered' → 'none': flags cleared AND (stabilization done OR clear improving trend)
+        if (currentStatus === 'triggered' && newStatus === 'triggered') {
+          if (flags.length === 0 && (stabilizationDaysRemaining <= 0 || improving)) {
+            newStatus = 'none';
+            console.log(`[Wellbeing] Auto-resolved ${user.id}: flags clear, improving=${improving}, stabilDays=${stabilizationDaysRemaining}`);
+          }
+        }
+
+        // 'watching' → 'none': flags cleared naturally
+        if (currentStatus === 'watching' && newStatus === 'watching' && flags.length === 0) {
+          newStatus = 'none';
+          console.log(`[Wellbeing] Auto-cleared ${user.id}: watching → none, flags resolved`);
+        }
 
         await storage.upsertUserWellbeing(user.id, {
           flags,
@@ -212,8 +240,18 @@ export async function processPulseSubmission(
 
   const currentStatus = wb?.alertStatus ?? 'none';
   let newStatus = currentStatus;
+
   if (triggered && currentStatus !== 'triggered') {
     newStatus = 'triggered';
+  }
+
+  // Dynamic auto-downgrade: if status was 'triggered' but this new pulse is fine
+  // and the last 3 pulses in the full history all show improvement → ease to 'watching'
+  if (currentStatus === 'triggered' && !triggered && newStatus === 'triggered') {
+    if (isImprovingTrend(newHistory)) {
+      newStatus = 'watching';
+      console.log(`[Wellbeing] Pulse auto-downgrade ${userId}: triggered → watching (improving trend)`);
+    }
   }
 
   const wb2 = await storage.upsertUserWellbeing(userId, {
@@ -227,7 +265,7 @@ export async function processPulseSubmission(
     } : {}),
   });
 
-  return { triggered };
+  return { triggered, autoDowngraded: currentStatus === 'triggered' && newStatus === 'watching' };
 }
 
 export function getStabilizationPrompt(index: number): string {

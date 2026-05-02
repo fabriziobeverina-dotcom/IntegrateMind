@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   AlertTriangle, Eye, CheckCircle2, Flag, TrendingDown,
   BookOpen, Repeat2, Flame, Activity, Mail, Save, Info,
+  Brain, Loader2, ChevronDown, ChevronUp, Copy,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -234,6 +235,11 @@ function ScoreDelta({ delta }: { delta: number | null }) {
   return <span className="text-muted-foreground text-sm">0</span>;
 }
 
+interface AiAnalysis {
+  report: string;
+  emailDraft: string;
+}
+
 function FlagReportDialog({
   row,
   onClose,
@@ -243,6 +249,11 @@ function FlagReportDialog({
 }) {
   const { toast } = useToast();
   const [note, setNote] = useState(row?.facilitatorNote ?? "");
+  const [showEmailDraft, setShowEmailDraft] = useState(false);
+  const [aiAnalysis, setAiAnalysis] = useState<AiAnalysis | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [showAiReport, setShowAiReport] = useState(true);
+  const [showAiEmail, setShowAiEmail] = useState(false);
 
   const noteMutation = useMutation({
     mutationFn: (note: string) =>
@@ -258,13 +269,33 @@ function FlagReportDialog({
   const reasons = pulseReasons(pulse, row.scoreDelta);
   const flags = Array.isArray(row.flags) ? (row.flags as Array<{ name: string; setAt: string }>) : [];
 
-  const [showEmailDraft, setShowEmailDraft] = useState(false);
+  const handleRunAiAnalysis = async () => {
+    setAiLoading(true);
+    setAiAnalysis(null);
+    try {
+      const res = await fetch(`/api/admin/wellbeing/${row.userId}/ai-analysis`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || "Analysis failed");
+      }
+      const data = await res.json();
+      setAiAnalysis(data);
+      setShowAiReport(true);
+      setShowAiEmail(false);
+    } catch (e: any) {
+      toast({ title: "AI analysis failed", description: e.message, variant: "destructive" });
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
-  const handleEmail = () => {
+  const handleEmail = (draft?: string) => {
     const subject = encodeURIComponent(`Checking in — Integration Compass`);
-    const body = encodeURIComponent(buildEmailBody(row));
+    const body = encodeURIComponent(draft ?? buildEmailBody(row));
     const to = row.email ?? "";
-    // Try mailto link; also show draft in case browser has no mail handler
     const a = document.createElement("a");
     a.href = `mailto:${to}?subject=${subject}&body=${body}`;
     a.click();
@@ -455,7 +486,102 @@ function FlagReportDialog({
             </Button>
           </div>
 
-          {/* Email section */}
+          {/* AI Analysis section */}
+          <div className="rounded-lg border px-3 py-3 space-y-3">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div>
+                <p className="text-xs font-medium flex items-center gap-1.5">
+                  <Brain className="h-3.5 w-3.5 text-primary" />
+                  AI Analysis
+                </p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  Generate a facilitator report and personalised email draft based on this participant's journal, prompts, and pulse data.
+                </p>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleRunAiAnalysis}
+                disabled={aiLoading}
+                data-testid="button-ai-analysis"
+              >
+                {aiLoading ? (
+                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                ) : (
+                  <Brain className="h-3.5 w-3.5 mr-1.5" />
+                )}
+                {aiLoading ? "Analysing…" : aiAnalysis ? "Re-analyse" : "Run analysis"}
+              </Button>
+            </div>
+
+            {aiAnalysis && (
+              <div className="space-y-2">
+                {/* Report section */}
+                <button
+                  className="w-full flex items-center justify-between text-xs font-medium py-1 text-left"
+                  onClick={() => setShowAiReport(v => !v)}
+                  data-testid="toggle-ai-report"
+                >
+                  <span>Facilitator report</span>
+                  {showAiReport ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                </button>
+                {showAiReport && (
+                  <div className="rounded-md bg-muted/40 px-3 py-2.5">
+                    <p className="text-xs leading-relaxed whitespace-pre-wrap" data-testid="text-ai-report">{aiAnalysis.report}</p>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="mt-2 w-full text-xs text-muted-foreground"
+                      onClick={() => { navigator.clipboard.writeText(aiAnalysis.report); toast({ title: "Report copied" }); }}
+                      data-testid="button-copy-ai-report"
+                    >
+                      <Copy className="h-3 w-3 mr-1.5" />
+                      Copy report
+                    </Button>
+                  </div>
+                )}
+
+                {/* AI email draft section */}
+                <button
+                  className="w-full flex items-center justify-between text-xs font-medium py-1 text-left"
+                  onClick={() => setShowAiEmail(v => !v)}
+                  data-testid="toggle-ai-email"
+                >
+                  <span>AI email draft</span>
+                  {showAiEmail ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                </button>
+                {showAiEmail && (
+                  <div className="space-y-1.5">
+                    <pre className="text-xs whitespace-pre-wrap bg-muted/40 rounded-md px-3 py-2.5 leading-relaxed font-sans" data-testid="text-ai-email">{aiAnalysis.emailDraft}</pre>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => { navigator.clipboard.writeText(aiAnalysis.emailDraft); toast({ title: "Email draft copied" }); }}
+                        data-testid="button-copy-ai-email"
+                      >
+                        <Copy className="h-3 w-3 mr-1.5" />
+                        Copy draft
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => handleEmail(aiAnalysis.emailDraft)}
+                        disabled={!row.email}
+                        data-testid="button-open-ai-email"
+                      >
+                        <Mail className="h-3.5 w-3.5 mr-1.5" />
+                        Open in mail
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Standard email section */}
           <div className="rounded-lg border px-3 py-3 space-y-3">
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <div>
@@ -466,7 +592,7 @@ function FlagReportDialog({
               </div>
               <Button
                 size="sm"
-                onClick={handleEmail}
+                onClick={() => handleEmail()}
                 disabled={!row.email}
                 data-testid="button-send-email"
               >
@@ -496,9 +622,7 @@ function FlagReportDialog({
                     size="sm"
                     variant="outline"
                     className="mt-1.5 w-full"
-                    onClick={() => {
-                      navigator.clipboard.writeText(buildEmailBody(row));
-                    }}
+                    onClick={() => { navigator.clipboard.writeText(buildEmailBody(row)); }}
                     data-testid="button-copy-email"
                   >
                     Copy message

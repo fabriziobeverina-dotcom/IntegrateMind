@@ -2363,6 +2363,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin — AI analysis of flagged user (Gemini)
+  app.post('/api/admin/wellbeing/:userId/ai-analysis', isAdmin, async (req: any, res) => {
+    try {
+      const { userId } = req.params;
+
+      if (!process.env.AI_INTEGRATIONS_GEMINI_BASE_URL || !process.env.AI_INTEGRATIONS_GEMINI_API_KEY) {
+        return res.status(503).json({ message: "AI analysis not yet configured. Please enable the Gemini integration." });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) return res.status(404).json({ message: "User not found" });
+
+      const wb = await storage.getUserWellbeing(userId);
+      const journalEntriesData = await storage.getUserJournalEntries(userId, 12);
+      const promptResponsesData = await storage.getAllUserPromptResponses(userId);
+
+      const firstName = [user.firstName, user.lastName].filter(Boolean).join(' ') || user.name || 'the participant';
+      const pulseHistory = (wb?.pulseHistory ?? []) as any[];
+      const recentPulses = pulseHistory.slice(-6);
+      const flags = (wb?.flags ?? []) as any[];
+      const alertStatus = wb?.alertStatus ?? 'none';
+
+      const journalText = journalEntriesData
+        .map((e, i) => `[Journal ${i + 1} – ${new Date(e.createdAt!).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}]\n${e.content}`)
+        .join('\n\n---\n\n');
+
+      const promptText = promptResponsesData.slice(-10)
+        .map((r) => `[Integration prompt response]\n${r.response}`)
+        .join('\n\n---\n\n');
+
+      const pulseText = recentPulses
+        .map(p => `${new Date(p.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}: Emotional ${p.q1}/5 · Body ${p.q2}/5 · Connection ${p.q3}/5 (Total ${p.composite}/15)`)
+        .join('\n');
+
+      const flagText = flags.map((f: any) => f.name.replace(/_/g, ' ')).join(', ') || 'None';
+
+      const systemPrompt = `You are a compassionate integration support specialist reviewing participant data for an ayahuasca integration program. Your analysis should be trauma-informed, respectful, and focused on support rather than diagnosis. Never use clinical diagnostic language. Focus on engagement patterns, emotional signals, and practical facilitator guidance.
+
+Return ONLY valid JSON with exactly two string fields:
+- "report": A structured facilitator report (3–4 paragraphs) covering: overall engagement and behavioral patterns, emotional/body/connection trends from pulse checks, notable themes or shifts in journal and prompt content, and specific recommendations for facilitator follow-up.
+- "emailDraft": A warm, personal email the facilitator can send to this participant. Make it specific to the patterns observed — not a generic template. Start with "Hi [first name]," and end with "With care," followed by a blank signature line.`;
+
+      const userMessage = `Analyze the following participant data for ${firstName}.
+
+Alert status: ${alertStatus}
+Behavioural flags: ${flagText}
+
+Pulse check history (most recent ${recentPulses.length} entries):
+${pulseText || 'No pulse data available.'}
+
+Recent journal entries (${journalEntriesData.length} entries):
+${journalText || 'No journal entries available.'}
+
+Recent integration prompt responses (${Math.min(promptResponsesData.length, 10)} entries):
+${promptText || 'No prompt responses available.'}`;
+
+      const OpenAI = (await import('openai')).default;
+      const client = new OpenAI({
+        apiKey: process.env.AI_INTEGRATIONS_GEMINI_API_KEY,
+        baseURL: process.env.AI_INTEGRATIONS_GEMINI_BASE_URL,
+      });
+
+      const response = await client.chat.completions.create({
+        model: 'gemini-2.5-flash',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userMessage },
+        ],
+        response_format: { type: 'json_object' },
+        max_tokens: 8192,
+      });
+
+      const content = response.choices[0]?.message?.content ?? '{}';
+      const parsed = JSON.parse(content);
+
+      res.json({
+        report: parsed.report ?? 'Analysis unavailable.',
+        emailDraft: parsed.emailDraft ?? '',
+      });
+    } catch (error: any) {
+      console.error("Error generating AI analysis:", error);
+      res.status(500).json({ message: error.message || "Failed to generate AI analysis" });
+    }
+  });
+
   // Debug route — manually set wellbeing state (development only)
   if (process.env.NODE_ENV !== 'production') {
     app.post('/debug/wellbeing-test', isAuthenticated, async (req: any, res) => {
