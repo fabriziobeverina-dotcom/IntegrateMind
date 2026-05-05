@@ -541,6 +541,9 @@ export const userWellbeing = pgTable("user_wellbeing", {
   lastPulseDate: timestamp("last_pulse_date"),
   // Facilitator note written from admin dashboard
   facilitatorNote: text("facilitator_note"),
+  // Resolution note + who resolved (written when marking resolved)
+  resolveNote: text("resolve_note"),
+  resolvedByName: text("resolved_by_name"),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 

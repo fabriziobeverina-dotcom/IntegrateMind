@@ -235,7 +235,7 @@ export interface IStorage {
   getUserWellbeing(userId: string): Promise<UserWellbeing | null>;
   upsertUserWellbeing(userId: string, data: Partial<Omit<UserWellbeing, 'userId'>>): Promise<UserWellbeing>;
   getAllUsersWithWellbeing(): Promise<Array<{ user: User; wellbeing: UserWellbeing | null }>>;
-  resolveWellbeingAlert(userId: string, note?: string): Promise<void>;
+  resolveWellbeingAlert(userId: string, note?: string, resolvedByName?: string): Promise<void>;
   getAllUsersForFlagCheck(): Promise<User[]>;
 }
 
@@ -1335,12 +1335,13 @@ export class DatabaseStorage implements IStorage {
     return allUsers.map(u => ({ user: u, wellbeing: wellbeingMap.get(u.id) ?? null }));
   }
 
-  async resolveWellbeingAlert(userId: string, note?: string): Promise<void> {
+  async resolveWellbeingAlert(userId: string, note?: string, resolvedByName?: string): Promise<void> {
     await this.upsertUserWellbeing(userId, {
       alertStatus: 'resolved',
       alertResolvedAt: new Date(),
       stabilizationDaysRemaining: 0,
-      ...(note !== undefined ? { facilitatorNote: note } : {}),
+      ...(note !== undefined ? { resolveNote: note } : {}),
+      ...(resolvedByName !== undefined ? { resolvedByName } : {}),
     });
   }
 

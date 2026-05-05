@@ -2439,7 +2439,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           flagStats,
           alertStatus: wellbeing?.alertStatus ?? 'none',
           alertTriggeredAt: wellbeing?.alertTriggeredAt ?? null,
+          alertResolvedAt: wellbeing?.alertResolvedAt ?? null,
           facilitatorNote: wellbeing?.facilitatorNote ?? null,
+          resolveNote: wellbeing?.resolveNote ?? null,
+          resolvedByName: wellbeing?.resolvedByName ?? null,
         };
       }));
       res.json(result);
@@ -2468,7 +2471,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { userId } = req.params;
       const { note } = req.body;
-      await storage.resolveWellbeingAlert(userId, note);
+      const adminName = [req.user?.firstName, req.user?.lastName].filter(Boolean).join(' ') || req.user?.name || 'An administrator';
+      await storage.resolveWellbeingAlert(userId, note, adminName);
       res.json({ ok: true });
     } catch (error) {
       console.error("Error resolving wellbeing alert:", error);

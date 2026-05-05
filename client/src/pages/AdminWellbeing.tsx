@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   AlertTriangle, Eye, CheckCircle2, Flag, TrendingDown,
   BookOpen, Repeat2, Flame, Activity, Mail, Save, Info,
-  Brain, Loader2, ChevronDown, ChevronUp, Copy, BarChart2,
+  Brain, Loader2, ChevronDown, ChevronUp, Copy, BarChart2, Bell,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -44,7 +44,31 @@ interface WellbeingRow {
   flagStats: FlagStats;
   alertStatus: "none" | "watching" | "triggered" | "resolved";
   alertTriggeredAt: string | null;
+  alertResolvedAt: string | null;
   facilitatorNote: string | null;
+  resolveNote: string | null;
+  resolvedByName: string | null;
+}
+
+// ─── "New flag" tracking via localStorage ──────────────────────────────────────
+const SEEN_KEY = "ic_admin_wellbeing_seen";
+
+function getSeenMap(): Record<string, string> {
+  try { return JSON.parse(localStorage.getItem(SEEN_KEY) ?? "{}"); } catch { return {}; }
+}
+
+function markAsSeen(userId: string) {
+  const map = getSeenMap();
+  map[userId] = new Date().toISOString();
+  localStorage.setItem(SEEN_KEY, JSON.stringify(map));
+}
+
+function isNewFlag(row: WellbeingRow): boolean {
+  if (!row.alertTriggeredAt) return false;
+  if (row.alertStatus !== "triggered" && row.alertStatus !== "watching") return false;
+  const seen = getSeenMap()[row.userId];
+  if (!seen) return true;
+  return new Date(row.alertTriggeredAt) > new Date(seen);
 }
 
 const FLAG_LABELS: Record<string, string> = {
@@ -765,6 +789,8 @@ export default function AdminWellbeing() {
   const [resolvingUser, setResolvingUser] = useState<WellbeingRow | null>(null);
   const [reportUser, setReportUser] = useState<WellbeingRow | null>(null);
   const [resolveNote, setResolveNote] = useState("");
+  // Force re-render after marking seen (so badge disappears without re-fetch)
+  const [, forceUpdate] = useState(0);
 
   const { data: rows = [], isLoading } = useQuery<WellbeingRow[]>({
     queryKey: ['/api/admin/wellbeing'],
@@ -781,9 +807,17 @@ export default function AdminWellbeing() {
     },
   });
 
+  function openReport(row: WellbeingRow) {
+    markAsSeen(row.userId);
+    forceUpdate(n => n + 1);
+    setReportUser(row);
+  }
+
   const filtered = showOnlyTriggered
     ? rows.filter(r => r.alertStatus === "triggered" || r.alertStatus === "watching")
     : rows;
+
+  const newFlagCount = rows.filter(r => isNewFlag(r)).length;
 
   return (
     <div className="p-6 space-y-6 max-w-6xl mx-auto">
@@ -793,6 +827,21 @@ export default function AdminWellbeing() {
           Behavioral signals and check-in data. All information is confidential.
         </p>
       </div>
+
+      {/* New flags banner */}
+      {!isLoading && newFlagCount > 0 && (
+        <div
+          className="flex items-center gap-3 px-4 py-3 rounded-md bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50"
+          data-testid="banner-new-flags"
+        >
+          <Bell className="h-4 w-4 text-red-600 dark:text-red-400 shrink-0" />
+          <p className="text-sm text-red-800 dark:text-red-300 font-medium">
+            {newFlagCount === 1
+              ? "1 new red flag has appeared since your last visit."
+              : `${newFlagCount} new red flags have appeared since your last visit.`}
+          </p>
+        </div>
+      )}
 
       {/* Controls */}
       <div className="flex items-center gap-3">
@@ -822,7 +871,9 @@ export default function AdminWellbeing() {
         </Card>
       ) : (
         <div className="space-y-3">
-          {filtered.map((row) => (
+          {filtered.map((row) => {
+            const isNew = isNewFlag(row);
+            return (
             <Card
               key={row.userId}
               data-testid={`wellbeing-row-${row.userId}`}
@@ -835,12 +886,21 @@ export default function AdminWellbeing() {
                       <span className="font-medium">{row.displayName}</span>
                       <StatusBadge
                         status={row.alertStatus}
-                        onClick={() => (row.alertStatus === "triggered" || row.alertStatus === "watching") && setReportUser(row)}
+                        onClick={() => (row.alertStatus === "triggered" || row.alertStatus === "watching") && openReport(row)}
                       />
+                      {isNew && (
+                        <span
+                          className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-red-600 text-white"
+                          data-testid={`badge-new-flag-${row.userId}`}
+                        >
+                          <Bell className="h-2.5 w-2.5" />
+                          NEW
+                        </span>
+                      )}
                       {(row.alertStatus === "triggered" || row.alertStatus === "watching") && (
                         <button
                           className="text-[10px] text-muted-foreground underline underline-offset-2"
-                          onClick={() => setReportUser(row)}
+                          onClick={() => openReport(row)}
                           data-testid={`button-view-report-${row.userId}`}
                         >
                           View report
@@ -905,6 +965,27 @@ export default function AdminWellbeing() {
                         Note: {row.facilitatorNote}
                       </p>
                     )}
+
+                    {row.alertStatus === "resolved" && row.resolveNote && (
+                      <div
+                        className="mt-2 flex items-start gap-1.5 text-xs text-muted-foreground"
+                        data-testid={`resolve-note-${row.userId}`}
+                      >
+                        <CheckCircle2 className="h-3.5 w-3.5 mt-0.5 shrink-0 text-green-600 dark:text-green-400" />
+                        <span>
+                          <span className="font-medium text-foreground">
+                            {row.resolvedByName ?? "Admin"}
+                          </span>
+                          {row.alertResolvedAt && (
+                            <span className="text-muted-foreground">
+                              {" "}on {format(new Date(row.alertResolvedAt), "MMM d")}
+                            </span>
+                          )}
+                          {": "}
+                          {row.resolveNote}
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   {(row.alertStatus === "triggered" || row.alertStatus === "watching") && (
@@ -922,7 +1003,7 @@ export default function AdminWellbeing() {
                 </div>
               </CardContent>
             </Card>
-          ))}
+          ); })}
         </div>
       )}
 
@@ -939,13 +1020,14 @@ export default function AdminWellbeing() {
           </DialogHeader>
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Add an optional note about what action was taken for{" "}
-              <strong>{resolvingUser?.displayName}</strong>.
+              Describe what action was taken for{" "}
+              <strong>{resolvingUser?.displayName}</strong>. This note will be
+              visible to all administrators.
             </p>
             <Textarea
               value={resolveNote}
               onChange={e => setResolveNote(e.target.value)}
-              placeholder="e.g. Followed up via WhatsApp on Apr 2"
+              placeholder="e.g. Followed up via WhatsApp — participant feeling better"
               className="resize-none"
               rows={3}
               data-testid="input-resolve-note"
