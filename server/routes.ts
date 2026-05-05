@@ -2306,16 +2306,116 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/admin/wellbeing', isAdmin, async (req: any, res) => {
     try {
       const rows = await storage.getAllUsersWithWellbeing();
-      // Compute days since last journal for each user
+
+      const stemWord = (word: string): string =>
+        word.toLowerCase().replace(/[^a-z]/g, '').replace(/(ing|tion|ness|ment|ed|er|est|ly|s)$/, '');
+
       const result = await Promise.all(rows.map(async ({ user, wellbeing }) => {
-        const entries = await storage.getUserJournalEntries(user.id, 1);
-        const lastEntry = entries[0];
-        const daysSinceJournal = lastEntry
-          ? Math.floor((Date.now() - new Date(lastEntry.createdAt!).getTime()) / (1000 * 60 * 60 * 24))
-          : null;
+        const activeFlags = (wellbeing?.flags ?? []) as any[];
         const pulseHistory = (wellbeing?.pulseHistory ?? []) as any[];
         const lastPulse = pulseHistory[pulseHistory.length - 1] ?? null;
         const prevPulse = pulseHistory[pulseHistory.length - 2] ?? null;
+
+        // Fetch journal entries — full 100 if flagged, just 1 otherwise
+        const allEntries = await storage.getUserJournalEntries(user.id, activeFlags.length > 0 ? 100 : 1);
+        const lastEntry = allEntries[0];
+        const daysSinceJournal = lastEntry
+          ? Math.floor((Date.now() - new Date(lastEntry.createdAt!).getTime()) / (1000 * 60 * 60 * 24))
+          : null;
+
+        // Compute per-flag specific stats
+        const flagStats: Record<string, any> = {};
+        if (activeFlags.length > 0) {
+          const now = Date.now();
+          const sevenDaysAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+          const fourteenDaysAgo = new Date(now - 14 * 24 * 60 * 60 * 1000);
+          const threeDaysAgo = new Date(now - 3 * 24 * 60 * 60 * 1000);
+
+          const recent14 = allEntries.filter(e => new Date(e.createdAt!) >= fourteenDaysAgo);
+          const last7 = recent14.filter(e => new Date(e.createdAt!) >= sevenDaysAgo);
+          const prev7 = recent14.filter(e => new Date(e.createdAt!) < sevenDaysAgo);
+          const last3Days = last7.filter(e => new Date(e.createdAt!) >= threeDaysAgo);
+
+          for (const flag of activeFlags) {
+            if (flag.name === 'journaling_dropout') {
+              const daysWithout = lastEntry
+                ? Math.floor((now - new Date(lastEntry.createdAt!).getTime()) / (1000 * 60 * 60 * 24))
+                : null;
+              flagStats['journaling_dropout'] = {
+                previousWeekCount: prev7.length,
+                daysWithout,
+              };
+            }
+
+            if (flag.name === 'entry_length_collapse') {
+              const prevAvgWords = prev7.length > 0
+                ? Math.round(prev7.reduce((s, e) => s + e.content.split(/\s+/).filter(Boolean).length, 0) / prev7.length)
+                : null;
+              const recentAvgWords = last3Days.length > 0
+                ? Math.round(last3Days.reduce((s, e) => s + e.content.split(/\s+/).filter(Boolean).length, 0) / last3Days.length)
+                : null;
+              flagStats['entry_length_collapse'] = {
+                prevAvgWords,
+                recentAvgWords,
+                entriesAnalyzed: last3Days.length,
+              };
+            }
+
+            if (flag.name === 'obsessive_repetition') {
+              const lastFive = [...last7]
+                .sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime())
+                .slice(0, 5);
+              const stemCounts = new Map<string, { originals: string[]; count: number }>();
+              let totalWords = 0;
+              for (const entry of lastFive) {
+                const words = entry.content.toLowerCase().split(/\W+/).filter((w: string) => w.length > 3);
+                for (const w of words) {
+                  const s = stemWord(w);
+                  if (s.length > 2) {
+                    if (!stemCounts.has(s)) stemCounts.set(s, { originals: [], count: 0 });
+                    stemCounts.get(s)!.originals.push(w);
+                    stemCounts.get(s)!.count++;
+                    totalWords++;
+                  }
+                }
+              }
+              let dominantStem = '';
+              let dominantCount = 0;
+              let dominantOriginals: string[] = [];
+              Array.from(stemCounts.entries()).forEach(([s, data]) => {
+                if (data.count > dominantCount) {
+                  dominantCount = data.count;
+                  dominantStem = s;
+                  dominantOriginals = data.originals;
+                }
+              });
+              const pct = totalWords > 0 ? Math.round((dominantCount / totalWords) * 100) : 0;
+              const uniqueOriginals = Array.from(new Set(dominantOriginals));
+              flagStats['obsessive_repetition'] = {
+                dominantWord: uniqueOriginals[0] ?? dominantStem,
+                relatedForms: uniqueOriginals.slice(0, 3),
+                pct,
+                occurrences: dominantCount,
+                totalWords,
+                entriesAnalyzed: lastFive.length,
+              };
+            }
+
+            if (flag.name === 'streak_break') {
+              const entriesByDay = new Set(recent14.map(e => new Date(e.createdAt!).toDateString()));
+              const today = new Date();
+              let streak = 0;
+              for (let i = 1; i <= 14; i++) {
+                const d = new Date(today);
+                d.setDate(today.getDate() - i);
+                if (entriesByDay.has(d.toDateString())) streak++;
+                else break;
+              }
+              flagStats['streak_break'] = { streakLength: streak };
+            }
+          }
+        }
+
         return {
           userId: user.id,
           displayName: [user.firstName, user.lastName].filter(Boolean).join(' ') || user.name || 'Anonymous',
@@ -2323,7 +2423,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           daysSinceJournal,
           lastPulse,
           scoreDelta: (lastPulse && prevPulse) ? lastPulse.composite - prevPulse.composite : null,
+          recentPulseHistory: pulseHistory.slice(-5),
           flags: wellbeing?.flags ?? [],
+          flagStats,
           alertStatus: wellbeing?.alertStatus ?? 'none',
           alertTriggeredAt: wellbeing?.alertTriggeredAt ?? null,
           facilitatorNote: wellbeing?.facilitatorNote ?? null,

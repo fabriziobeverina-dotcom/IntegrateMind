@@ -16,14 +16,31 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 
+interface PulseRecord {
+  date: string;
+  q1: number;
+  q2: number;
+  q3: number;
+  composite: number;
+}
+
+interface FlagStats {
+  journaling_dropout?: { previousWeekCount: number; daysWithout: number | null };
+  entry_length_collapse?: { prevAvgWords: number | null; recentAvgWords: number | null; entriesAnalyzed: number };
+  obsessive_repetition?: { dominantWord: string; relatedForms: string[]; pct: number; occurrences: number; totalWords: number; entriesAnalyzed: number };
+  streak_break?: { streakLength: number };
+}
+
 interface WellbeingRow {
   userId: string;
   displayName: string;
   email: string | null;
   daysSinceJournal: number | null;
-  lastPulse: { q1: number; q2: number; q3: number; composite: number; date: string } | null;
+  lastPulse: PulseRecord | null;
   scoreDelta: number | null;
+  recentPulseHistory: PulseRecord[];
   flags: Array<{ name: string; setAt: string }>;
+  flagStats: FlagStats;
   alertStatus: "none" | "watching" | "triggered" | "resolved";
   alertTriggeredAt: string | null;
   facilitatorNote: string | null;
@@ -36,16 +53,40 @@ const FLAG_LABELS: Record<string, string> = {
   streak_break: "Streak broken",
 };
 
-const FLAG_DESCRIPTIONS: Record<string, string> = {
-  journaling_dropout:
-    "This person was journaling 3 or more times in the previous week, then stopped completely for 4 or more consecutive days — a significant behavioral change.",
-  entry_length_collapse:
-    "Their journal entries previously averaged 80+ words. Over the last 3 days the average has dropped below 30 words — suggesting withdrawal or disengagement.",
-  obsessive_repetition:
-    "One word or theme dominates more than 40% of content across their last 5 journal entries — a possible sign of fixation or looping thought patterns.",
-  streak_break:
-    "They maintained a journaling streak of 7 or more consecutive days, then missed today — breaking an established pattern of engagement.",
-};
+function getFlagDescription(flagName: string, stats: FlagStats): string {
+  if (flagName === 'journaling_dropout') {
+    const s = stats.journaling_dropout;
+    if (s) {
+      const daysStr = s.daysWithout != null ? `${s.daysWithout} consecutive day${s.daysWithout === 1 ? '' : 's'}` : 'several days';
+      return `They wrote at least ${s.previousWeekCount} journal entries in the prior week, then stopped entirely for ${daysStr}. Our system flags this when a previously active journaller suddenly goes quiet for 4 or more days in a row.`;
+    }
+    return "This person was journaling 3 or more times in the previous week, then stopped completely for 4 or more consecutive days — a significant behavioral change.";
+  }
+  if (flagName === 'entry_length_collapse') {
+    const s = stats.entry_length_collapse;
+    if (s && s.prevAvgWords != null && s.recentAvgWords != null) {
+      const drop = s.prevAvgWords - s.recentAvgWords;
+      return `Their journal entries averaged ${s.prevAvgWords} words in the previous week. Over the most recent ${s.entriesAnalyzed} ${s.entriesAnalyzed === 1 ? 'day' : 'days'} that dropped to an average of ${s.recentAvgWords} words — a reduction of ${drop} words (${Math.round((drop / s.prevAvgWords) * 100)}%). We flag this when entries collapse below 30 words after previously averaging 80 or more, as it often signals withdrawal or emotional shutdown.`;
+    }
+    return "Their journal entries previously averaged 80+ words. Over the last 3 days the average has dropped below 30 words — suggesting withdrawal or disengagement.";
+  }
+  if (flagName === 'obsessive_repetition') {
+    const s = stats.obsessive_repetition;
+    if (s) {
+      const formsStr = s.relatedForms.length > 1 ? ` (and related forms: ${s.relatedForms.slice(1).join(', ')})` : '';
+      return `The word "${s.dominantWord}"${formsStr} appears ${s.occurrences} times across their last ${s.entriesAnalyzed} journal entries — accounting for ${s.pct}% of all meaningful words. Our threshold is 40%. This level of repetition can indicate a looping thought pattern or unresolved fixation on a particular experience or concern.`;
+    }
+    return "One word or theme dominates more than 40% of content across their last 5 journal entries — a possible sign of fixation or looping thought patterns.";
+  }
+  if (flagName === 'streak_break') {
+    const s = stats.streak_break;
+    if (s) {
+      return `They had maintained a journaling streak of ${s.streakLength} consecutive day${s.streakLength === 1 ? '' : 's'} and then stopped today. While a missed day is not always significant, breaking a streak of this length after consistent daily engagement is worth noting — particularly during an active integration phase.`;
+    }
+    return "They maintained a journaling streak of 7 or more consecutive days, then missed today — breaking an established pattern of engagement.";
+  }
+  return "Unusual pattern detected in journal behaviour.";
+}
 
 const FLAG_ICONS: Record<string, typeof Flag> = {
   journaling_dropout: BookOpen,
@@ -103,16 +144,9 @@ function buildSummary(row: WellbeingRow): string {
   }
 
   // --- Journal-based flags ---
-  const flagSentences: Record<string, string> = {
-    journaling_dropout: `${firstName} had been journaling at least 3 times in the prior week but then made no entries for 4 or more consecutive days. Our system flags this pattern as a meaningful drop in engagement.`,
-    entry_length_collapse: `The length of ${firstName}'s journal entries dropped sharply — from an average of 80 or more words to fewer than 30 words over the most recent 3 days. This collapse in depth is a recognised signal of possible emotional withdrawal.`,
-    obsessive_repetition: `Analysis of ${firstName}'s last 5 journal entries found that a single word or theme accounts for more than 40% of all written content. This level of repetition may reflect a looping thought pattern or unresolved fixation.`,
-    streak_break: `${firstName} had maintained a journaling streak of 7 or more consecutive days and then stopped. While a missed day can be ordinary, a streak break after consistent engagement is worth noting in the context of integration support.`,
-  };
-
+  const flagStats = (row as any).flagStats as FlagStats ?? {};
   for (const flag of flags) {
-    const sentence = flagSentences[flag.name];
-    if (sentence) parts.push(sentence);
+    parts.push(getFlagDescription(flag.name, flagStats));
   }
 
   // --- Composite context ---
@@ -422,23 +456,79 @@ function FlagReportDialog({
               <div className="space-y-2">
                 {flags.map((f) => {
                   const Icon = FLAG_ICONS[f.name] ?? Flag;
+                  const stats = row.flagStats ?? {};
                   return (
                     <div
                       key={f.name}
-                      className="rounded-lg border bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/40 px-3 py-2.5 space-y-1"
+                      className="rounded-lg border bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/40 px-3 py-3 space-y-2"
                     >
                       <div className="flex items-center justify-between gap-2 flex-wrap">
                         <div className="flex items-center gap-1.5">
                           <Icon className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-                          <span className="text-xs font-medium">{FLAG_LABELS[f.name] ?? f.name}</span>
+                          <span className="text-xs font-semibold">{FLAG_LABELS[f.name] ?? f.name}</span>
                         </div>
                         <span className="text-[10px] text-muted-foreground">
                           Detected {format(new Date(f.setAt), "MMM d, yyyy")}
                         </span>
                       </div>
+
                       <p className="text-xs text-muted-foreground leading-relaxed">
-                        {FLAG_DESCRIPTIONS[f.name] ?? "Unusual pattern detected in journal behaviour."}
+                        {getFlagDescription(f.name, stats)}
                       </p>
+
+                      {/* Inline stat callout for entry length collapse */}
+                      {f.name === 'entry_length_collapse' && stats.entry_length_collapse?.prevAvgWords != null && stats.entry_length_collapse?.recentAvgWords != null && (
+                        <div className="grid grid-cols-2 gap-2 pt-0.5">
+                          <div className="rounded bg-muted/50 px-2.5 py-1.5 text-center">
+                            <p className="text-[10px] text-muted-foreground">Previous avg</p>
+                            <p className="text-sm font-semibold">{stats.entry_length_collapse.prevAvgWords} <span className="text-[10px] font-normal text-muted-foreground">words</span></p>
+                          </div>
+                          <div className="rounded bg-red-50 dark:bg-red-950/30 px-2.5 py-1.5 text-center">
+                            <p className="text-[10px] text-muted-foreground">Recent avg</p>
+                            <p className="text-sm font-semibold text-red-600 dark:text-red-400">{stats.entry_length_collapse.recentAvgWords} <span className="text-[10px] font-normal text-muted-foreground">words</span></p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Inline stat callout for obsessive repetition */}
+                      {f.name === 'obsessive_repetition' && stats.obsessive_repetition && (
+                        <div className="rounded bg-muted/50 px-2.5 py-2 flex items-center justify-between gap-2 flex-wrap">
+                          <div>
+                            <p className="text-[10px] text-muted-foreground mb-0.5">Dominant word</p>
+                            <p className="text-xs font-semibold">"{stats.obsessive_repetition.dominantWord}"</p>
+                            {stats.obsessive_repetition.relatedForms.length > 1 && (
+                              <p className="text-[10px] text-muted-foreground mt-0.5">
+                                Also: {stats.obsessive_repetition.relatedForms.slice(1).join(', ')}
+                              </p>
+                            )}
+                          </div>
+                          <div className="text-right">
+                            <p className="text-[10px] text-muted-foreground mb-0.5">Share of content</p>
+                            <p className="text-sm font-semibold text-red-600 dark:text-red-400">{stats.obsessive_repetition.pct}%</p>
+                            <p className="text-[10px] text-muted-foreground">{stats.obsessive_repetition.occurrences} of {stats.obsessive_repetition.totalWords} words</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Inline stat callout for streak break */}
+                      {f.name === 'streak_break' && stats.streak_break && (
+                        <div className="rounded bg-muted/50 px-2.5 py-1.5 flex items-center gap-2">
+                          <Flame className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                          <p className="text-xs text-muted-foreground">
+                            Streak was <span className="font-semibold text-foreground">{stats.streak_break.streakLength} days</span> before it broke
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Inline stat callout for journaling dropout */}
+                      {f.name === 'journaling_dropout' && stats.journaling_dropout && (
+                        <div className="rounded bg-muted/50 px-2.5 py-1.5 flex items-center gap-2">
+                          <BookOpen className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                          <p className="text-xs text-muted-foreground">
+                            <span className="font-semibold text-foreground">{stats.journaling_dropout.previousWeekCount} entries</span> the week before, then silent for <span className="font-semibold text-foreground">{stats.journaling_dropout.daysWithout ?? '4+'} days</span>
+                          </p>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
