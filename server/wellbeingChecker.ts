@@ -136,6 +136,18 @@ function shouldTriggerFromPulse(record: PulseRecord, previous: PulseRecord | nul
   return false;
 }
 
+// ─── Sustained low mood detection ─────────────────────────────────────────────
+// Flags when the last 3 pulse check-ins all score ≤ 9/15 (avg ≤ 3/5 per dimension).
+// This catches persistent low mood that never hits the single-check crisis threshold.
+
+export function detectSustainedLowMood(history: PulseRecord[]): WellbeingFlag | null {
+  if (history.length < 3) return null;
+  const recent = history.slice(-3);
+  const allPersistentlyLow = recent.every(r => r.composite <= 9);
+  if (!allPersistentlyLow) return null;
+  return { name: 'sustained_low_mood', setAt: new Date().toISOString() };
+}
+
 // ─── Improvement detection ────────────────────────────────────────────────────
 // Returns true if the last 3 pulse records all show healthy scores:
 // no individual score at crisis level (1/5), composite >= 9 (avg 3+ per dimension).
@@ -154,8 +166,13 @@ export async function runDailyWellbeingCheck(): Promise<void> {
     const allUsers = await storage.getAllUsersForFlagCheck();
     for (const user of allUsers) {
       try {
-        const flags = await detectFlags(user.id);
+        const journalFlags = await detectFlags(user.id);
         const wb = await storage.getUserWellbeing(user.id);
+
+        // Also check for sustained low mood across pulse history
+        const pulseHistory = (wb?.pulseHistory ?? []) as PulseRecord[];
+        const sustainedFlag = detectSustainedLowMood(pulseHistory);
+        const flags = sustainedFlag ? [...journalFlags, sustainedFlag] : journalFlags;
 
         const currentStatus = wb?.alertStatus ?? 'none';
         let newStatus = currentStatus;
@@ -171,7 +188,6 @@ export async function runDailyWellbeingCheck(): Promise<void> {
         const stabilizationDaysRemaining = Math.max(0, (wb?.stabilizationDaysRemaining ?? 0) - 1);
 
         // ── Dynamic auto-downgrade based on improving pulse trend ──────────────
-        const pulseHistory = (wb?.pulseHistory ?? []) as PulseRecord[];
         const improving = isImprovingTrend(pulseHistory);
 
         // 'triggered' → 'none': flags cleared AND (stabilization done OR clear improving trend)
@@ -245,6 +261,13 @@ export async function processPulseSubmission(
     newStatus = 'triggered';
   }
 
+  // Check for sustained low mood pattern after adding this new check-in
+  const sustainedFlag = detectSustainedLowMood(newHistory);
+  if (sustainedFlag && !triggered && currentStatus === 'none') {
+    newStatus = 'watching';
+    console.log(`[Wellbeing] Sustained low mood detected for ${userId}: → watching`);
+  }
+
   // Dynamic auto-downgrade: if status was 'triggered' but this new pulse is fine
   // and the last 3 pulses in the full history all show improvement → ease to 'watching'
   if (currentStatus === 'triggered' && !triggered && newStatus === 'triggered') {
@@ -254,7 +277,7 @@ export async function processPulseSubmission(
     }
   }
 
-  const wb2 = await storage.upsertUserWellbeing(userId, {
+  await storage.upsertUserWellbeing(userId, {
     pulseHistory: newHistory,
     lastPulseDate: new Date(),
     alertStatus: newStatus,
@@ -265,7 +288,7 @@ export async function processPulseSubmission(
     } : {}),
   });
 
-  return { triggered, autoDowngraded: currentStatus === 'triggered' && newStatus === 'watching' };
+  return { triggered, sustainedLowMood: !!sustainedFlag, autoDowngraded: currentStatus === 'triggered' && newStatus === 'watching' };
 }
 
 export function getStabilizationPrompt(index: number): string {

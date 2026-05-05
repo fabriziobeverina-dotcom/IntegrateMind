@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   AlertTriangle, Eye, CheckCircle2, Flag, TrendingDown,
   BookOpen, Repeat2, Flame, Activity, Mail, Save, Info,
-  Brain, Loader2, ChevronDown, ChevronUp, Copy,
+  Brain, Loader2, ChevronDown, ChevronUp, Copy, BarChart2,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -29,6 +29,7 @@ interface FlagStats {
   entry_length_collapse?: { prevAvgWords: number | null; recentAvgWords: number | null; entriesAnalyzed: number };
   obsessive_repetition?: { dominantWord: string; relatedForms: string[]; pct: number; occurrences: number; totalWords: number; entriesAnalyzed: number };
   streak_break?: { streakLength: number };
+  sustained_low_mood?: { checkins: Array<{ date: string; q1: number; q2: number; q3: number; composite: number }>; avgComposite: number };
 }
 
 interface WellbeingRow {
@@ -51,6 +52,7 @@ const FLAG_LABELS: Record<string, string> = {
   entry_length_collapse: "Entry length drop",
   obsessive_repetition: "Repetitive themes",
   streak_break: "Streak broken",
+  sustained_low_mood: "Sustained low mood",
 };
 
 function getFlagDescription(flagName: string, stats: FlagStats): string {
@@ -85,6 +87,13 @@ function getFlagDescription(flagName: string, stats: FlagStats): string {
     }
     return "They maintained a journaling streak of 7 or more consecutive days, then missed today — breaking an established pattern of engagement.";
   }
+  if (flagName === 'sustained_low_mood') {
+    const s = stats.sustained_low_mood;
+    if (s) {
+      return `Their last ${s.checkins.length} pulse check-ins have all scored ${s.avgComposite}/15 on average — consistently at or below the midpoint across emotional, body, and connection dimensions. No single check-in reached crisis level, but the sustained pattern across multiple weeks is a signal worth responding to. This differs from an acute crisis: it suggests a slow, ongoing struggle rather than a sudden drop.`;
+    }
+    return "Their last 3 or more pulse check-ins have all scored 9/15 or below — consistently low across emotional, physical, and connection dimensions without ever hitting the acute crisis threshold. This sustained pattern indicates ongoing difficulty that warrants a facilitator check-in.";
+  }
   return "Unusual pattern detected in journal behaviour.";
 }
 
@@ -93,6 +102,7 @@ const FLAG_ICONS: Record<string, typeof Flag> = {
   entry_length_collapse: TrendingDown,
   obsessive_repetition: Repeat2,
   streak_break: Flame,
+  sustained_low_mood: BarChart2,
 };
 
 const PULSE_QUESTIONS = [
@@ -526,6 +536,24 @@ function FlagReportDialog({
                           <BookOpen className="h-3.5 w-3.5 text-amber-500 shrink-0" />
                           <p className="text-xs text-muted-foreground">
                             <span className="font-semibold text-foreground">{stats.journaling_dropout.previousWeekCount} entries</span> the week before, then silent for <span className="font-semibold text-foreground">{stats.journaling_dropout.daysWithout ?? '4+'} days</span>
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Inline stat callout for sustained low mood */}
+                      {f.name === 'sustained_low_mood' && stats.sustained_low_mood && (
+                        <div className="space-y-1.5 pt-0.5">
+                          <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${stats.sustained_low_mood.checkins.length}, minmax(0, 1fr))` }}>
+                            {stats.sustained_low_mood.checkins.map((c, i) => (
+                              <div key={i} className="rounded bg-muted/50 px-2 py-1.5 text-center">
+                                <p className="text-[10px] text-muted-foreground">{format(new Date(c.date), "MMM d")}</p>
+                                <p className="text-sm font-semibold text-amber-600 dark:text-amber-400">{c.composite}<span className="text-[10px] font-normal text-muted-foreground">/15</span></p>
+                                <p className="text-[10px] text-muted-foreground">{c.q1}·{c.q2}·{c.q3}</p>
+                              </div>
+                            ))}
+                          </div>
+                          <p className="text-[10px] text-muted-foreground text-center">
+                            Average: <span className="font-semibold">{stats.sustained_low_mood.avgComposite}/15</span> across these check-ins (threshold: 9/15)
                           </p>
                         </div>
                       )}

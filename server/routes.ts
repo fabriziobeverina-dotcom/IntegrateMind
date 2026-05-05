@@ -2413,6 +2413,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
               flagStats['streak_break'] = { streakLength: streak };
             }
+
+            if (flag.name === 'sustained_low_mood') {
+              const last3 = pulseHistory.slice(-3);
+              const avgComposite = last3.length > 0
+                ? Math.round(last3.reduce((s: number, r: any) => s + r.composite, 0) / last3.length)
+                : 0;
+              flagStats['sustained_low_mood'] = {
+                checkins: last3,
+                avgComposite,
+              };
+            }
           }
         }
 
