@@ -252,6 +252,10 @@ export class DatabaseStorage implements IStorage {
     
     this.pool = new Pool({
       connectionString,
+      max: 3,
+      connectionTimeoutMillis: 10000,
+      idleTimeoutMillis: 30000,
+      allowExitOnIdle: true,
     });
     this.db = drizzle(this.pool);
   }

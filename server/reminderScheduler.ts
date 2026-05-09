@@ -79,7 +79,8 @@ const reminderTemplates = {
 };
 
 export class ReminderScheduler {
-  
+  private reminderRunning = false;
+
   // Get users who should receive morning or evening reminders right now
   async getUsersForCurrentTime(): Promise<{ user: User; reminderType: 'journal' | 'progress' }[]> {
     try {
@@ -267,18 +268,18 @@ export class ReminderScheduler {
   
   // Process all reminders for current time (called by scheduler)
   async processCurrentReminders(): Promise<void> {
-    console.log('Processing reminders for current time...');
-
+    if (this.reminderRunning) return; // skip if previous run hasn't finished
+    this.reminderRunning = true;
     try {
       const entries = await this.getUsersForCurrentTime();
-
       for (const { user, reminderType } of entries) {
         if (!user.reminderEnabled) continue;
         await this.sendNotificationToUser(user, reminderType);
       }
-
     } catch (error) {
       console.error('Error processing current reminders:', error);
+    } finally {
+      this.reminderRunning = false;
     }
   }
   

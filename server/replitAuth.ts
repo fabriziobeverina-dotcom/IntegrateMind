@@ -26,7 +26,13 @@ export function getSession() {
   const sessionTtl = 30 * 24 * 60 * 60 * 1000; // 30 days
 
   const PgSession = ConnectPgSimple(session);
-  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    max: 2,
+    connectionTimeoutMillis: 10000,
+    idleTimeoutMillis: 30000,
+    allowExitOnIdle: true,
+  });
   const sessionStore = new PgSession({
     pool,
     tableName: 'sessions',

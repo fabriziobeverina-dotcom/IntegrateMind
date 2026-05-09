@@ -160,7 +160,11 @@ function isImprovingTrend(history: PulseRecord[]): boolean {
 
 // ─── Main daily check ─────────────────────────────────────────────────────────
 
+let dailyCheckRunning = false;
+
 export async function runDailyWellbeingCheck(): Promise<void> {
+  if (dailyCheckRunning) return;
+  dailyCheckRunning = true;
   console.log('[Wellbeing] Running daily flag check...');
   try {
     const allUsers = await storage.getAllUsersForFlagCheck();
@@ -220,6 +224,8 @@ export async function runDailyWellbeingCheck(): Promise<void> {
     console.log(`[Wellbeing] Daily check complete for ${allUsers.length} users`);
   } catch (err) {
     console.error('[Wellbeing] Daily check failed:', err);
+  } finally {
+    dailyCheckRunning = false;
   }
 }
 
