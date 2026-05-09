@@ -5,7 +5,9 @@ import session from "express-session";
 import type { Express, RequestHandler } from "express";
 import memoize from "memoizee";
 import ConnectPgSimple from "connect-pg-simple";
-import { Pool } from "@neondatabase/serverless";
+import { Pool, neonConfig } from "@neondatabase/serverless";
+import ws from "ws";
+neonConfig.webSocketConstructor = ws;
 import { storage } from "./storage";
 
 if (!process.env.REPLIT_DOMAINS) {
@@ -28,7 +30,7 @@ export function getSession() {
   const PgSession = ConnectPgSimple(session);
   const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    max: 2,
+    max: 1,
     connectionTimeoutMillis: 10000,
     idleTimeoutMillis: 30000,
     allowExitOnIdle: true,

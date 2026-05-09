@@ -5,6 +5,28 @@
 import { storage } from './storage';
 import type { WellbeingFlag, PulseRecord, UserWellbeing } from '@shared/schema';
 
+// ─── Retry helper for transient Neon cold-start errors ────────────────────────
+async function withRetry<T>(fn: () => Promise<T>, retries = 3, delayMs = 2000): Promise<T> {
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      return await fn();
+    } catch (err: any) {
+      const isRetryable = err?.sourceError?.message?.includes('retryable') ||
+        JSON.stringify(err).includes('"neon:retryable":true') ||
+        err?.message?.includes('Control plane request failed') ||
+        err?.message?.includes('Too many database connection attempts');
+      if (isRetryable && attempt < retries - 1) {
+        await new Promise(r => setTimeout(r, delayMs * (attempt + 1)));
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw new Error('withRetry exhausted');
+}
+
+const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+
 // ─── Stabilization prompts (5, rotating) ─────────────────────────────────────
 
 export const STABILIZATION_PROMPTS = [
@@ -167,11 +189,12 @@ export async function runDailyWellbeingCheck(): Promise<void> {
   dailyCheckRunning = true;
   console.log('[Wellbeing] Running daily flag check...');
   try {
-    const allUsers = await storage.getAllUsersForFlagCheck();
+    const allUsers = await withRetry(() => storage.getAllUsersForFlagCheck());
     for (const user of allUsers) {
       try {
-        const journalFlags = await detectFlags(user.id);
-        const wb = await storage.getUserWellbeing(user.id);
+        await sleep(100); // stagger: 100ms between users to avoid connection bursts
+        const journalFlags = await withRetry(() => detectFlags(user.id));
+        const wb = await withRetry(() => storage.getUserWellbeing(user.id));
 
         // Also check for sustained low mood across pulse history
         const pulseHistory = (wb?.pulseHistory ?? []) as PulseRecord[];
@@ -208,7 +231,7 @@ export async function runDailyWellbeingCheck(): Promise<void> {
           console.log(`[Wellbeing] Auto-cleared ${user.id}: watching → none, flags resolved`);
         }
 
-        await storage.upsertUserWellbeing(user.id, {
+        await withRetry(() => storage.upsertUserWellbeing(user.id, {
           flags,
           alertStatus: newStatus,
           ...(newStatus === 'triggered' && currentStatus !== 'triggered' ? {
@@ -216,7 +239,7 @@ export async function runDailyWellbeingCheck(): Promise<void> {
             stabilizationDaysRemaining: 3,
             stabilizationStartedAt: new Date(),
           } : { stabilizationDaysRemaining }),
-        });
+        }));
       } catch (err) {
         console.error(`[Wellbeing] Error checking user ${user.id}:`, err);
       }

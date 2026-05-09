@@ -1,7 +1,5 @@
-import { drizzle } from "drizzle-orm/neon-serverless";
-import { Pool, neonConfig } from "@neondatabase/serverless";
-import ws from "ws";
-neonConfig.webSocketConstructor = ws;
+import { drizzle } from "drizzle-orm/neon-http";
+import { neon } from "@neondatabase/serverless";
 import { eq, desc, and, gte, lte, sql, isNotNull } from "drizzle-orm";
 import { 
   type User,
@@ -243,62 +241,40 @@ export interface IStorage {
 
 export class DatabaseStorage implements IStorage {
   private db;
-  private pool: Pool;
-  
+
   constructor() {
     const connectionString = process.env.DATABASE_URL;
-    
     if (!connectionString) {
       throw new Error("DATABASE_URL environment variable is not set");
     }
-    
-    this.pool = new Pool({
-      connectionString,
-      max: 3,
-      connectionTimeoutMillis: 10000,
-      idleTimeoutMillis: 120000, // 2 min — longer than the 1-min scheduler tick
-      keepAlive: true,
-    });
-    // Swallow pool-level errors so an idle connection drop never crashes the process
-    this.pool.on('error', (err) => {
-      console.warn('[DB] Pool idle client error (will reconnect):', err.message);
-    });
-    this.db = drizzle(this.pool);
+    // HTTP client: one-shot HTTPS request per query — no persistent connections
+    this.db = drizzle(neon(connectionString));
   }
   
   async initIntegrationPromptTables(): Promise<void> {
-    const client = await this.pool.connect();
-    try {
-      // Create integration_prompts table
-      await client.query(`
-        CREATE TABLE IF NOT EXISTS integration_prompts (
-          id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
-          sequence INTEGER NOT NULL UNIQUE,
-          category TEXT NOT NULL,
-          prompt TEXT NOT NULL,
-          practice TEXT NOT NULL,
-          points_value INTEGER NOT NULL DEFAULT 10,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-      `);
-      
-      // Create user_prompt_progress table
-      await client.query(`
-        CREATE TABLE IF NOT EXISTS user_prompt_progress (
-          id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
-          user_id VARCHAR NOT NULL REFERENCES users(id),
-          prompt_id VARCHAR NOT NULL REFERENCES integration_prompts(id),
-          response TEXT NOT NULL,
-          completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          points_earned INTEGER NOT NULL DEFAULT 10,
-          UNIQUE(user_id, prompt_id)
-        );
-      `);
-      
-      console.log('Integration prompt tables initialized successfully');
-    } finally {
-      client.release();
-    }
+    await this.db.execute(sql`
+      CREATE TABLE IF NOT EXISTS integration_prompts (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        sequence INTEGER NOT NULL UNIQUE,
+        category TEXT NOT NULL,
+        prompt TEXT NOT NULL,
+        practice TEXT NOT NULL,
+        points_value INTEGER NOT NULL DEFAULT 10,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    await this.db.execute(sql`
+      CREATE TABLE IF NOT EXISTS user_prompt_progress (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id VARCHAR NOT NULL REFERENCES users(id),
+        prompt_id VARCHAR NOT NULL REFERENCES integration_prompts(id),
+        response TEXT NOT NULL,
+        completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        points_earned INTEGER NOT NULL DEFAULT 10,
+        UNIQUE(user_id, prompt_id)
+      );
+    `);
+    console.log('Integration prompt tables initialized successfully');
   }
   
   // User management
