@@ -304,8 +304,8 @@ export function getStabilizationPrompt(index: number): string {
 // ─── Scheduler setup ──────────────────────────────────────────────────────────
 
 export function setupWellbeingScheduler(): void {
-  // Run once at startup (after a delay to let DB settle)
-  setTimeout(() => runDailyWellbeingCheck(), 10_000);
+  // Delay startup check so it doesn't race with session store init
+  setTimeout(() => runDailyWellbeingCheck(), 60_000);
 
   // Then every 24 hours
   setInterval(() => runDailyWellbeingCheck(), 24 * 60 * 60 * 1000);

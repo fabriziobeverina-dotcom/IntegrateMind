@@ -1,5 +1,7 @@
-import { drizzle } from "drizzle-orm/node-postgres";
-import { Pool } from "pg";
+import { drizzle } from "drizzle-orm/neon-serverless";
+import { Pool, neonConfig } from "@neondatabase/serverless";
+import ws from "ws";
+neonConfig.webSocketConstructor = ws;
 import { eq, desc, and, gte, lte, sql, isNotNull } from "drizzle-orm";
 import { 
   type User,
@@ -254,8 +256,12 @@ export class DatabaseStorage implements IStorage {
       connectionString,
       max: 3,
       connectionTimeoutMillis: 10000,
-      idleTimeoutMillis: 30000,
-      allowExitOnIdle: true,
+      idleTimeoutMillis: 120000, // 2 min — longer than the 1-min scheduler tick
+      keepAlive: true,
+    });
+    // Swallow pool-level errors so an idle connection drop never crashes the process
+    this.pool.on('error', (err) => {
+      console.warn('[DB] Pool idle client error (will reconnect):', err.message);
     });
     this.db = drizzle(this.pool);
   }

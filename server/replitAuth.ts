@@ -5,7 +5,7 @@ import session from "express-session";
 import type { Express, RequestHandler } from "express";
 import memoize from "memoizee";
 import ConnectPgSimple from "connect-pg-simple";
-import { Pool } from "pg";
+import { Pool } from "@neondatabase/serverless";
 import { storage } from "./storage";
 
 if (!process.env.REPLIT_DOMAINS) {
@@ -36,7 +36,8 @@ export function getSession() {
   const sessionStore = new PgSession({
     pool,
     tableName: 'sessions',
-    ttl: sessionTtl / 1000, // seconds
+    ttl: sessionTtl / 1000,       // seconds
+    pruneSessionInterval: 3600,   // prune old sessions once per hour, not on startup
   });
 
   return session({
