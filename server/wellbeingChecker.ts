@@ -2,8 +2,49 @@
 // Runs daily flag checks and manages alert states server-side.
 // Never exposes clinical language to users.
 
+import webpush from 'web-push';
 import { storage } from './storage';
 import type { WellbeingFlag, PulseRecord, UserWellbeing } from '@shared/schema';
+
+// ─── Admin push notification helper ──────────────────────────────────────────
+
+async function notifyAdmins(triggeredCount: number, watchingCount: number): Promise<void> {
+  const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY;
+  const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY;
+  const VAPID_EMAIL = process.env.VAPID_EMAIL || 'mailto:admin@integrationcompass.com';
+  if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) return;
+
+  webpush.setVapidDetails(VAPID_EMAIL, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
+
+  const total = triggeredCount + watchingCount;
+  if (total === 0) return; // Nothing to report
+
+  const parts: string[] = [];
+  if (triggeredCount > 0) parts.push(`${triggeredCount} red flag${triggeredCount > 1 ? 's' : ''}`);
+  if (watchingCount > 0) parts.push(`${watchingCount} monitoring`);
+
+  const payload = JSON.stringify({
+    title: 'Wellbeing Alert — Action Required',
+    body: `Daily check: ${parts.join(', ')}. Open the wellbeing board to review.`,
+    url: '/admin/wellbeing',
+    tag: 'admin-wellbeing-daily',
+    icon: '/icon-192.png',
+  });
+
+  const subs = await storage.getAdminPushSubscriptions();
+  for (const sub of subs) {
+    try {
+      await webpush.sendNotification(
+        { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+        payload,
+        { TTL: 86400, urgency: 'high', vapidDetails: { subject: VAPID_EMAIL, publicKey: VAPID_PUBLIC_KEY, privateKey: VAPID_PRIVATE_KEY } }
+      );
+      console.log(`[Wellbeing] Admin notification sent to endpoint: ${sub.endpoint.slice(0, 40)}…`);
+    } catch (err: any) {
+      console.error(`[Wellbeing] Failed to send admin push:`, err?.message);
+    }
+  }
+}
 
 // ─── Retry helper for transient Neon cold-start errors ────────────────────────
 async function withRetry<T>(fn: () => Promise<T>, retries = 3, delayMs = 2000): Promise<T> {
@@ -190,6 +231,9 @@ export async function runDailyWellbeingCheck(): Promise<void> {
   console.log('[Wellbeing] Running daily flag check...');
   try {
     const allUsers = await withRetry(() => storage.getAllUsersForFlagCheck());
+    let triggeredCount = 0;
+    let watchingCount = 0;
+
     for (const user of allUsers) {
       try {
         await sleep(100); // stagger: 100ms between users to avoid connection bursts
@@ -240,11 +284,21 @@ export async function runDailyWellbeingCheck(): Promise<void> {
             stabilizationStartedAt: new Date(),
           } : { stabilizationDaysRemaining }),
         }));
+
+        // Tally final status for admin notification
+        if (newStatus === 'triggered') triggeredCount++;
+        else if (newStatus === 'watching') watchingCount++;
+
       } catch (err) {
         console.error(`[Wellbeing] Error checking user ${user.id}:`, err);
       }
     }
-    console.log(`[Wellbeing] Daily check complete for ${allUsers.length} users`);
+
+    console.log(`[Wellbeing] Daily check complete for ${allUsers.length} users — triggered: ${triggeredCount}, watching: ${watchingCount}`);
+
+    // Send one daily push notification to all admins if any flags are active
+    await notifyAdmins(triggeredCount, watchingCount);
+
   } catch (err) {
     console.error('[Wellbeing] Daily check failed:', err);
   } finally {

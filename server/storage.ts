@@ -237,6 +237,7 @@ export interface IStorage {
   getAllUsersWithWellbeing(): Promise<Array<{ user: User; wellbeing: UserWellbeing | null }>>;
   resolveWellbeingAlert(userId: string, note?: string, resolvedByName?: string): Promise<void>;
   getAllUsersForFlagCheck(): Promise<User[]>;
+  getAdminPushSubscriptions(): Promise<Array<{ endpoint: string; p256dh: string; auth: string }>>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1333,6 +1334,19 @@ export class DatabaseStorage implements IStorage {
 
   async getAllUsersForFlagCheck(): Promise<User[]> {
     return this.db.select().from(users);
+  }
+
+  async getAdminPushSubscriptions(): Promise<Array<{ endpoint: string; p256dh: string; auth: string }>> {
+    const rows = await this.db
+      .select({
+        endpoint: pushSubscriptions.endpoint,
+        p256dh: pushSubscriptions.p256dh,
+        auth: pushSubscriptions.auth,
+      })
+      .from(pushSubscriptions)
+      .innerJoin(users, eq(pushSubscriptions.userId, users.id))
+      .where(and(eq(users.isAdmin, true), eq(pushSubscriptions.isActive, true)));
+    return rows;
   }
 
   // ─── Gamification ────────────────────────────────────────────────────────────
