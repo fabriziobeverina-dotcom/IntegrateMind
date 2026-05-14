@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,10 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { PlusIcon, BookIcon, VideoIcon, ActivityIcon, BarChart3, MessageCircle, Save } from "lucide-react";
+import { PlusIcon, BookIcon, VideoIcon, ActivityIcon, BarChart3, MessageCircle, Save, Bell, BellOff, BellRing } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { subscribeToPush, unsubscribeFromPush, isPushSupported, getPushSubscriptionStatus } from "@/lib/push";
 
 export default function AdminDashboard() {
   const { user } = useAuth();
@@ -41,6 +42,49 @@ export default function AdminDashboard() {
 
   const [tarotWhatsappInput, setTarotWhatsappInput] = useState<string | null>(null);
   const tarotWhatsappValue = tarotWhatsappInput !== null ? tarotWhatsappInput : (siteSettings['tarot_whatsapp_number'] ?? '');
+
+  // Push notification state for wellbeing alerts
+  type PushState = 'checking' | 'unsupported' | 'blocked' | 'enabled' | 'disabled';
+  const [pushState, setPushState] = useState<PushState>('checking');
+  const [pushLoading, setPushLoading] = useState(false);
+
+  useEffect(() => {
+    async function detectPushState() {
+      if (!isPushSupported()) { setPushState('unsupported'); return; }
+      const permission = await getPushSubscriptionStatus();
+      if (permission === 'denied') { setPushState('blocked'); return; }
+      // Check if there's an active SW subscription
+      try {
+        const reg = await navigator.serviceWorker.getRegistration('/');
+        const sub = reg ? await reg.pushManager.getSubscription() : null;
+        setPushState(sub ? 'enabled' : 'disabled');
+      } catch {
+        setPushState('disabled');
+      }
+    }
+    detectPushState();
+  }, []);
+
+  async function handleEnableAlerts() {
+    setPushLoading(true);
+    const ok = await subscribeToPush();
+    setPushLoading(false);
+    if (ok) {
+      setPushState('enabled');
+      toast({ title: "Alerts enabled", description: "You'll receive a daily notification when red flags are detected." });
+    } else {
+      toast({ title: "Could not enable alerts", description: "Please allow notifications in your browser settings, then try again.", variant: "destructive" });
+      setPushState('blocked');
+    }
+  }
+
+  async function handleDisableAlerts() {
+    setPushLoading(true);
+    await unsubscribeFromPush();
+    setPushLoading(false);
+    setPushState('disabled');
+    toast({ title: "Alerts disabled", description: "You will no longer receive wellbeing alert notifications." });
+  }
 
   const updateSettingsMutation = useMutation({
     mutationFn: async (updates: Record<string, string>) => {
@@ -313,6 +357,71 @@ export default function AdminDashboard() {
               <p className="text-xs text-muted-foreground">
                 Preview: <span className="font-mono">https://wa.me/{whatsappValue.replace(/[^0-9]/g, '')}</span>
               </p>
+            )}
+          </div>
+
+          <div className="border-t border-border" />
+
+          {/* Wellbeing alert notifications */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <BellRing className="h-4 w-4 text-muted-foreground" />
+              <Label>Wellbeing Alert Notifications</Label>
+              {pushState === 'enabled' && (
+                <Badge variant="secondary" className="text-xs" data-testid="badge-alerts-status">Active</Badge>
+              )}
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Receive a daily push notification on this device whenever one or more users have an active red flag. No notification is sent if everyone is clear.
+            </p>
+
+            {pushState === 'checking' && (
+              <p className="text-sm text-muted-foreground">Checking notification status…</p>
+            )}
+
+            {pushState === 'unsupported' && (
+              <p className="text-sm text-muted-foreground">Push notifications are not supported in this browser.</p>
+            )}
+
+            {pushState === 'blocked' && (
+              <div className="flex items-start gap-2 rounded-md bg-destructive/10 px-3 py-2">
+                <BellOff className="h-4 w-4 mt-0.5 text-destructive shrink-0" />
+                <p className="text-sm text-destructive">
+                  Notifications are blocked in your browser. Open your browser's site settings and allow notifications for this site, then refresh the page.
+                </p>
+              </div>
+            )}
+
+            {pushState === 'disabled' && (
+              <Button
+                data-testid="button-enable-wellbeing-alerts"
+                onClick={handleEnableAlerts}
+                disabled={pushLoading}
+                variant="outline"
+                className="gap-2"
+              >
+                <Bell className="h-4 w-4" />
+                {pushLoading ? "Enabling…" : "Enable alerts on this device"}
+              </Button>
+            )}
+
+            {pushState === 'enabled' && (
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Bell className="h-4 w-4 text-green-600" />
+                  Alerts are active on this device
+                </div>
+                <Button
+                  data-testid="button-disable-wellbeing-alerts"
+                  onClick={handleDisableAlerts}
+                  disabled={pushLoading}
+                  variant="ghost"
+                  className="gap-2 text-muted-foreground"
+                >
+                  <BellOff className="h-4 w-4" />
+                  {pushLoading ? "Disabling…" : "Disable"}
+                </Button>
+              </div>
             )}
           </div>
 
