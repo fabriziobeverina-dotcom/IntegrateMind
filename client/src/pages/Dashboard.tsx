@@ -329,141 +329,133 @@ export default function Dashboard() {
       </div>
 
       {/* One-on-One Services */}
-      {(evaUrl || cateUrl || tomiUrl || dominicUrl) && (
-        <div className="space-y-6">
-          <div>
-            <h2 className="text-xl font-semibold">One-on-One Services</h2>
-            <p className="text-sm text-muted-foreground mt-1">Personal guidance from our team of specialists</p>
-          </div>
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-xl font-semibold">One-on-One Services</h2>
+          <p className="text-sm text-muted-foreground mt-1">Personal guidance from our team of specialists</p>
+        </div>
 
-          {/* Psychological Integration */}
-          {evaUrl && (
-            <div className="space-y-3">
-              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Psychological Integration</p>
-              <Card className="overflow-hidden">
-                <div className="flex flex-col sm:flex-row gap-0">
-                  <div className="flex-shrink-0 flex items-center justify-center p-6 sm:p-8 sm:pr-0">
-                    <img
-                      src={evaImage}
-                      alt="Eva"
-                      className="w-24 h-24 sm:w-28 sm:h-28 rounded-full object-cover"
-                      data-testid="img-practitioner-eva"
-                    />
+        {/* Psychological Integration — Eva */}
+        <div className="space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Psychological Integration</p>
+          <Card className="overflow-hidden">
+            <div className="flex flex-col sm:flex-row gap-0">
+              <div className="flex-shrink-0 flex items-center justify-center p-6 sm:p-8 sm:pr-0">
+                <img
+                  src={evaImage}
+                  alt="Eva"
+                  className="w-24 h-24 sm:w-28 sm:h-28 rounded-full object-cover"
+                  data-testid="img-practitioner-eva"
+                />
+              </div>
+              <div className="flex-1 p-6 flex flex-col justify-center gap-3">
+                <h3 className="text-base font-semibold">Eva</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Italian psychologist and counselor with over twenty years in transformational processes, relational support, and personal development. Her work bridges psychology, mindfulness, experiential learning, and psychedelic integration.
+                </p>
+                {evaUrl && (
+                  <div>
+                    <a href={evaUrl} target="_blank" rel="noopener noreferrer" data-testid="button-whatsapp-eva">
+                      <Button className="gap-2">
+                        <MessageCircle className="w-4 h-4" />
+                        Connect on WhatsApp
+                      </Button>
+                    </a>
                   </div>
-                  <div className="flex-1 p-6 flex flex-col justify-center gap-3">
-                    <div>
-                      <h3 className="text-base font-semibold">Eva</h3>
-                    </div>
-                    <p className="text-sm text-muted-foreground leading-relaxed">
-                      Italian psychologist and counselor with over twenty years in transformational processes, relational support, and personal development. Her work bridges psychology, mindfulness, experiential learning, and psychedelic integration.
-                    </p>
-                    <div>
-                      <a href={evaUrl} target="_blank" rel="noopener noreferrer" data-testid="button-whatsapp-eva">
-                        <Button className="gap-2">
-                          <MessageCircle className="w-4 h-4" />
-                          Connect on WhatsApp
-                        </Button>
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            </div>
-          )}
-
-          {/* Breathwork Integration */}
-          {(cateUrl || tomiUrl) && (
-            <div className="space-y-3">
-              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Breathwork Integration</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {cateUrl && (
-                  <Card className="overflow-hidden">
-                    <div className="flex flex-col items-center text-center p-6 gap-4">
-                      <img
-                        src={cateImage}
-                        alt="Caterina"
-                        className="w-24 h-24 rounded-full object-cover"
-                        data-testid="img-practitioner-cate"
-                      />
-                      <div className="space-y-2">
-                        <h3 className="text-base font-semibold">Caterina</h3>
-                        <p className="text-sm text-muted-foreground leading-relaxed">
-                          A compassionate medical doctor integrating emergency medicine with holistic healing approaches. Certified breathwork mentor, Caterina combines Western clinical knowledge with Amazonian traditions, yoga, meditation, and conscious breathing practices to create safe spaces for deep transformation.
-                        </p>
-                      </div>
-                      <a href={cateUrl} target="_blank" rel="noopener noreferrer" data-testid="button-whatsapp-cate">
-                        <Button className="gap-2">
-                          <MessageCircle className="w-4 h-4" />
-                          Connect on WhatsApp
-                        </Button>
-                      </a>
-                    </div>
-                  </Card>
-                )}
-                {tomiUrl && (
-                  <Card className="overflow-hidden">
-                    <div className="flex flex-col items-center text-center p-6 gap-4">
-                      <img
-                        src={tomiImage}
-                        alt="Tomi"
-                        className="w-24 h-24 rounded-full object-cover"
-                        data-testid="img-practitioner-tomi"
-                      />
-                      <div className="space-y-2">
-                        <h3 className="text-base font-semibold">Tomi</h3>
-                        <p className="text-sm text-muted-foreground leading-relaxed">
-                          A systems-based breathwork educator focused on optimizing human physiology through functional breathing, CO₂ adaptation training, and somatic regulation. His approach blends modern breathing science with experiential methods for performance and wellbeing.
-                        </p>
-                      </div>
-                      <a href={tomiUrl} target="_blank" rel="noopener noreferrer" data-testid="button-whatsapp-tomi">
-                        <Button className="gap-2">
-                          <MessageCircle className="w-4 h-4" />
-                          Connect on WhatsApp
-                        </Button>
-                      </a>
-                    </div>
-                  </Card>
                 )}
               </div>
             </div>
-          )}
-
-          {/* Tarot & Spiritual Integration */}
-          {dominicUrl && (
-            <div className="space-y-3">
-              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Tarot & Spiritual Integration</p>
-              <Card className="overflow-hidden">
-                <div className="flex flex-col sm:flex-row gap-0">
-                  <div className="flex-shrink-0 flex items-center justify-center p-6 sm:p-8 sm:pr-0">
-                    <img
-                      src={dominicImage}
-                      alt="Dominic"
-                      className="w-24 h-24 sm:w-28 sm:h-28 rounded-full object-cover"
-                      data-testid="img-practitioner-dominic"
-                    />
-                  </div>
-                  <div className="flex-1 p-6 flex flex-col justify-center gap-3">
-                    <div>
-                      <h3 className="text-base font-semibold">Dominic</h3>
-                    </div>
-                    <p className="text-sm text-muted-foreground leading-relaxed">
-                      An intuitive guide working with tarot, yoga, and spiritual practices to support emotional release and inner clarity. His approach is centered on compassion, presence, and helping individuals reconnect with their own inner healing intelligence.
-                    </p>
-                    <div>
-                      <a href={dominicUrl} target="_blank" rel="noopener noreferrer" data-testid="button-whatsapp-dominic">
-                        <Button className="gap-2">
-                          <MessageCircle className="w-4 h-4" />
-                          Connect on WhatsApp
-                        </Button>
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            </div>
-          )}
+          </Card>
         </div>
-      )}
+
+        {/* Breathwork Integration — Cate & Tomi */}
+        <div className="space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Breathwork Integration</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Card className="overflow-hidden">
+              <div className="flex flex-col items-center text-center p-6 gap-4">
+                <img
+                  src={cateImage}
+                  alt="Caterina"
+                  className="w-24 h-24 rounded-full object-cover"
+                  data-testid="img-practitioner-cate"
+                />
+                <div className="space-y-2">
+                  <h3 className="text-base font-semibold">Caterina</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    A compassionate medical doctor integrating emergency medicine with holistic healing approaches. Certified breathwork mentor, Caterina combines Western clinical knowledge with Amazonian traditions, yoga, meditation, and conscious breathing practices to create safe spaces for deep transformation.
+                  </p>
+                </div>
+                {cateUrl && (
+                  <a href={cateUrl} target="_blank" rel="noopener noreferrer" data-testid="button-whatsapp-cate">
+                    <Button className="gap-2">
+                      <MessageCircle className="w-4 h-4" />
+                      Connect on WhatsApp
+                    </Button>
+                  </a>
+                )}
+              </div>
+            </Card>
+            <Card className="overflow-hidden">
+              <div className="flex flex-col items-center text-center p-6 gap-4">
+                <img
+                  src={tomiImage}
+                  alt="Tomi"
+                  className="w-24 h-24 rounded-full object-cover"
+                  data-testid="img-practitioner-tomi"
+                />
+                <div className="space-y-2">
+                  <h3 className="text-base font-semibold">Tomi</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    A systems-based breathwork educator focused on optimizing human physiology through functional breathing, CO₂ adaptation training, and somatic regulation. His approach blends modern breathing science with experiential methods for performance and wellbeing.
+                  </p>
+                </div>
+                {tomiUrl && (
+                  <a href={tomiUrl} target="_blank" rel="noopener noreferrer" data-testid="button-whatsapp-tomi">
+                    <Button className="gap-2">
+                      <MessageCircle className="w-4 h-4" />
+                      Connect on WhatsApp
+                    </Button>
+                  </a>
+                )}
+              </div>
+            </Card>
+          </div>
+        </div>
+
+        {/* Tarot & Spiritual Integration — Dominic */}
+        <div className="space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Tarot & Spiritual Integration</p>
+          <Card className="overflow-hidden">
+            <div className="flex flex-col sm:flex-row gap-0">
+              <div className="flex-shrink-0 flex items-center justify-center p-6 sm:p-8 sm:pr-0">
+                <img
+                  src={dominicImage}
+                  alt="Dominic"
+                  className="w-24 h-24 sm:w-28 sm:h-28 rounded-full object-cover"
+                  data-testid="img-practitioner-dominic"
+                />
+              </div>
+              <div className="flex-1 p-6 flex flex-col justify-center gap-3">
+                <h3 className="text-base font-semibold">Dominic</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  An intuitive guide working with tarot, yoga, and spiritual practices to support emotional release and inner clarity. His approach is centered on compassion, presence, and helping individuals reconnect with their own inner healing intelligence.
+                </p>
+                {dominicUrl && (
+                  <div>
+                    <a href={dominicUrl} target="_blank" rel="noopener noreferrer" data-testid="button-whatsapp-dominic">
+                      <Button className="gap-2">
+                        <MessageCircle className="w-4 h-4" />
+                        Connect on WhatsApp
+                      </Button>
+                    </a>
+                  </div>
+                )}
+              </div>
+            </div>
+          </Card>
+        </div>
+      </div>
     </div>
     <KillTheShamanOverlay open={eggOpen} close={closeEgg} />
     </>
