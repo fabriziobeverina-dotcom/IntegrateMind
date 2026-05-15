@@ -40,8 +40,14 @@ export default function AdminDashboard() {
   const [whatsappInput, setWhatsappInput] = useState<string | null>(null);
   const whatsappValue = whatsappInput !== null ? whatsappInput : (siteSettings['whatsapp_number'] ?? '');
 
-  const [tarotWhatsappInput, setTarotWhatsappInput] = useState<string | null>(null);
-  const tarotWhatsappValue = tarotWhatsappInput !== null ? tarotWhatsappInput : (siteSettings['tarot_whatsapp_number'] ?? '');
+  const [cateWhatsappInput, setCateWhatsappInput] = useState<string | null>(null);
+  const cateWhatsappValue = cateWhatsappInput !== null ? cateWhatsappInput : (siteSettings['cate_whatsapp_number'] ?? '');
+
+  const [tomiWhatsappInput, setTomiWhatsappInput] = useState<string | null>(null);
+  const tomiWhatsappValue = tomiWhatsappInput !== null ? tomiWhatsappInput : (siteSettings['tomi_whatsapp_number'] ?? '');
+
+  const [dominicWhatsappInput, setDominicWhatsappInput] = useState<string | null>(null);
+  const dominicWhatsappValue = dominicWhatsappInput !== null ? dominicWhatsappInput : (siteSettings['tarot_whatsapp_number'] ?? '');
 
   // Push notification state for wellbeing alerts
   type PushState = 'checking' | 'unsupported' | 'blocked' | 'enabled' | 'disabled';
@@ -93,7 +99,9 @@ export default function AdminDashboard() {
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/site-settings'] });
       if ('whatsapp_number' in variables) setWhatsappInput(null);
-      if ('tarot_whatsapp_number' in variables) setTarotWhatsappInput(null);
+      if ('cate_whatsapp_number' in variables) setCateWhatsappInput(null);
+      if ('tomi_whatsapp_number' in variables) setTomiWhatsappInput(null);
+      if ('tarot_whatsapp_number' in variables) setDominicWhatsappInput(null);
       toast({ title: "Settings saved", description: "Site settings updated successfully." });
     },
     onError: () => {
@@ -329,15 +337,16 @@ export default function AdminDashboard() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Integration Expert number */}
+          <p className="text-sm text-muted-foreground">
+            Enter WhatsApp numbers for each practitioner. Leave a field empty to hide that person's button from the dashboard.
+          </p>
+
+          {/* Psychological Integration — Eva */}
           <div className="space-y-3">
-            <Label htmlFor="input-whatsapp-number">Integration Expert WhatsApp Number</Label>
-            <p className="text-sm text-muted-foreground">
-              Number for the "Walk with our integration expert" button. Leave empty to hide the button.
-            </p>
+            <Label htmlFor="input-whatsapp-eva">Eva — Psychological Integration</Label>
             <div className="flex flex-wrap gap-2">
               <Input
-                id="input-whatsapp-number"
+                id="input-whatsapp-eva"
                 data-testid="input-whatsapp-number"
                 placeholder="15551234567"
                 value={whatsappValue}
@@ -354,9 +363,63 @@ export default function AdminDashboard() {
               </Button>
             </div>
             {whatsappValue && (
-              <p className="text-xs text-muted-foreground">
-                Preview: <span className="font-mono">https://wa.me/{whatsappValue.replace(/[^0-9]/g, '')}</span>
-              </p>
+              <p className="text-xs text-muted-foreground font-mono">https://wa.me/{whatsappValue.replace(/[^0-9]/g, '')}</p>
+            )}
+          </div>
+
+          <div className="border-t border-border" />
+
+          {/* Breathwork — Caterina */}
+          <div className="space-y-3">
+            <Label htmlFor="input-whatsapp-cate">Caterina — Breathwork Integration</Label>
+            <div className="flex flex-wrap gap-2">
+              <Input
+                id="input-whatsapp-cate"
+                data-testid="input-whatsapp-cate"
+                placeholder="15551234567"
+                value={cateWhatsappValue}
+                onChange={(e) => setCateWhatsappInput(e.target.value)}
+                className="max-w-xs"
+              />
+              <Button
+                data-testid="button-save-cate-whatsapp"
+                disabled={updateSettingsMutation.isPending}
+                onClick={() => updateSettingsMutation.mutate({ cate_whatsapp_number: cateWhatsappValue })}
+              >
+                <Save className="h-4 w-4 mr-2" />
+                {updateSettingsMutation.isPending ? "Saving..." : "Save"}
+              </Button>
+            </div>
+            {cateWhatsappValue && (
+              <p className="text-xs text-muted-foreground font-mono">https://wa.me/{cateWhatsappValue.replace(/[^0-9]/g, '')}</p>
+            )}
+          </div>
+
+          <div className="border-t border-border" />
+
+          {/* Breathwork — Tomi */}
+          <div className="space-y-3">
+            <Label htmlFor="input-whatsapp-tomi">Tomi — Breathwork Integration</Label>
+            <div className="flex flex-wrap gap-2">
+              <Input
+                id="input-whatsapp-tomi"
+                data-testid="input-whatsapp-tomi"
+                placeholder="15551234567"
+                value={tomiWhatsappValue}
+                onChange={(e) => setTomiWhatsappInput(e.target.value)}
+                className="max-w-xs"
+              />
+              <Button
+                data-testid="button-save-tomi-whatsapp"
+                disabled={updateSettingsMutation.isPending}
+                onClick={() => updateSettingsMutation.mutate({ tomi_whatsapp_number: tomiWhatsappValue })}
+              >
+                <Save className="h-4 w-4 mr-2" />
+                {updateSettingsMutation.isPending ? "Saving..." : "Save"}
+              </Button>
+            </div>
+            {tomiWhatsappValue && (
+              <p className="text-xs text-muted-foreground font-mono">https://wa.me/{tomiWhatsappValue.replace(/[^0-9]/g, '')}</p>
             )}
           </div>
 
@@ -427,34 +490,29 @@ export default function AdminDashboard() {
 
           <div className="border-t border-border" />
 
-          {/* Tarot reading number */}
+          {/* Tarot & Spiritual Integration — Dominic */}
           <div className="space-y-3">
-            <Label htmlFor="input-tarot-whatsapp-number">Tarot Reading WhatsApp Number</Label>
-            <p className="text-sm text-muted-foreground">
-              Number for the "Tarot reading for integration" button. Leave empty to hide the button.
-            </p>
+            <Label htmlFor="input-whatsapp-dominic">Dominic — Tarot & Spiritual Integration</Label>
             <div className="flex flex-wrap gap-2">
               <Input
-                id="input-tarot-whatsapp-number"
+                id="input-whatsapp-dominic"
                 data-testid="input-tarot-whatsapp-number"
                 placeholder="15551234567"
-                value={tarotWhatsappValue}
-                onChange={(e) => setTarotWhatsappInput(e.target.value)}
+                value={dominicWhatsappValue}
+                onChange={(e) => setDominicWhatsappInput(e.target.value)}
                 className="max-w-xs"
               />
               <Button
                 data-testid="button-save-tarot-whatsapp"
                 disabled={updateSettingsMutation.isPending}
-                onClick={() => updateSettingsMutation.mutate({ tarot_whatsapp_number: tarotWhatsappValue })}
+                onClick={() => updateSettingsMutation.mutate({ tarot_whatsapp_number: dominicWhatsappValue })}
               >
                 <Save className="h-4 w-4 mr-2" />
                 {updateSettingsMutation.isPending ? "Saving..." : "Save"}
               </Button>
             </div>
-            {tarotWhatsappValue && (
-              <p className="text-xs text-muted-foreground">
-                Preview: <span className="font-mono">https://wa.me/{tarotWhatsappValue.replace(/[^0-9]/g, '')}</span>
-              </p>
+            {dominicWhatsappValue && (
+              <p className="text-xs text-muted-foreground font-mono">https://wa.me/{dominicWhatsappValue.replace(/[^0-9]/g, '')}</p>
             )}
           </div>
         </CardContent>

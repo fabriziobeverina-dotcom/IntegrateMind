@@ -18,8 +18,10 @@ import { Plus, Compass, MessageCircle, ExternalLink, Sunrise, Check } from "luci
 import { PhaseIndicator } from "@/components/PhaseIndicator";
 import KillTheShamanOverlay, { useKillTheShamanEgg } from "@/components/KillTheShamanEgg";
 import logoImage from "@assets/pao_logo_1775666029285.jpg";
-import expertImage from "@assets/integration_expert.png";
-import tarotImage from "@assets/tarot_reader.png";
+import evaImage from "@assets/eva_1778865447748.png";
+import cateImage from "@assets/cate_1778865447755.png";
+import tomiImage from "@assets/tomi_1778865447750.png";
+import dominicImage from "@assets/dominic_1778865447755.png";
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
@@ -90,15 +92,14 @@ export default function Dashboard() {
     queryKey: ['/api/site-settings'],
   });
 
-  const whatsappNumber = siteSettings['whatsapp_number'] || '';
-  const whatsappUrl = whatsappNumber
-    ? `https://wa.me/${whatsappNumber.replace(/[^0-9]/g, '')}?text=I'm%20interested%20in%20integration%20support`
-    : null;
-
-  const tarotWhatsappNumber = siteSettings['tarot_whatsapp_number'] || '';
-  const tarotWhatsappUrl = tarotWhatsappNumber
-    ? `https://wa.me/${tarotWhatsappNumber.replace(/[^0-9]/g, '')}?text=I'm%20interested%20in%20a%20tarot%20reading%20for%20integration`
-    : null;
+  function waUrl(num: string, text: string) {
+    const n = num.replace(/[^0-9]/g, '');
+    return n ? `https://wa.me/${n}?text=${encodeURIComponent(text)}` : null;
+  }
+  const evaUrl    = waUrl(siteSettings['whatsapp_number'] ?? '',        "I'm interested in psychological integration support");
+  const cateUrl   = waUrl(siteSettings['cate_whatsapp_number'] ?? '',   "I'm interested in breathwork integration with Cate");
+  const tomiUrl   = waUrl(siteSettings['tomi_whatsapp_number'] ?? '',   "I'm interested in breathwork integration with Tomi");
+  const dominicUrl = waUrl(siteSettings['tarot_whatsapp_number'] ?? '', "I'm interested in tarot & spiritual integration");
 
   const isJourneyStart = !user?.journeyStartDate;
 
@@ -327,71 +328,142 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* Walk with our integration expert banner */}
-      {whatsappUrl && (
-        <Card className="overflow-hidden">
-          <div className="flex flex-col sm:flex-row items-center gap-0">
-            <div
-              className="w-full sm:w-48 h-48 sm:h-auto bg-cover bg-center flex-shrink-0"
-              style={{ backgroundImage: `url(${expertImage})`, minHeight: '12rem' }}
-              role="img"
-              aria-label="Integration expert"
-            />
-            <div className="flex-1 p-6 flex flex-col justify-center gap-3">
-              <h3 className="text-lg font-semibold leading-snug">Walk with our integration expert</h3>
-              <p className="text-sm text-muted-foreground">
-                Sometimes the journey benefits from personal guidance. Connect directly with our expert on WhatsApp for support tailored to your experience.
-              </p>
-              <div>
-                <a
-                  href={whatsappUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  data-testid="button-whatsapp-expert"
-                >
-                  <Button className="gap-2">
-                    <MessageCircle className="w-4 h-4" />
-                    Start conversation
-                  </Button>
-                </a>
+      {/* One-on-One Services */}
+      {(evaUrl || cateUrl || tomiUrl || dominicUrl) && (
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-xl font-semibold">One-on-One Services</h2>
+            <p className="text-sm text-muted-foreground mt-1">Personal guidance from our team of specialists</p>
+          </div>
+
+          {/* Psychological Integration */}
+          {evaUrl && (
+            <div className="space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Psychological Integration</p>
+              <Card className="overflow-hidden">
+                <div className="flex flex-col sm:flex-row gap-0">
+                  <div className="flex-shrink-0 flex items-center justify-center p-6 sm:p-8 sm:pr-0">
+                    <img
+                      src={evaImage}
+                      alt="Eva"
+                      className="w-24 h-24 sm:w-28 sm:h-28 rounded-full object-cover"
+                      data-testid="img-practitioner-eva"
+                    />
+                  </div>
+                  <div className="flex-1 p-6 flex flex-col justify-center gap-3">
+                    <div>
+                      <h3 className="text-base font-semibold">Eva</h3>
+                    </div>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      Italian psychologist and counselor with over twenty years in transformational processes, relational support, and personal development. Her work bridges psychology, mindfulness, experiential learning, and psychedelic integration.
+                    </p>
+                    <div>
+                      <a href={evaUrl} target="_blank" rel="noopener noreferrer" data-testid="button-whatsapp-eva">
+                        <Button className="gap-2">
+                          <MessageCircle className="w-4 h-4" />
+                          Connect on WhatsApp
+                        </Button>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            </div>
+          )}
+
+          {/* Breathwork Integration */}
+          {(cateUrl || tomiUrl) && (
+            <div className="space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Breathwork Integration</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {cateUrl && (
+                  <Card className="overflow-hidden">
+                    <div className="flex flex-col items-center text-center p-6 gap-4">
+                      <img
+                        src={cateImage}
+                        alt="Caterina"
+                        className="w-24 h-24 rounded-full object-cover"
+                        data-testid="img-practitioner-cate"
+                      />
+                      <div className="space-y-2">
+                        <h3 className="text-base font-semibold">Caterina</h3>
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                          A compassionate medical doctor integrating emergency medicine with holistic healing approaches. Certified breathwork mentor, Caterina combines Western clinical knowledge with Amazonian traditions, yoga, meditation, and conscious breathing practices to create safe spaces for deep transformation.
+                        </p>
+                      </div>
+                      <a href={cateUrl} target="_blank" rel="noopener noreferrer" data-testid="button-whatsapp-cate">
+                        <Button className="gap-2">
+                          <MessageCircle className="w-4 h-4" />
+                          Connect on WhatsApp
+                        </Button>
+                      </a>
+                    </div>
+                  </Card>
+                )}
+                {tomiUrl && (
+                  <Card className="overflow-hidden">
+                    <div className="flex flex-col items-center text-center p-6 gap-4">
+                      <img
+                        src={tomiImage}
+                        alt="Tomi"
+                        className="w-24 h-24 rounded-full object-cover"
+                        data-testid="img-practitioner-tomi"
+                      />
+                      <div className="space-y-2">
+                        <h3 className="text-base font-semibold">Tomi</h3>
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                          A systems-based breathwork educator focused on optimizing human physiology through functional breathing, CO₂ adaptation training, and somatic regulation. His approach blends modern breathing science with experiential methods for performance and wellbeing.
+                        </p>
+                      </div>
+                      <a href={tomiUrl} target="_blank" rel="noopener noreferrer" data-testid="button-whatsapp-tomi">
+                        <Button className="gap-2">
+                          <MessageCircle className="w-4 h-4" />
+                          Connect on WhatsApp
+                        </Button>
+                      </a>
+                    </div>
+                  </Card>
+                )}
               </div>
             </div>
-          </div>
-        </Card>
-      )}
+          )}
 
-      {/* Tarot reading for integration banner */}
-      <Card className="overflow-hidden">
-        <div className="flex flex-col sm:flex-row items-center gap-0">
-          <div
-            className="w-full sm:w-48 h-48 sm:h-auto bg-cover bg-center flex-shrink-0"
-            style={{ backgroundImage: `url(${tarotImage})`, minHeight: '12rem' }}
-            role="img"
-            aria-label="Tarot reader for integration"
-          />
-          <div className="flex-1 p-6 flex flex-col justify-center gap-3">
-            <h3 className="text-lg font-semibold leading-snug">Tarot reading for integration</h3>
-            <p className="text-sm text-muted-foreground">
-              Let the cards illuminate your path. A personal tarot reading can offer powerful symbolic insight to deepen your integration process.
-            </p>
-            {tarotWhatsappUrl && (
-              <div>
-                <a
-                  href={tarotWhatsappUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  data-testid="button-whatsapp-tarot"
-                >
-                  <Button className="gap-2">
-                    <MessageCircle className="w-4 h-4" />
-                    Book a reading
-                  </Button>
-                </a>
-              </div>
-            )}
-          </div>
+          {/* Tarot & Spiritual Integration */}
+          {dominicUrl && (
+            <div className="space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Tarot & Spiritual Integration</p>
+              <Card className="overflow-hidden">
+                <div className="flex flex-col sm:flex-row gap-0">
+                  <div className="flex-shrink-0 flex items-center justify-center p-6 sm:p-8 sm:pr-0">
+                    <img
+                      src={dominicImage}
+                      alt="Dominic"
+                      className="w-24 h-24 sm:w-28 sm:h-28 rounded-full object-cover"
+                      data-testid="img-practitioner-dominic"
+                    />
+                  </div>
+                  <div className="flex-1 p-6 flex flex-col justify-center gap-3">
+                    <div>
+                      <h3 className="text-base font-semibold">Dominic</h3>
+                    </div>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      An intuitive guide working with tarot, yoga, and spiritual practices to support emotional release and inner clarity. His approach is centered on compassion, presence, and helping individuals reconnect with their own inner healing intelligence.
+                    </p>
+                    <div>
+                      <a href={dominicUrl} target="_blank" rel="noopener noreferrer" data-testid="button-whatsapp-dominic">
+                        <Button className="gap-2">
+                          <MessageCircle className="w-4 h-4" />
+                          Connect on WhatsApp
+                        </Button>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            </div>
+          )}
         </div>
-      </Card>
+      )}
     </div>
     <KillTheShamanOverlay open={eggOpen} close={closeEgg} />
     </>
