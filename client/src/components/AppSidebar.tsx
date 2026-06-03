@@ -1,4 +1,4 @@
-import { BookOpen, Compass, Users, TrendingUp, User, Settings, Home, Shield, Activity, BookIcon, VideoIcon, BarChart3, HeartHandshake } from "lucide-react";
+import { BookOpen, Compass, Users, TrendingUp, User, Settings, Home, Shield, Activity, BookIcon, VideoIcon, BarChart3, HeartHandshake, Gamepad2, Lock } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -15,6 +15,15 @@ import { UserAvatar } from "@/components/UserAvatar";
 import { useLocation } from "wouter";
 import { ThemeToggle } from "./ThemeToggle";
 import { useAuth } from "@/hooks/useAuth";
+
+function getJourneyDay(journeyStartDate: string | Date | null | undefined): number | null {
+  if (!journeyStartDate) return null;
+  const start = new Date(journeyStartDate);
+  start.setHours(0, 0, 0, 0);
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  return Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+}
 
 const mainNavItems = [
   {
@@ -110,6 +119,9 @@ export function AppSidebar() {
   const { user } = useAuth();
   const isAdmin = (user as any)?.isAdmin;
 
+  const journeyDay = getJourneyDay((user as any)?.journeyStartDate);
+  const gameAvailable = journeyDay !== null && journeyDay >= 7 && journeyDay % 7 === 0;
+
   return (
     <Sidebar>
       <SidebarHeader className="p-4">
@@ -146,6 +158,32 @@ export function AppSidebar() {
                   </SidebarMenuItem>
                 );
               })}
+
+              {/* The Return — weekly game portal */}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={location === "/the-return"}
+                  data-testid="nav-the-return"
+                >
+                  <a href="/the-return" className="flex items-center justify-between w-full">
+                    <span className="flex items-center gap-2">
+                      <Gamepad2 className="h-4 w-4" />
+                      <span>The Return</span>
+                    </span>
+                    {gameAvailable ? (
+                      <span
+                        className="text-[10px] font-bold tracking-wider px-1.5 py-0.5 rounded"
+                        style={{ background: "rgba(0,245,212,0.15)", color: "#00f5d4", border: "1px solid rgba(0,245,212,0.4)" }}
+                      >
+                        OPEN
+                      </span>
+                    ) : (
+                      <Lock className="h-3 w-3 opacity-40" />
+                    )}
+                  </a>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

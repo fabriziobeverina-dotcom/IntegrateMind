@@ -31,6 +31,7 @@ import AdminVideos from "@/pages/AdminVideos";
 import AdminAnalytics from "@/pages/AdminAnalytics";
 import AdminUsers from "@/pages/AdminUsers";
 import AdminWellbeing from "@/pages/AdminWellbeing";
+import TheReturn from "@/pages/TheReturn";
 import NotFound from "@/pages/not-found";
 import InstallGuide from "@/pages/InstallGuide";
 import { NotificationScheduler } from "@/components/NotificationScheduler";
@@ -68,6 +69,7 @@ function AuthenticatedRouter() {
       <Route path="/progress" component={Progress} />
       <Route path="/profile" component={Profile} />
       <Route path="/settings" component={Settings} />
+      <Route path="/the-return" component={TheReturn} />
       <Route path="/install" component={InstallGuide} />
       <Route component={NotFound} />
     </Switch>

@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>THE RETURN</title>
+<style>
+:root {
+  --bg-color: #020204;
+  --text-color: #ffffff;
+  --blood: #ff2a2a;
+  --gold: #ffb703;
+  --spirit: #00f5d4;
+  --shadow: #111217;
+  --arcade-blue: #0022ff;
+  --g3: #475569;
+}
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+body {
+  background: var(--bg-color);
+  color: var(--text-color);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.7;
+  min-height: 100vh;
+  overflow-x: hidden;
+  transition: background 0.5s ease, color 0.5s ease;
+}
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.3) 50%);
+  background-size: 100% 4px;
+  pointer-events: none;
+  z-index: 999;
+}
+#game {
+  position: relative;
+  z-index: 2;
+  max-width: 660px;
+  margin: 0 auto;
+  padding: 28px 20px 90px;
+}
+.gh {
+  text-align: center;
+  margin-bottom: 26px;
+  padding-bottom: 16px;
+  border-bottom: 4px double var(--g3);
+}
+.gt {
+  font-size: clamp(1.8rem, 6vw, 3rem);
+  letter-spacing: 0.1em;
+  color: var(--gold);
+  text-shadow: 4px 4px 0px #000;
+  font-weight: 900;
+  margin-bottom: 3px;
+  text-transform: uppercase;
+}
+.gs {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.art-wrap {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+.art-wrap svg {
+  width: 100%;
+  max-width: 512px;
+  height: auto;
+  display: block;
+  border: 4px solid var(--arcade-blue);
+  background: #000;
+  box-shadow: 0 8px 0px #000;
+}
+.art-wrap.cere svg {
+  border-color: var(--spirit);
+  box-shadow: 0 0 20px rgba(0,245,212,0.4), 0 8px 0px #000;
+}
+.art-wrap.guide svg {
+  border-color: var(--gold);
+  box-shadow: 0 0 20px rgba(255,183,3,0.4), 0 8px 0px #000;
+}
+.dbar {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 22px;
+  flex-wrap: wrap;
+}
+.dp {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 4px 10px;
+  border: 2px solid #334155;
+  color: rgba(255, 255, 255, 0.3);
+  text-transform: uppercase;
+  border-radius: 4px;
+}
+.dp.on {
+  border-color: var(--blood);
+  color: var(--text-color);
+  background: rgba(255,42,42,0.25);
+}
+.dp.deep {
+  border-color: var(--spirit);
+  color: var(--spirit);
+  background: rgba(0,245,212,0.15);
+}
+.scene { animation: fi .3s ease-out; }
+@keyframes fi {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.slabel {
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.stitle {
+  font-size: clamp(1.4rem, 4vw, 2rem);
+  font-weight: 800;
+  color: var(--text-color);
+  margin-bottom: 18px;
+  line-height: 1.2;
+}
+.sbody {
+  font-size: 1.05rem;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 24px;
+}
+.sbody p { margin-bottom: 1em; }
+.vis { color: var(--spirit); padding-left: 15px; border-left: 4px solid var(--spirit); margin: 18px 0; font-weight: 500; }
+.shv { color: var(--blood); padding-left: 15px; border-left: 4px solid var(--blood); margin: 18px 0; font-weight: 700; }
+.mecho { color: var(--gold); padding-left: 15px; border-left: 4px solid var(--gold); margin: 18px 0; font-weight: 500; }
+.ctext { color: #a0f5d4; padding-left: 15px; border-left: 4px dashed var(--spirit); margin: 18px 0; }
+.jmirror { color: #cbd5e1; padding-left: 15px; border-left: 4px dotted #ffb703; margin: 18px 0; }
+.guide-text { color: #fffbda; padding-left: 15px; border-left: 4px double var(--gold); margin: 18px 0; font-weight: 700; }
+.choices { display: flex; flex-direction: column; gap: 12px; }
+.cb {
+  background: #16171e;
+  border: 2px solid #475569;
+  color: var(--text-color);
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 16px;
+  text-align: left;
+  cursor: pointer;
+  line-height: 1.4;
+  box-shadow: 4px 4px 0px #000;
+  border-radius: 6px;
+}
+.cb:hover { border-color: var(--gold); color: var(--gold); background: #090a0f; }
+.cb:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0px #000; }
+.cb .ck { color: var(--gold); margin-right: 12px; font-weight: 800; }
+.cb.cere { border-color: var(--spirit); background: #091f1c; }
+.cb.cere:hover { border-color: #ffffff; color: var(--spirit); }
+.cb.guide { border-color: var(--gold); background: #241b05; }
+.cb.guide:hover { border-color: #ffffff; color: var(--gold); }
+.sigil { text-align: center; color: #334155; font-size: 1.5rem; margin: 20px 0; letter-spacing: 0.4em; }
+#mtoggle {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 100;
+  background: #16171e;
+  border: 2px solid var(--gold);
+  color: var(--gold);
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 10px 16px;
+  cursor: pointer;
+  box-shadow: 4px 4px 0px #000;
+  border-radius: 4px;
+}
+#mtoggle:hover { background: var(--gold); color: #000; }
+.portrait { animation: fi .4s ease-out; }
+.ptitle { font-size: clamp(1.8rem, 5vw, 2.5rem); font-weight: 900; color: var(--gold); text-align: center; margin-bottom: 6px; text-transform: uppercase; }
+.parch { text-align: center; color: rgba(255, 255, 255, 0.4); margin-bottom: 28px; font-size: 0.85rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em; }
+.dentry { padding: 16px 0; border-bottom: 2px dashed #334155; display: grid; grid-template-columns: 110px 1fr; gap: 12px; }
+.dname { font-size: 0.8rem; font-weight: 800; text-transform: uppercase; color: var(--gold); letter-spacing: 0.05em; }
+.dtext { font-size: 1rem; color: rgba(255, 255, 255, 0.85); }
+.srep { background: #16171e; border: 2px solid var(--blood); padding: 18px; margin: 24px 0; box-shadow: 4px 4px 0px #000; border-radius: 6px; }
+.srep h3 { font-size: 0.8rem; font-weight: 800; color: var(--blood); text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.05em; }
+.srep p { font-size: 0.95rem; line-height: 1.6; margin-bottom: 12px; }
+.restart {
+  display: block;
+  width: 100%;
+  background: transparent;
+  border: 2px solid var(--gold);
+  color: var(--gold);
+  font-weight: 800;
+  font-size: 1.1rem;
+  padding: 16px;
+  cursor: pointer;
+  text-transform: uppercase;
+  box-shadow: 4px 4px 0px #000;
+  margin-top: 32px;
+  border-radius: 6px;
+}
+.restart:hover { background: var(--gold); color: #000; }
+.mintro { text-align: center; padding: 20px 16px; }
+.msym { font-size: 3.5rem; display: block; margin-bottom: 16px; color: var(--gold); }
+.mintro h2 { font-size: clamp(1.5rem, 4vw, 2.2rem); font-weight: 900; color: var(--gold); margin-bottom: 14px; text-transform: uppercase; }
+.mintro p { color: rgba(255, 255, 255, 0.75); max-width: 480px; margin: 0 auto 24px; }
+.bbtn {
+  background: var(--gold);
+  border: 2px solid #fff;
+  color: #000;
+  font-weight: 800;
+  font-size: 1.1rem;
+  padding: 14px 36px;
+  cursor: pointer;
+  text-transform: uppercase;
+  box-shadow: 6px 6px 0px #000;
+  border-radius: 6px;
+}
+.bbtn:hover { background: #fff; transform: translate(-2px, -2px); box-shadow: 8px 8px 0px #000; }
+.sp { position: fixed; width: 4px; height: 4px; pointer-events: none; z-index: 0; }
+.watermark {
+  text-align: center;
+  font-size: 0.58rem;
+  color: rgba(255, 255, 255, 0.04);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin-top: 40px;
+  user-select: none;
+}
+</style>
+</head>
+<body>
+<button id="mtoggle" onclick="toggleMusic()">♪ SOUND OFF</button>
+<div id="game"></div>
+<script>
+// ═══════════════════════════════════════════════════════
+// DYNAMIC PROCEDURAL MUTATORS & PERSISTED SEED ENGINE
+// ═══════════════════════════════════════════════════════
+const S = {
+  scene: 'intro',
+  d: { body: 0, mind: 0, rel: 0, spirit: 0 },
+  shadows: [], ch: {}, ceremony: false, guideRecognized: false, reactionCount: 0,
+  seed: {
+    airportIdx: Math.floor(Math.random() * 4),
+    days: [7, 8, 10][Math.floor(Math.random() * 3)],
+    friend: ['Marco', 'Luca', 'Giulia', 'Sara', 'Dario', 'Elena', 'Pietro', 'Mia'][Math.floor(Math.random() * 8)],
+    childWords: [
+      `"You look like you're carrying something heavy. Are you sure it's yours?"`,
+      `"The light around your forehead is flickering. Did you leave a door open behind you?"`,
+      `"You walk like someone who thinks they are awake, but is still running in their sleep."`,
+      `"They are still singing behind your eyes. Why are you trying to block the frequency?"`,
+      `"If you give back what you stole from the underworld, your shadow will let you pass."`
+    ][Math.floor(Math.random() * 5)],
+    clock: ['02:48', '03:07', '03:22', '03:41', '04:03'][Math.floor(Math.random() * 5)],
+    shamanText: [
+      'The shaman does not look up. He knew you were coming back.',
+      'The shaman smiles wildly into the shadow, calling your true name out loud.',
+      'The shaman blows a spray of mapacho smoke across the matrix, sealing the architecture.',
+      'The shaman continues rattling his leaves, shaking the illusions off your ribcage.'
+    ][Math.floor(Math.random() * 4)],
+    queueScene: ['supermarket', 'post office', 'pharmacy'][Math.floor(Math.random() * 3)],
+    triggerScene: ['traffic light', 'pavement bump', 'train platform'][Math.floor(Math.random() * 3)],
+    animal: [
+      { name: 'jaguar', desc: 'Its spots are expanding geometric cubes. It watches your core structure dissolve.' },
+      { name: 'condor', desc: 'Its wings expand across thirty thousand feet of cloud layer, catching ancestral drafts.' },
+      { name: 'anaconda', desc: 'It coils directly around your central nervous axis, squeezing out the residual noise.' },
+      { name: 'hummingbird', desc: 'It vibrates at a frequency that fractures your old calcified behavioral architectures.' },
+      { name: 'black puma', desc: 'It steps from the blind spot of your ego, moving with complete, lethal integration.' }
+    ][Math.floor(Math.random() * 5)],
+    temptation: [
+      { type: 'the ex', text: 'An unexpected notification flash on your lock screen. A portal back to the loop.' },
+      { type: 'the drink', text: 'The condensation on the glass. The clean, synthetic erasure it guarantees.' },
+      { type: 'the scroll', text: 'The infinite feed. Digital static to fill the baseline existential vacuum.' },
+      { type: 'the inbox', text: 'A collection of artificial urgencies demanding immediate validation armor.' },
+      { type: 'the argument', text: 'An invitation to defend your identity against a projection that doesn\'t matter.' }
+    ][Math.floor(Math.random() * 5)],
+    palette: ['Shadow', 'Jungle', 'Violet', 'Amber'][Math.floor(Math.random() * 4)],
+    sessionID: String(Math.floor(10000 + Math.random() * 90000))
+  }
+};
+
+const palettes = {
+  Shadow: { ink: '#020204', blue: '#0022ff', g3: '#475569' },
+  Jungle: { ink: '#040d08', blue: '#059669', g3: '#155e75' },
+  Violet: { ink: '#0a0518', blue: '#7c3aed', g3: '#4c1d95' },
+  Amber:  { ink: '#0f0802', blue: '#ea580c', g3: '#78350f' }
+};
+const cp = palettes[S.seed.palette];
+document.documentElement.style.setProperty('--bg-color', cp.ink);
+document.documentElement.style.setProperty('--arcade-blue', cp.blue);
+document.documentElement.style.setProperty('--g3', cp.g3);
+
+function shuffle(array) {
+  let arr = [...array];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+// ═══════════════════════════════════════════════════════
+// CHIPTUNE SOUND GENERATION LOGIC
+// ═══════════════════════════════════════════════════════
+let AC=null, musicOn=false, currentMood=null, seqInterval=null;
+const currentNodes=[];
+function getAC(){ if(!AC) AC=new(window.AudioContext||window.webkitAudioContext)(); return AC; }
+function stopMusic(){ if(seqInterval) clearInterval(seqInterval); currentNodes.forEach(n=>{try{n.stop();}catch(e){}}); currentNodes.length=0; }
+function play8BitTone(freq, duration, type='square', gainVal=0.04, detuneVal=0){
+  if(!musicOn) return;
+  const ac=getAC(); const osc=ac.createOscillator(); const gainNode=ac.createGain();
+  osc.type=type; osc.frequency.setValueAtTime(freq, ac.currentTime); osc.detune.setValueAtTime(detuneVal, ac.currentTime);
+  gainNode.gain.setValueAtTime(gainVal, ac.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.00001, ac.currentTime + duration);
+  osc.connect(gainNode); gainNode.connect(ac.destination); osc.start(); osc.stop(ac.currentTime + duration); currentNodes.push(osc);
+}
+const loops={
+  city: [110, 116, 130, 110, 146, 138, 110, 98],
+  jungle: [73, 87, 73, 110, 98, 73, 65, 55],
+  ceremony: [146, 220, 293, 220, 349, 329, 220, 196],
+  guide: [220, 277, 329, 392, 440, 392, 329, 277],
+  insomnia: [55, 58, 55, 65, 55, 48, 41, 36]
+};
+function startChiptuneLoop(mood){
+  stopMusic(); if(!loops[mood]) return; let step=0; const notes=loops[mood];
+  seqInterval=setInterval(()=>{
+    if(!musicOn) return; const baseNote=notes[step % notes.length];
+    play8BitTone(baseNote, 0.4, 'square', 0.03);
+    if(step % 2 === 0) play8BitTone(baseNote * 1.5, 0.8, 'square', 0.015, 12);
+    if(step % 4 === 0) play8BitTone(baseNote * 0.5, 1.5, 'triangle', 0.06);
+    step++;
+  }, 350);
+}
+function setMood(m){ if(!musicOn) return; if(m===currentMood) return; currentMood=m; startChiptuneLoop(m); }
+function toggleMusic(){
+  const ac = getAC();
+  if(!musicOn){ 
+    musicOn=true; 
+    document.getElementById('mtoggle').textContent='♪ SOUND ON'; 
+    if(ac.state === 'suspended') ac.resume();
+    setMood(currentMood||'city'); 
+  }
+  else { musicOn=false; document.getElementById('mtoggle').textContent='♪ SOUND OFF'; stopMusic(); currentMood=null; }
+}
+
+// ═══════════════════════════════════════════════════════
+// PAC-MAN / SPACE INVADERS GRAPHICS FRAMEWORK
+// ═══════════════════════════════════════════════════════
+const PX = { bg: '#000000', blue: '#0022ff', g1: '#16171e', g2: '#2b2e3a', g3: '#4f5569', w1: '#ffffff', w2: '#cbd5e1', gold: '#ffb703', spirit: '#00f5d4', blood: '#ff3e3e', blood_d: '#991b1b' };
+function svgStart(){return `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="192" viewBox="0 0 128 48" shape-rendering="crispEdges">`;}
+const SE='</svg>'; function R(x,y,w,h,c){return `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${c}"/>`;}
+function P(x,y,c){return R(x,y,1,1,c);} function HL(x,y,w,c){return R(x,y,w,1,c);} function VL(x,y,h,c){return R(x,y,1,h,c);}
+function mazeWalls(c) {
+  let s=''; s+=R(0,0,128,2,c)+R(0,46,128,2,c)+R(0,0,2,48,c)+R(126,0,2,48,c);
+  for(let x=12; x<120; x+=24) { s+=R(x,8,6,10,c)+R(x+10,28,6,10,c); } return s;
+}
+function dotFill(x0,y0,w,h,c) {
+  let s=''; for(let y=y0; y<y0+h; y+=4){ for(let x=x0; x<x0+w; x+=4){ s+=R(x,y,2,2,c); } } return s;
+}
+// Large ghost — 14×16 px, very visible
+function ghost(x,y,c,eye='#000') {
+  return R(x+4,y,6,2,c)+R(x+2,y+2,10,2,c)+R(x,y+4,14,8,c)+
+    R(x,y+12,3,4,c)+R(x+4,y+12,3,4,c)+R(x+8,y+12,3,4,c)+R(x+11,y+12,3,4,c)+
+    // eyes
+    R(x+2,y+5,3,3,PX.w1)+R(x+9,y+5,3,3,PX.w1)+
+    R(x+3,y+6,1,1,eye)+R(x+10,y+6,1,1,eye);
+}
+// Large invader — 16×12 px
+function invader(x,y,c) {
+  return R(x+6,y,4,2,c)+R(x+4,y+2,8,2,c)+R(x+2,y+4,12,2,c)+
+    R(x,y+6,16,2,c)+R(x,y+8,4,2,c)+R(x+6,y+8,4,2,c)+R(x+12,y+8,4,2,c)+
+    R(x+2,y+10,4,2,c)+R(x+10,y+10,4,2,c)+
+    // eyes
+    R(x+4,y+4,2,2,PX.w1)+R(x+10,y+4,2,2,PX.w1);
+}
+// Hero sprite — the player character, 10×16
+function hero(x,y,c,hair='#ffb703') {
+  return R(x+3,y,4,2,hair)+R(x+2,y+2,6,4,c)+
+    R(x+3,y+3,1,1,PX.w1)+R(x+6,y+3,1,1,PX.w1)+
+    R(x+1,y+6,8,6,c)+R(x,y+8,2,4,'#8B4513')+R(x+8,y+8,2,4,'#8B4513')+
+    R(x+2,y+12,3,4,c)+R(x+5,y+12,3,4,c);
+}
+// Serpent — sinuous 3-segment
+function serpent(x,y,c) {
+  return R(x,y+4,6,4,c)+R(x+5,y+2,6,4,c)+R(x+10,y+4,6,4,c)+R(x+15,y+2,6,4,c)+
+    R(x+20,y+4,4,3,c)+R(x+22,y+2,4,4,c)+
+    P(x+23,y+3,PX.w1)+P(x+24,y+5,PX.w1);
+}
+// Shaman — 10×18
+function shaman(x,y,c,hat='#ffb703') {
+  return R(x+2,y,6,3,hat)+R(x+1,y+3,8,4,c)+
+    R(x+2,y+4,1,1,PX.w1)+R(x+7,y+4,1,1,PX.w1)+
+    R(x,y+7,10,8,c)+R(x-2,y+9,3,3,'#8B4513')+R(x+9,y+9,3,3,'#8B4513')+
+    R(x+2,y+15,3,5,c)+R(x+5,y+15,3,5,c);
+}
+// Child — small 8×12
+function child(x,y,c,hair='#c8952a') {
+  return R(x+1,y,6,2,hair)+R(x,y+2,8,4,c)+
+    R(x+1,y+3,1,1,PX.w1)+R(x+6,y+3,1,1,PX.w1)+
+    R(x,y+6,8,5,c)+R(x+1,y+11,3,3,c)+R(x+4,y+11,3,3,c);
+}
+
+const ARTS={
+  intro:`${svgStart()}
+    ${R(0,0,128,48,PX.bg)}${mazeWalls(PX.blue)}${dotFill(6,4,116,40,PX.g1)}
+    ${ghost(10,16,PX.blood,'#ff0000')}
+    ${hero(42,16,PX.spirit)}
+    ${invader(72,17,PX.gold)}
+    ${ghost(98,16,PX.spirit,'#006666')}
+    ${R(0,44,128,4,PX.blue)}
+  ${SE}`,
+
+  airport:`${svgStart()}
+    ${R(0,0,128,48,PX.bg)}${mazeWalls(PX.g2)}
+    ${dotFill(4,4,120,36,PX.g1)}
+    ${hero(14,20,PX.spirit)}
+    ${ghost(50,20,PX.g3,'#888')}${ghost(68,20,PX.g3,'#888')}${ghost(86,20,PX.g3,'#888')}
+    ${R(104,20,14,16,PX.blood)}${R(106,22,10,12,PX.bg)}
+    ${R(0,44,128,4,PX.blue)}
+  ${SE}`,
+
+  plane:`${svgStart()}
+    ${R(0,0,128,48,'#0a1628')}
+    ${R(0,20,128,8,PX.g2)}${R(0,28,128,20,PX.bg)}
+    ${R(4,12,60,26,PX.g2)}${R(6,14,56,22,PX.bg)}${R(8,16,52,18,'#0a2040')}
+    ${R(20,20,14,8,PX.g2)}${R(40,20,14,8,PX.g2)}
+    ${hero(24,14,PX.spirit)}
+    ${ghost(80,14,PX.blood)}
+    ${R(0,44,128,4,'#0a2040')}
+  ${SE}`,
+
+  homecoming:`${svgStart()}
+    ${R(0,0,128,48,PX.bg)}${mazeWalls(PX.gold)}
+    ${R(20,6,90,36,PX.g2)}${R(22,8,86,32,PX.bg)}
+    ${R(28,14,20,26,PX.g2)}${R(30,16,16,22,PX.bg)}
+    ${ghost(34,19,PX.g3,'#555')}
+    ${hero(65,18,PX.spirit)}
+    ${ghost(90,19,PX.g3,'#555')}
+    ${R(0,44,128,4,PX.gold)}
+  ${SE}`,
+
+  supermarket:`${svgStart()}
+    ${R(0,0,128,48,PX.bg)}${mazeWalls(PX.blue)}
+    ${dotFill(4,4,120,40,PX.g1)}
+    ${[10,28,46,64,82].map(x=>R(x,24,14,20,PX.g2)+ghost(x+1,24,PX.g3,'#666')).join('')}
+    ${hero(100,20,PX.spirit)}
+    ${R(0,44,128,4,PX.blood)}
+  ${SE}`,
+
+  traffic:`${svgStart()}
+    ${R(0,0,128,48,PX.bg)}
+    ${R(0,30,128,4,PX.gold)}
+    ${R(4,18,36,16,PX.blood)}${R(6,20,32,12,PX.bg)}${invader(14,22,PX.blood)}
+    ${R(60,18,40,16,PX.g2)}${R(62,20,36,12,PX.bg)}${hero(70,20,PX.spirit)}
+    ${R(112,10,12,8,PX.blood)}${R(113,11,10,6,PX.bg)}${R(116,12,4,4,PX.blood)}
+    ${mazeWalls(PX.g1)}
+    ${R(0,44,128,4,PX.blood)}
+  ${SE}`,
+
+  child_guide:`${svgStart()}
+    ${R(0,0,128,48,PX.bg)}${mazeWalls(PX.spirit)}
+    ${dotFill(4,4,120,40,PX.g1)}
+    ${hero(20,18,PX.spirit)}
+    ${child(65,22,PX.gold,'#ffb703')}
+    ${R(58,40,24,6,PX.g2)}
+    ${R(0,44,128,4,PX.spirit)}
+  ${SE}`,
+
+  colleague:`${svgStart()}
+    ${R(0,0,128,48,PX.bg)}${mazeWalls(PX.g3)}
+    ${dotFill(4,4,120,40,PX.g1)}
+    ${R(10,12,50,30,PX.blue)}${R(12,14,46,26,PX.bg)}
+    ${R(14,16,42,20,'#002244')}
+    ${R(16,28,20,6,PX.spirit)}
+    ${hero(70,18,PX.spirit)}
+    ${ghost(100,18,PX.gold)}
+    ${R(0,44,128,4,PX.g3)}
+  ${SE}`,
+
+  friend:`${svgStart()}
+    ${R(0,0,128,48,PX.bg)}${mazeWalls(PX.blue)}
+    ${dotFill(4,4,120,40,PX.g2)}
+    ${hero(20,18,PX.spirit)}
+    ${ghost(56,18,PX.gold)}
+    ${ghost(82,18,'#334155','#334155')}
+    ${R(0,44,128,4,PX.blue)}
+  ${SE}`,
+
+  temptation:`${svgStart()}
+    ${R(0,0,128,48,PX.bg)}${mazeWalls(PX.blood)}
+    ${dotFill(4,4,120,40,PX.blood_d)}
+    ${hero(18,18,PX.spirit)}
+    ${ghost(70,14,PX.blood,'#ff0000')}
+    ${R(68,30,18,4,PX.blood)}${R(52,32,16,2,PX.blood)}${R(36,33,16,1,PX.blood)}
+    ${R(0,44,128,4,PX.blood)}
+  ${SE}`,
+
+  get insomnia(){ return `${svgStart()}
+    ${R(0,0,128,48,PX.bg)}${mazeWalls(PX.g2)}
+    ${serpent(2,2,PX.spirit)}
+    ${R(8,24,60,18,PX.g2)}${R(10,26,56,14,PX.bg)}
+    ${hero(22,26,'#334155')}
+    ${R(84,20,36,16,PX.g2)}${R(86,22,32,12,PX.bg)}
+    <text x="86" y="34" font-size="8" fill="${PX.blood}" font-weight="bold" font-family="monospace">${S.seed.clock}</text>
+    ${R(0,44,128,4,PX.g2)}
+  ${SE}`; },
+
+  ceremony:`${svgStart()}
+    ${R(0,0,128,48,'#020a04')}${mazeWalls(PX.spirit)}
+    ${dotFill(4,4,120,40,PX.spirit)}
+    ${shaman(8,16,PX.spirit,'#ffb703')}
+    ${hero(50,18,PX.gold,'#00f5d4')}
+    ${ghost(86,16,PX.spirit,'#006644')}${ghost(108,16,PX.spirit,'#006644')}
+    ${R(0,44,128,4,PX.spirit)}
+  ${SE}`,
+
+  ceremony_return:`${svgStart()}
+    ${R(0,0,128,48,PX.bg)}${mazeWalls(PX.blue)}
+    ${R(0,0,64,48,PX.spirit)}${R(64,0,64,48,PX.g2)}
+    ${dotFill(2,2,60,44,'#006644')}${dotFill(66,2,60,44,PX.blood_d)}
+    ${shaman(4,16,PX.spirit,'#ffb703')}
+    ${hero(86,16,PX.gold,'#00f5d4')}
+    ${R(0,44,128,4,PX.gold)}
+  ${SE}`,
+
+  practice:`${svgStart()}
+    ${R(0,0,128,48,PX.bg)}${mazeWalls(PX.gold)}
+    ${dotFill(4,4,120,40,PX.g1)}
+    ${hero(57,14,PX.spirit,'#00f5d4')}
+    ${R(48,34,32,2,PX.gold)}
+    ${R(0,44,128,4,PX.gold)}
+  ${SE}`,
+
+  morning:`${svgStart()}
+    ${R(0,0,128,20,'#0a1628')}${R(0,20,128,28,PX.bg)}
+    ${mazeWalls(PX.spirit)}
+    ${dotFill(4,4,120,16,PX.gold)}
+    ${R(56,10,16,10,PX.gold)}
+    ${hero(20,22,PX.spirit,'#ffb703')}
+    ${ghost(94,22,PX.gold,'#c8952a')}
+    ${R(0,44,128,4,PX.spirit)}
+  ${SE}`,
+
+  end:`${svgStart()}
+    ${R(0,0,128,48,PX.bg)}${mazeWalls(PX.gold)}
+    ${dotFill(4,4,120,40,PX.g1)}
+    ${R(44,8,40,32,PX.blue)}${R(46,10,36,28,PX.bg)}
+    ${hero(57,14,PX.gold,'#00f5d4')}
+    ${R(0,44,128,4,PX.gold)}
+  ${SE}`
+};
+
+function art(id,cls=''){ return `<div class="art-wrap ${cls}"><div style="width:100%;max-width:512px;">${ARTS[id]||ARTS.morning}</div></div>`; }
+
+// ═══════════════════════════════════════════════════════
+// NARRATIVE DATA NODES & LAYOUTS
+// ═══════════════════════════════════════════════════════
+const hasShadow=n=>S.shadows.includes(n);
+const chose=(sc,i)=>S.ch[sc]===i;
+const tends=(d,min)=>S.d[d]>=min;
+
+const airportTexts = [
+  '<p>The Iquitos airport hums with grey fluorescent light. Around you, people scroll phones, argue with children, eat plastic sandwiches.</p>',
+  '<p>A suffocating damp clinginess locks over the small terminal. The luggage carousel turns like a heavy mechanical wheel of past attachments.</p>',
+  '<p>Static discharges from the terminal monitors. Everything smells of jet fuel and old rain. You step into line feeling completely weightless.</p>',
+  '<p>The airport terminal vibrates with raw infrastructure. Thousands of transit fields interlock here, intersecting through the blinding neon roof gates.</p>'
+];
+
+const SCENES={
+  intro:{
+    mood:'jungle',
+    render:()=>`
+      <div class="mintro">
+        <span class="msym">■</span>
+        <h2>Put on the Mask</h2>
+        <p>You have returned from the jungle.<br>${S.seed.days} days of ceremony. You are not the same.<br><br>
+        But the world does not know this yet.<br>
+        The world is still the world — and now it is full of spirits, energies, temptations, tests.<br><br>
+        And a guide or two, if you have the eyes for it.</p>
+        <p style="font-size:.78rem;color:rgba(255,255,255,0.4);margin-bottom:24px;">Behind the mask, you may be honest.<br>No self-judgement. Only truth.</p>
+        <button class="bbtn" onclick="initializeGameAudioAndStart()">Enter the Return</button>
+      </div>`
+  },
+
+  airport:{
+    mood:'city',label:'DAY ONE · THE THRESHOLD',title:'The Airport of Souls',art:'airport',
+    body:()=>`
+      ${airportTexts[S.seed.airportIdx]}
+      <div class="vis">The grey static around each person is visible now — coils of unprocessed grief, small figures on shoulders. The man ahead carries something on his left that you recognise. You saw it in ceremony.</div>
+      <p>A woman sits beside you, crying softly into her phone. "Everything is fine," she says. "Everything is absolutely fine."</p>
+      <div class="shv">Something in you wants to flee — back to the jungle, back to where everything made sense.</div>`,
+    choices:()=> shuffle([
+      {t:'You sit beside her in silence. Your presence, offered without agenda.',tags:{spirit:1},sh:null,nx:'plane',id:0},
+      {t:'You look away. You are still too raw. This is her world, her grief.',tags:{rel:1},sh:'The Retreater',nx:'plane',id:1},
+      {t:'You open your notebook and write feverishly — recording every vision before it fades.',tags:{mind:1},sh:null,nx:'plane',id:2},
+      {t:'You close your eyes and feel the longing to go back as a physical weight in your chest. You let it be there.',tags:{body:1,spirit:1},sh:null,nx:'plane',id:3}
+    ])
+  },
+
+  plane:{
+    mood:'city',label:'DAY ONE · THE IN-BETWEEN',title:'Thirty Thousand Feet Above the World',art:'plane',
+    body:()=>`
+      <p>The plane climbs. Below, the Amazon shrinks into green geometry — then cloud. You watch it disappear with a strange grief.</p>
+      ${chose('airport',1)?`<div class="mecho">You think of the woman. Her grief is still somewhere in the world, unwitnessed. A small thing that mattered.</div>`:''}
+      <p>The man beside you — late forties, suit — glances at your jungle bracelet. "Holiday?" he asks.</p>
+      <div class="vis">You see his soul: a bright young thing, maybe twelve, locked in a glass cage inside his ribcage. Pressing its hands against the walls.</div>`,
+    choices:()=> [
+      {t:'"Something like that." You smile and put your headphones in.',tags:{rel:1},sh:'The Keeper',nx:'homecoming'},
+      {t:'You tell him the truth — the ayahuasca, the ceremonies, what you saw. All of it.',tags:{spirit:1},sh:null,nx:'homecoming'},
+      {t:'You ask him about his work and listen differently — following the thread beneath his words.',tags:{rel:1,spirit:1},sh:null,nx:'homecoming'},
+      {t:'You say nothing. You press your forehead against the cold window and watch the clouds.',tags:{body:1},sh:null,nx:'homecoming'}
+    ]
+  },
+
+  homecoming:{
+    mood:'city',label:'DAY TWO · THE FAMILIAR WORLD',title:'The Kitchen of Your Parents',art:'homecoming',
+    body:()=>`
+      <p>Your mother has cooked. The familiar smell of home — and underneath it, the familiar anxiety that has lived in this kitchen for forty years.</p>
+      <p>Your father asks if you ate well in Peru. He does not ask what you did there.</p>
+      <div class="vis">Old family patterns move like smoke between the chairs. A spirit of unspoken grief anchors itself to the corner near the window. It has been there for decades.</div>
+      <p>Your mother refills your glass before it is empty. She has always done this. "You look thin," she says.</p>
+      <div class="shv">They will never understand. You have been to the edge of the world and back, and here you are, passing the bread.</div>`,
+    choices:()=> shuffle([
+      {t:'You eat the food with complete attention — each bite a ceremony of return, a gratitude for ordinary love.',tags:{body:1,spirit:1},sh:null,nx:'supermarket',id:0},
+      {t:'You try to explain what happened. You watch their faces close, slowly, like windows.',tags:{rel:1,mind:1},sh:'The Prophet',nx:'supermarket',id:1},
+      {t:'You perform the familiar role — good child, good guest. You feel yourself dividing into two.',tags:{rel:1},sh:'The Mask-Wearer',nx:'supermarket',id:2},
+      {t:'You excuse yourself early. In your old bedroom, you lie on the floor and breathe.',tags:{body:1},sh:null,nx:'supermarket',id:3}
+    ])
+  },
+
+  supermarket:{
+    mood:'city',label:'DAY THREE · FIRST TEST',title:()=>`The Queue at the ${S.seed.queueScene.toUpperCase()}`,art:'supermarket',
+    body:()=>`
+      <p>The lines are long today. You are trapped inside the ${S.seed.queueScene} queue with six items. The person ahead has a complicated transaction that is completely stalled. People behind you shift their weight aggressively.</p>
+      <div class="jmirror">Something tightens in your jaw. The crowd is completely static. You notice you are already somewhere else in your head — a story about structural inefficiency, about your precious time.</div>
+      ${hasShadow('The Mask-Wearer')?`<div class="mecho">At dinner you performed patience. Here, with total strangers, the performance isn't available. This is what you actually are.</div>`:''}
+      <p>The frame is freezing. The cashier's face remains totally blank.</p>`,
+    choices:()=> shuffle([
+      {t:'You stay with your breath. The tightening was information — you felt it, noted it, let it pass.',tags:{body:1,spirit:1},sh:null,nx:'traffic',id:0},
+      {t:'You step forward and offer to cover the difference or assist. Not from performance — something just moves.',tags:{rel:1,spirit:1},sh:null,nx:'traffic',id:1},
+      {t:'You move to another lane. The frustration was real. You don\'t pretend otherwise, but you don\'t act from it.',tags:{mind:1},sh:null,nx:'traffic',id:2},
+      {t:'You sigh loudly. You feel the small ugly satisfaction of it, and then the crushing shame.',tags:{rel:1},sh:'The Reactor',nx:'traffic',id:3}
+    ])
+  },
+
+  traffic:{
+    mood:'city',label:'DAY THREE · SECOND TEST',title:()=>`The Incident on the ${S.seed.triggerScene.toUpperCase()}`,art:'traffic',
+    body:()=>`
+      <p>A friction point. You encounter an error space here on the ${S.seed.triggerScene} — someone is frozen, entirely oblivious, blocking the track pathway.</p>
+      <div class="jmirror">The explosive reaction is right there under your skin. And with it, the whole familiar architecture: the certainty that you are right, that this person is wrong, that the anger is justified, that expressing it will change something.</div>
+      ${S.reactionCount>0?`<div class="mecho">It is the second time today something small has triggered the old circuitry. The jungle showed you this exact wiring.</div>`:''}
+      <div class="jmirror">Behind the anger, if you look: you are tired. You want to be home.</div>`,
+    choices:()=> shuffle([
+      {t:'You wait. You notice the tiredness beneath the irritation and acknowledge it properly to yourself.',tags:{body:1,spirit:1},sh:null,nx:'child_guide',id:0},
+      {t:'You signal once — lightly, without any aggression. A signal, not an identity statement.',tags:{mind:1},sh:null,nx:'child_guide',id:1},
+      {t:'You explode into a reaction. The release feels good for exactly two seconds, and then something else enters.',tags:{rel:1},sh:'The Reactor',nx:'child_guide',id:2},
+      {t:'You alter your pathway completely. You accept the detour as necessary processing motion.',tags:{body:1},sh:null,nx:'child_guide',id:3}
+    ])
+  },
+
+  child_guide:{
+    mood:'guide',label:'DAY THREE · THE ENCOUNTER',title:'The Messenger at the Door',art:'child_guide',
+    body:()=>{
+      const reactive=S.reactionCount>=2;
+      return`<p>You stop near the lane corner shop for something small. On the step outside, a child is sitting completely alone, watching the street matrix with an attention that seems too still for their age.</p>
+      ${reactive?`<div class="jmirror">You are still carrying the toxic residue of the day's reactions. You almost walk past. But something slows your step.</div>`:`<div class="mecho">The day has been quiet inside you, mostly. Something about that quiet lets you actually see.</div>`}
+      <p>As you pass, they look straight up at you — directly, without the usual social hesitation — and say:</p>
+      <div class="guide-text">${S.seed.childWords}</div>
+      <div class="vis">Something stops the timeline loop for a half-second. You know this feeling — the sudden absolute stillness of ceremony when something true is spoken.</div>`;
+    },
+    choices:()=> [
+      {t:'You stop. You crouch down to her level and say: "You might be right. Thank you."',tags:{spirit:2,rel:1},sh:null,nx:'colleague',isGuide:true},
+      {t:'You smile, deeply moved, but keep walking. The words stay locked inside your processing buffer.',tags:{spirit:1,mind:1},sh:null,nx:'colleague',isGuide:true},
+      {t:'You stop and ask ordinary tracking questions. Something passed between you anyway.',tags:{rel:1,spirit:1},sh:null,nx:'colleague',isGuide:true},
+      {t:'You laugh softly, a little rattled, and bypass the interaction completely, stepping inside.',tags:{mind:1},sh:null,nx:'colleague'}
+    ]
+  },
+
+  colleague:{
+    mood:'city',label:'DAY FIVE · THIRD TEST',title:'The Meeting Space Architecture',art:'colleague',
+    body:()=>{
+      const recognized=S.guideRecognized;
+      return`<p>In the Thursday interface board meeting, your coordinator presents the proposal framework. The slides are yours — you built them over three long evenings. Your colleague nods along as if he had some authorship role in it, accepting the praise without correction.</p>
+      ${recognized?`<div class="mecho">The messenger asked if what you carry is yours. This anger — is it yours? Or is it the old story about not being seen?</div>`:`<div class="jmirror">The structural unfairness is completely real. And beneath it, something older: the fear that if you don\'t claim your space, it will be wiped.</div>`}
+      <p>After the interface finishes, your colleague finds you by the terminal machine and says cheerfully: "Great framework layout by the way."</p>`;
+    },
+    choices:()=> shuffle([
+      {t:'"Actually — I built that proposal. I\'d appreciate it if you mentioned that to leadership." Calm. Specific.',tags:{rel:1,mind:1},sh:null,nx:'friend',id:0},
+      {t:'You say nothing at the terminal machine. You schedule a direct private conversation later instead.',tags:{mind:1},sh:null,nx:'friend',id:1},
+      {t:'You say "Thanks" and feel the toxic energy calcify inside into something that will vent elsewhere.',tags:{rel:1},sh:'The Swallower',nx:'friend',id:2},
+      {t:'"I know. I wrote it." You let that sit cold in the air between you without formatting updates.',tags:{rel:1,spirit:1},sh:null,nx:'friend',id:3}
+    ])
+  },
+
+  friend:{
+    mood:'city',label:'DAY FOUR · THE MIRROR',title:()=>`Your Encounter with ${S.seed.friend.toUpperCase()}`,art:'friend',
+    body:()=>`
+      <p>${S.seed.friend} has known you since you were seventeen. Two drinks in, tracking old files, they ask what the jungle loop was like. "Intense?" they offer.</p>
+      ${chose('homecoming',2)?`<div class="mecho">You did it again at dinner — the familiar performance. Are you running the script now too?</div>`:''}
+      <div class="vis">Two coordinates: the friend you love, and a ghost version of you — the one who never left the matrix. The ghost sits comfortably, ordering another cycle.</div>
+      <p>"You seem different," ${S.seed.friend} says. Not a compliment, not a criticism. Slight wariness.</p>`,
+    choices:()=> shuffle([
+      {t:'"I am different. I don\'t fully understand how yet." You meet their eyes directly.',tags:{rel:1,spirit:1},sh:null,nx:'temptation',id:0},
+      {t:'You deflect back into their timeline story. You are good at this — becoming whatever the grid node needs.',tags:{rel:1},sh:'The Mirror',nx:'temptation',id:1},
+      {t:'The systemic chemicals look wrong. Your body system flags an error. You select water instead.',tags:{body:1},sh:null,nx:'temptation',id:2},
+      {t:'Something heavy rises in your chest loop. You excuse yourself to process it in isolation.',tags:{body:1,mind:1},sh:null,nx:'temptation',id:3}
+    ])
+  },
+
+  temptation:{
+    mood:'insomnia',label:'DAY SIX · THE DESCENT',title:'The Spirit of the Old Pattern',art:'temptation',
+    body:()=>`
+      <p>11pm. Alone. A deep gravitational pull activates — the core vulnerability node.</p>
+      <div class="shv">The target file appears before you: ${S.seed.temptation.text}</div>
+      <div class="vis">It stands in the corner. Not monstrous — beautiful, almost. Ancient, patient eyes. In ceremony you saw it, named it, wept with it. It has waited patiently for your return.</div>
+      <div class="shv">"You cannot sustain this integration architecture," it whispers. "Come back to the baseline."</div>`,
+    choices:()=> [
+      {t:'You say its name out loud in the empty room. You sit directly with the data. You do not execute.',tags:{spirit:1,mind:1},sh:null,nx:'insomnia'},
+      {t:'You execute your journal array — writing down the explicit shape of the pull, its cost parameters.',tags:{mind:1},sh:null,nx:'insomnia'},
+      {t:'You execute a partial override. You give in just enough to take the edge off, rationalizing the trade.',tags:{body:1},sh:'The Negotiator',nx:'insomnia'},
+      {t:'You establish an external connection loop. You call someone immediately just to interrupt the frequency.',tags:{rel:1},sh:null,nx:'insomnia'}
+    ]
+  },
+
+  insomnia:{
+    mood:'insomnia',label:()=>`DAY SIX · ${S.seed.clock} · THE CEILING`,title:'The Diagnostic Horizon',art:'insomnia',
+    body:()=>`
+      <p>The time layout reads exactly ${S.seed.clock}am. Dark. You are awake staring up into the structural interface of the ceiling.</p>
+      ${chose('temptation',2)?`<div class="shv">The partial execution didn't patch the framework. The vacuum left behind is louder.</div>`:''}
+      <div class="vis">The horizon is not blank. You can still see — tracing across the layout — the signature of the great serpent. It turns its glowing pixel head toward your field.</div>`,
+    choices:()=> [
+      {t:'You close your eyes and follow the serpent. You let go of the bedroom. You go back.',tags:{spirit:2},sh:null,nx:'ceremony',isCeremony:true},
+      {t:'You lie still and let the dark ask its questions without answering them.',tags:{spirit:1,body:1},sh:null,nx:'practice'},
+      {t:'You decouple from the bed space. You make tea, writing variables by hand until light calculations begin.',tags:{mind:1,spirit:1},sh:null,nx:'practice'},
+      {t:'You perform an absolute body diagnostic scan from feet upward, shutting down standard processing.',tags:{body:1},sh:null,nx:'practice'}
+    ]
+  },
+
+  ceremony:{
+    mood:'ceremony',label:'NIGHT · THE METAPROGRAMMING SPACE',title:'The Maloca Interface Re-established',art:'ceremony',artCls:'cere',isCere:true,
+    body:()=>`
+      <div class="ctext">The ceiling structure breaks completely. The serpent collapses the physical vectors between your flat and the sacred perimeter into absolute zero.</div>
+      <div class="ctext">You are back inside the ceremony workspace. ${S.seed.shamanText}</div>
+      <p style="color:#00f5d4;">And then, your primary animal guide steps cleanly into the firelight field:</p>
+      <div class="ctext">The **${S.seed.animal.name.toUpperCase()}** appears. ${S.seed.animal.desc}</div>
+      <div class="ctext">The guide tracks your entire past week from an elevated systemic coordinate. You see the macro landscape: the automated reactions, the compression fields, the explicit lines where something true broke through.</div>`,
+    choices:()=> [
+      {t:'You ask the guide what data token to bring back. It sets a warm, non-verbal file configuration in your chest.',tags:{spirit:2,mind:1},sh:null,nx:'ceremony_return',isCeremony:true},
+      {t:'You ask no processing queries. You look into the fire node and allow your systems to be completely rewritten.',tags:{spirit:2,body:1},sh:null,nx:'ceremony_return',isCeremony:true},
+      {t:'You process the exact mechanics of your weekly tests. The guide strips the scale away from them.',tags:{spirit:1,mind:1},sh:null,nx:'ceremony_return',isCeremony:true},
+      {t:'You query the guide on what the grand program wants from your lifetime cycle. The firewall blazes.',tags:{spirit:2},sh:null,nx:'ceremony_return',isCeremony:true}
+    ]
+  },
+
+  ceremony_return:{
+    mood:'ceremony',label:'NIGHT · LINK DISCONNECT',title:()=>`${S.seed.clock} — Framework Static`,art:'ceremony_return',artCls:'cere',isCere:true,
+    body:()=>{
+      const c=S.ch['ceremony']||0;
+      const msgs=[
+        'The animal guide injected a pristine variable configuration into your hardware before extraction. You cannot parse its shape, but you feel it protecting the core.',
+        'No direct answers were written to your terminal. Only absolute, unblinking witnessing attention. The program didn\'t offer patches; it offered pure awareness.',
+        'The architecture of the marketplace mechanics looks like simple machine loop algorithms from out here. Automated patterns running code, nothing more.',
+        'The fire flared. The shaman code smiled. The query regarding your life sequence remains open — but it has rewritten its parameters into a door.'
+      ];
+      return`
+        <div class="ctext">A clean hard disconnect occurs. The clock readout still flashes exactly ${S.seed.clock}am. Not a single tick of the hardware clock has elapsed.</div>
+        <div class="ctext">${msgs[c]}</div>
+        <p style="color:#a0f5d4;">The grid environment has completely stabilized. You have executed an unmapped dual-layer integration protocol.</p>`;
+    },
+    choices:()=> [
+      {t:'You stay completely motionless. You let the firmware update compile into your cells.',tags:{spirit:1,body:1},sh:null,nx:'practice',isCeremony:true},
+      {t:'You immediately write out the raw logs before memory allocation blocks are overwritten.',tags:{mind:1,spirit:1},sh:null,nx:'practice',isCeremony:true},
+      {t:'You execute a single silent oath binding your central loop to the entity network.',tags:{spirit:2},sh:null,nx:'practice',isCeremony:true},
+      {t:'Your system drops into a total hardware sleep cycle. Deep. Absolute. Protected.',tags:{body:2},sh:null,nx:'practice',isCeremony:true}
+    ]
+  },
+
+  practice:{
+    mood:'jungle',label:'DAY SEVEN · CORE CONFIGURATION',title:'The Pre-Dawn Processing Block',art:'practice',
+    body:()=>`
+      <p>The matrix outside is totally silent. The background city program hasn\'t initialized yet.</p>
+      ${tends('spirit',4)?`<div class="vis">The veil parameters are set to ultra-thin. You grasp now that ceremony is not a place — it is an active state of high-fidelity attention processing.</div>`:''}
+      ${S.ceremony?`<div class="ctext">The token granted by the ${S.seed.animal.name.toUpperCase()} hasn\'t cleared out. It glows steady inside your system core.</div>`:''}
+      <p>Thirty minutes before standard routine execution. The processing space is open.</p>`,
+    choices:()=> [
+      {t:'You initiate physical movement calculations. The integration code passes directly into the bone structure.',tags:{body:1,spirit:1},sh:null,nx:'morning'},
+      {t:'You execute absolute silent presence. No tools. Just tracking the changing light.',tags:{spirit:1},sh:null,nx:'morning'},
+      {t:'You stream raw thoughts into text arrays, parsing the edge of your current understanding.',tags:{mind:1},sh:null,nx:'morning'},
+      {t:'You generate a specific output commitment targeted at one specific relationship coordinate today.',tags:{rel:1,body:1},sh:null,nx:'morning'}
+    ]
+  },
+
+  morning:{
+    mood:'jungle',label:'DAY SEVEN · EXECUTION LIVE',title:'The Morning After the Week',art:'morning',
+    body:()=>`
+      <p>The sun hits the grid cleanly. The world initializes: transit vectors, data lines, life forms moving.</p>
+      <p>System diagnostic: what has anchored? What has dropped back into legacy code loops? The raw vision arrays are clearing out from RAM, but the internal generator remains hot.</p>
+      ${S.guideRecognized?`<div class="guide-text">The messenger\'s diagnostic query remains persistent inside your runtime loop: <em>Are you sure it\'s yours?</em></div>`:''}
+      ${S.reactionCount>=2&&!S.guideRecognized?`<div class="shv">The historical automated code was highly aggressive this cycle. It took its toll. This is not an execution crash. It is simply the layout of the work.</div>`:''}
+      <p>One week of run-time completed. The baseline system has been optimized. What is the permanent configuration you lock into the system bios?</p>`,
+    choices:()=> [
+      {t:'Commit to the Hardware Vessel: Absolute maintenance of the physical body mechanics, breath, water.',tags:{body:1},sh:null,nx:'end'},
+      {t:'Commit to the Core Processor: Constant manual alignment of narrative language, analytical integration.',tags:{mind:1},sh:null,nx:'end'},
+      {t:'Commit to the Connection Network: Direct, uncompressed, fully-witnessed exchange with external nodes.',tags:{rel:1},sh:null,nx:'end'},
+      {t:'Commit to the Invisible Signal: Constant tracking of the subterranean field dynamics beneath the world grid.',tags:{spirit:1},sh:null,nx:'end'}
+    ]
+  },
+
+  end:{isEnd:true}
+};
+
+// ═══════════════════════════════════
+// REGISTERS & PROFILE RENDERS
+// ═══════════════════════════════════
+const DR={
+  body:{low:'The body has been left at the gate. Your integration lives in the mind and in symbols — but the animal self waits for you, patient and unreached.',mid:'You are beginning to listen to what the body knows. It carries the ceremony in its cells even when the mind has moved on.',high:'Your integration lives in the flesh. You understand that the body is not the obstacle to spirit — it is the altar.'},
+  mind:{low:'The mind has been quiet — afraid, perhaps, of what naming might fix in place.',mid:'You reach for meaning, for structure, for words that can hold the formless. Necessary work.',high:'The mind is your primary vessel. You name things accurately — but naming can also pin them like butterflies.'},
+  rel:{low:'You returned alone and you are staying alone. Something still resists.',mid:'You feel the tension between your new self and the people who knew the old one. This friction is the work itself.',high:'You understand that no medicine integrates in isolation. The ceremony continues in every encounter.'},
+  spirit:{low:'The spiritual dimension is closing back over, like water over a stone. Practice is not optional.',mid:'You carry the luminous thread, but loosely. Resist filing it away.',high:'The veil remains thin for you. You continue to see. This is both gift and responsibility.'}
+};
+const SDEFS={
+  'The Retreater':'You protected what was sacred by making yourself unavailable. This has wisdom. But integration happens in contact, not only in solitude.',
+  'The Keeper':'You learned that the world is not always safe for truth. But secrets calcify — they become load-bearing walls inside the self.',
+  'The Prophet':'You speak truths the room is not yet ready to receive. Truth needs a listener.',
+  'The Mask-Wearer':'This mask was built for survival. Now it appears before you have decided to wear it.',
+  'The Mirror':'You have infinite empathy and almost no self in the presence of others.',
+  'The Reactor':'You discovered this week that the old circuitry is fast. Stimulus -> response, before the witness has time to step in.',
+  'The Negotiator':'The Negotiator finds the loophole in every commitment.',
+  'The Swallower':'The Swallower ingests injustice and converts it to internal weather. What is swallowed does not disappear.'
+};
+const ARCHS=[
+  {n:'The Sovereign Returning',s:'You crossed the threshold fully. The gifts were received and carried.',c:d=>d.body>=3&&d.spirit>=4},
+  {n:'The Jaguar-Touched',s:'The ceremony found you in the dark. You went back when called. This is rare.',c:()=>S.ceremony&&S.d.spirit>=3},
+  {n:'The Open Gate',s:'You recognized the guide in the child. The doors they offer are always ordinary.',c:()=>S.guideRecognized&&S.d.spirit>=2},
+  {n:'The Wounded Healer',s:'You know the wound because it is yours. This is qualification.',c:d=>d.spirit>=2&&d.rel>=2},
+  {n:'The Embodied Witness',s:'You ground the invisible in flesh. This is a rare and necessary gift.',c:d=>d.body>=3&&d.mind>=2},
+  {n:'The Bridge Walker',s:'You move between worlds without losing either.',c:d=>d.rel>=3},
+  {n:'The Cartographer of the Interior',s:'You map what others cannot see. Inhabit the territory.',c:d=>d.mind>=4},
+  {n:'The One Still Crossing',s:'The river is wide. You are in the middle. This is exactly where you should be.',c:()=>true}
+];
+
+function getArch(){return ARCHS.find(a=>a.c(S.d));}
+function dlvl(v){return v<=1?'low':v<=2?'mid':'high';}
+
+function renderPortrait(){
+  const arch=getArch(); const uSh=[...new Set(S.shadows)];
+  const domainLabels={body:'body',mind:'mind',rel:'relating',spirit:'spirit'};
+  const domHTML=Object.entries(S.d).map(([k,v])=>`<div class="dentry"><div class="dname">${domainLabels[k]||k}</div><div class="dtext">${DR[k][dlvl(v)]}</div></div>`).join('');
+  
+  const gNote=S.guideRecognized?`<div class="guide-text" style="margin-bottom:20px;">You identified the accidental guide in the matrix. The child delivered a targeted query payload, and your witness sequence interrupted automation long enough to absorb it.</div>`:'';
+  const cNote=S.ceremony?`<div class="ctext" style="margin-bottom:20px;">The ceremony found you inside your own room. The **${S.seed.animal.name.toUpperCase()}** intercepted your interface loop, forcing an external perspective of your processing arrays. Carry the structural token carefully.</div>`:'';
+  const rNote=S.reactionCount>=2?`<div class="jmirror" style="margin-bottom:20px;">Your automated historical reaction protocols executed twice during daily friction updates. You observed the machine running its routine scripts. True mastery lies inside the latency milliseconds between stimulus and command execution.</div>`:'';
+  const sHTML=uSh.length?`<div class="srep"><h3>■ ACTIVE SHADOW REGISTER</h3>${uSh.map(s=>`<p><strong>${s}</strong><br>${SDEFS[s]||''}</p>`).join('')}</div>`:`<div class="srep"><h3>■ SHADOW FIELD INACTIVE</h3><p>No major legacy shadow profiles claimed runtime dominance during this transit. The core codes remain patient in memory allocation.</p></div>`;
+  
+  return `<div class="portrait">
+    ${art('end','')}
+    <div class="sigil">■ ✦ ■</div>
+    <div class="ptitle">${arch.n}</div>
+    <div class="parch">${arch.s}</div>
+    ${gNote}${cNote}${rNote}
+    <div>${domHTML}</div>
+    ${sHTML}
+    <div class="vis" style="margin-top:20px;">
+      The jungle does not end when you leave it.<br>
+      It moves with you — in the quality of your attention,<br>
+      in what you can no longer ignore,<br>
+      in the eyes you now use to see the world.<br><br>
+      The question is never <em>did the ceremony work?</em><br>
+      The question is always <em>are you doing the work the ceremony began?</em>
+    </div>
+    <button class="restart" onclick="restart()">↩ Execute New Sequence Return</button>
+  </div>`;
+}
+
+// ═══════════════════════════════════
+// CONTROLLER & CORE MECHANICS
+// ═══════════════════════════════════
+function initializeGameAudioAndStart() {
+  const ac = getAC();
+  musicOn = true;
+  document.getElementById('mtoggle').textContent = '♪ SOUND ON';
+  if (ac.state === 'suspended') {
+    ac.resume();
+  }
+  go('airport');
+}
+
+function choose(scKey, choiceId){
+  const sc=SCENES[scKey];
+  const rawChoices = typeof sc.choices === 'function' ? sc.choices() : sc.choices;
+  const ch = rawChoices.find(c => (typeof c.id !== 'undefined' ? c.id === choiceId : rawChoices.indexOf(c) === choiceId));
+  
+  Object.entries(ch.tags).forEach(([d,v])=>{S.d[d]=(S.d[d]||0)+v;});
+  if(ch.sh) S.shadows.push(ch.sh);
+  S.ch[scKey]=choiceId;
+  
+  if(ch.sh==='The Reactor') S.reactionCount++;
+  if(ch.isGuide) S.guideRecognized=true;
+  if(sc.isCere || ch.isCeremony) S.ceremony=true;
+  go(ch.nx);
+}
+
+function go(id){ S.scene=id; render(); window.scrollTo({top:0,behavior:'smooth'}); }
+function restart(){ window.location.reload(); }
+
+function dbar(){
+  if(S.scene==='intro') return '';
+  const labels={body:'body',mind:'mind',rel:'relating',spirit:'spirit'};
+  return `<div class="dbar">${Object.entries(S.d).map(([k,v])=>{
+    const cls=v>=3?'deep':v>=1?'on':''; return `<div class="dp ${cls}">${labels[k]||k}</div>`;
+  }).join('')}</div>`;
+}
+
+function render(){
+  const game=document.getElementById('game'); const sc=SCENES[S.scene]; setMood(sc.mood||'city');
+  if(sc.render){
+    game.innerHTML=`<div class="gh"><div class="gt">THE RETURN</div><div class="gs">a mythic journey of integration</div></div>${art('intro','')}<div class="scene">${sc.render()}</div><div class="watermark">SESSION #0${S.seed.sessionID} · ${S.seed.palette.toUpperCase()} PALETTE · GUIDE: ${S.seed.animal.name.toUpperCase()}</div>`; return;
+  }
+  if(sc.isEnd){
+    game.innerHTML=`<div class="gh"><div class="gt">THE RETURN</div><div class="gs">your system status</div></div><div class="scene">${renderPortrait()}</div><div class="watermark">SESSION #0${S.seed.sessionID} · ${S.seed.palette.toUpperCase()} PALETTE · GUIDE: ${S.seed.animal.name.toUpperCase()}</div>`; return;
+  }
+  const body=typeof sc.body==='function'?sc.body():sc.body;
+  const isCere=sc.isCere||false;
+  
+  const rawChoices = typeof sc.choices === 'function' ? sc.choices() : sc.choices;
+  const chHTML=rawChoices.map((c,i)=>{
+    const targetId = typeof c.id !== 'undefined' ? c.id : i;
+    return `<button class="cb${isCere?' cere':(typeof sc.label === 'string' && sc.label.includes('ENCOUNTER'))?' guide':''}" onclick="choose('${S.scene}', ${targetId})"><span class="ck">[${i+1}]</span>${c.t}</button>`;
+  }).join('');
+  
+  const displayTitle = typeof sc.title === 'function' ? sc.title() : sc.title;
+  const displayLabel = typeof sc.label === 'function' ? sc.label() : sc.label;
+  const sub=isCere?'the ceremony within the return':(typeof sc.label === 'string' && sc.label.includes('ENCOUNTER'))?'the accidental guide':'a mythic journey of integration';
+  
+  game.innerHTML=`
+    <div class="gh"><div class="gt">THE RETURN</div><div class="gs">${sub}</div></div>
+    ${dbar()}
+    <div class="scene">
+      <div class="slabel">${displayLabel||''}</div>
+      ${art(sc.art||S.scene,sc.artCls||'')}
+      <div class="stitle">${displayTitle}</div>
+      <div class="sbody">${body}</div>
+      <div class="sigil">${isCere?'✦ ■ ✦':'■'}</div>
+      <div class="choices">${chHTML}</div>
+    </div>
+    <div class="watermark">SESSION #0${S.seed.sessionID} · ${S.seed.palette.toUpperCase()} PALETTE · GUIDE: ${S.seed.animal.name.toUpperCase()}</div>`;
+}
+
+for(let i=0;i<12;i++){
+  const p=document.createElement('div'); p.className='sp';
+  p.style.cssText=`left:${Math.random()*100}vw;top:${Math.random()*100}vh;background:${Math.random()>.5?PX.spirit:PX.gold};opacity:${.08+Math.random()*.1}`;
+  document.body.appendChild(p);
+}
+render();
+</script>
+</body>
+</html>
