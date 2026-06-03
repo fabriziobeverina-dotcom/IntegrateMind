@@ -317,20 +317,6 @@ const S = {
   }
 };
 
-// ═══════════════════════════════════════════════════════
-// JOURNAL PROFILE INJECTION — read window.JOURNAL_PROFILE
-// set by the app before loading this page
-// ═══════════════════════════════════════════════════════
-if (window.JOURNAL_PROFILE) {
-  const P = window.JOURNAL_PROFILE;
-  if (P.friction_scenario) S.seed.queueScene = P.friction_scenario;
-  if (P.old_pattern_label) S.seed.temptation = { type: P.old_pattern_label, text: P.old_pattern_desc || P.old_pattern_label };
-  if (P.friend_scene_person) S.seed.friend = P.friend_scene_person;
-  if (P.unresolved_thread) S.seed.unresolvedThread = P.unresolved_thread;
-  if (P.shadow_hint) S.shadows.push(P.shadow_hint);
-  if (P.somatic_anchor) S.seed.somaticAnchor = P.somatic_anchor;
-}
-
 const palettes = {
   Shadow: { ink: '#020204', blue: '#0022ff', g3: '#475569' },
   Jungle: { ink: '#040d08', blue: '#059669', g3: '#155e75' },
@@ -945,12 +931,9 @@ function somaticBridge(choicesHTML, sceneKey) {
   if (somaticBridgeFired || !stressScenes.includes(sceneKey) || S.shadows.length === 0) return choicesHTML;
   somaticBridgeFired = true;
   const p = SOMATIC_PROMPTS[Math.floor(Math.random() * SOMATIC_PROMPTS.length)];
-  const breathLine = S.seed.somaticAnchor
-    ? `You recognise this — the ${S.seed.somaticAnchor}. Just notice it is there.`
-    : p.breath;
   return `<div class="somatic-bridge" id="somaticBridge">
     <div class="soma-title">◈ Before you act</div>
-    <div class="soma-text">${breathLine}<br>${p.exhale}<br><br><strong style="color:var(--spirit);">${p.anchor}</strong></div>
+    <div class="soma-text">${p.breath}<br>${p.exhale}<br><br><strong style="color:var(--spirit);">${p.anchor}</strong></div>
     <div class="soma-skip" onclick="document.getElementById('somaticBridge').style.display='none';document.getElementById('choicesWrap').style.display='flex';">skip — I am ready</div>
   </div>
   <div id="choicesWrap" style="display:none;flex-direction:column;gap:12px;">${choicesHTML}</div>`;

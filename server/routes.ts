@@ -31,7 +31,8 @@ Return ONLY valid JSON, no other text:
   "dominant_domain": "body/mind/relationships/spirit",
   "unresolved_thread": "one sentence, second person, something mentioned more than once without resolution",
   "shadow_hint": "The Reactor/The Negotiator/The Mask-Wearer/The Mirror/The Retreater or null",
-  "friend_scene_person": "name of friend or social contact who appeared, or null"
+  "friend_scene_person": "name of friend or social contact who appeared, or null",
+  "somatic_anchor": "physical sensation the user mentions repeatedly (e.g. 'tightness in chest', 'floating feeling', 'cold hands') or null"
 }
 
 Use null for any field that cannot be determined. Be specific and concrete — 

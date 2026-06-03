@@ -70,9 +70,12 @@ export default function TheReturn() {
       const gameResp = await fetch("/the-return.html");
       const baseHtml = await gameResp.text();
 
-      // Inject profile as window.JOURNAL_PROFILE before the first <script> tag
-      const injection = `<script>window.JOURNAL_PROFILE = ${JSON.stringify(profile)};<\/script>`;
-      const injected = baseHtml.replace("<head>", `<head>\n${injection}`);
+      // Inject profile as window.JOURNAL_PROFILE — prepended into the first <script> block
+      // so S can read it immediately on initialisation
+      const injected = baseHtml.replace(
+        '<script>',
+        `<script>window.JOURNAL_PROFILE = ${JSON.stringify(profile)};\n`
+      );
 
       // Create a blob URL so the iframe can load it same-origin-ish
       if (prevBlobUrl.current) URL.revokeObjectURL(prevBlobUrl.current);
