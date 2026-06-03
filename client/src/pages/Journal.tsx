@@ -137,6 +137,7 @@ export default function Journal() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("write");
   const [showShareDialog, setShowShareDialog] = useState(false);
+  const [selectedEntry, setSelectedEntry] = useState<JournalEntry | null>(null);
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
 
@@ -601,7 +602,12 @@ export default function Journal() {
               ) : (
                 <div className="space-y-4">
                   {(displayedEntries as JournalEntry[]).map((entry: JournalEntry) => (
-                    <Card key={entry.id} className="hover-elevate">
+                    <Card
+                      key={entry.id}
+                      className="hover-elevate cursor-pointer"
+                      onClick={() => setSelectedEntry(entry)}
+                      data-testid={`card-journal-entry-${entry.id}`}
+                    >
                       <CardHeader className="pb-2">
                         <div className="flex items-start justify-between">
                           <div className="space-y-1">
@@ -641,6 +647,41 @@ export default function Journal() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Full entry view dialog */}
+      <Dialog open={!!selectedEntry} onOpenChange={(open) => { if (!open) setSelectedEntry(null); }}>
+        <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 pr-6">
+              {selectedEntry?.title}
+              {selectedEntry?.isPrivate && <Lock className="h-4 w-4 text-muted-foreground flex-shrink-0" />}
+            </DialogTitle>
+            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+              <div className="flex items-center gap-1">
+                <Calendar className="h-4 w-4" />
+                {selectedEntry && format(new Date(selectedEntry.createdAt), 'EEEE, MMMM d, yyyy')}
+              </div>
+              {selectedEntry?.mood && getMoodDisplay(selectedEntry.mood)}
+            </div>
+          </DialogHeader>
+
+          <ScrollArea className="flex-1 min-h-0 mt-2">
+            <p className="whitespace-pre-wrap text-foreground leading-relaxed pr-4">
+              {selectedEntry?.content}
+            </p>
+
+            {selectedEntry && selectedEntry.tags.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-4 pt-4 border-t">
+                {selectedEntry.tags.map((tag, index) => (
+                  <Badge key={index} variant="outline" className="text-xs">
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
 
       {/* Share with Facilitator Dialog */}
       <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
