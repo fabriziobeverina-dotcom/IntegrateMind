@@ -1,7 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { Button } from "@/components/ui/button";
-import { Lock, X } from "lucide-react";
+import { Lock, X, Loader2 } from "lucide-react";
 
 function getJourneyDay(journeyStartDate: string | Date | null | undefined): number | null {
   if (!journeyStartDate) return null;
@@ -9,8 +8,7 @@ function getJourneyDay(journeyStartDate: string | Date | null | undefined): numb
   start.setHours(0, 0, 0, 0);
   const now = new Date();
   now.setHours(0, 0, 0, 0);
-  const diff = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-  return diff + 1;
+  return Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 }
 
 function nextGameDay(currentDay: number): number {
@@ -21,12 +19,22 @@ function nextGameDay(currentDay: number): number {
 export default function TheReturn() {
   const { user } = useAuth();
   const [playing, setPlaying] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const prevBlobUrl = useRef<string | null>(null);
 
   const journeyDay = getJourneyDay((user as any)?.journeyStartDate);
   const isAvailable = journeyDay !== null && journeyDay >= 7 && journeyDay % 7 === 0;
   const daysUntil = journeyDay !== null && !isAvailable
     ? (journeyDay < 7 ? 7 - journeyDay : nextGameDay(journeyDay) - journeyDay)
     : null;
+
+  // Clean up blob URL on unmount
+  useEffect(() => {
+    return () => {
+      if (prevBlobUrl.current) URL.revokeObjectURL(prevBlobUrl.current);
+    };
+  }, []);
 
   // Prevent body scroll while playing
   useEffect(() => {
@@ -38,11 +46,60 @@ export default function TheReturn() {
     return () => { document.body.style.overflow = ""; };
   }, [playing]);
 
-  if (playing) {
+  async function handleEnter() {
+    setLoading(true);
+    try {
+      // Fetch personalisation profile (fire-and-forget timeout handled server-side)
+      let profile: object | null = null;
+      try {
+        const resp = await fetch("/api/personalise-game", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}), // server auto-fetches last 7 entries
+        });
+        if (resp.ok) {
+          const data = await resp.json();
+          profile = data.profile ?? null;
+        }
+      } catch {
+        // Network error — fall back to unpersonalised game
+        profile = null;
+      }
+
+      // Fetch game HTML
+      const gameResp = await fetch("/the-return.html");
+      const baseHtml = await gameResp.text();
+
+      // Inject profile as window.JOURNAL_PROFILE before the first <script> tag
+      const injection = `<script>window.JOURNAL_PROFILE = ${JSON.stringify(profile)};<\/script>`;
+      const injected = baseHtml.replace("<head>", `<head>\n${injection}`);
+
+      // Create a blob URL so the iframe can load it same-origin-ish
+      if (prevBlobUrl.current) URL.revokeObjectURL(prevBlobUrl.current);
+      const blob = new Blob([injected], { type: "text/html" });
+      const url = URL.createObjectURL(blob);
+      prevBlobUrl.current = url;
+      setBlobUrl(url);
+      setPlaying(true);
+    } catch {
+      // Absolute last resort — just open the static file
+      setBlobUrl("/the-return.html");
+      setPlaying(true);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function handleExit() {
+    setPlaying(false);
+    setBlobUrl(null);
+  }
+
+  if (playing && blobUrl) {
     return (
       <div className="fixed inset-0 z-[200] bg-black flex flex-col">
         <button
-          onClick={() => setPlaying(false)}
+          onClick={handleExit}
           className="absolute top-3 right-3 z-10 flex items-center gap-1.5 px-3 py-1.5 bg-black/80 border border-white/20 text-white/70 hover:text-white text-xs font-bold tracking-widest uppercase rounded"
           data-testid="button-exit-game"
         >
@@ -50,10 +107,11 @@ export default function TheReturn() {
           Exit
         </button>
         <iframe
-          src="/the-return.html"
+          src={blobUrl}
           title="The Return"
           className="flex-1 w-full border-0"
           allow="autoplay"
+          sandbox="allow-scripts allow-same-origin"
         />
       </div>
     );
@@ -175,17 +233,19 @@ export default function TheReturn() {
             </div>
 
             <button
-              onClick={() => setPlaying(true)}
+              onClick={handleEnter}
+              disabled={loading}
               data-testid="button-enter-game"
-              className="group relative px-12 py-5 font-black text-xl tracking-[0.2em] uppercase transition-all duration-150"
+              className="group relative px-12 py-5 font-black text-xl tracking-[0.2em] uppercase transition-all duration-150 disabled:opacity-60 disabled:cursor-not-allowed"
               style={{
                 background: "#ffb703",
                 border: "2px solid #fff",
                 color: "#000",
-                boxShadow: "6px 6px 0 #000",
+                boxShadow: loading ? "2px 2px 0 #000" : "6px 6px 0 #000",
                 borderRadius: "6px",
               }}
               onMouseEnter={e => {
+                if (loading) return;
                 (e.currentTarget as HTMLElement).style.transform = "translate(-2px,-2px)";
                 (e.currentTarget as HTMLElement).style.boxShadow = "8px 8px 0 #000";
               }}
@@ -194,20 +254,37 @@ export default function TheReturn() {
                 (e.currentTarget as HTMLElement).style.boxShadow = "6px 6px 0 #000";
               }}
               onMouseDown={e => {
+                if (loading) return;
                 (e.currentTarget as HTMLElement).style.transform = "translate(2px,2px)";
                 (e.currentTarget as HTMLElement).style.boxShadow = "2px 2px 0 #000";
               }}
               onMouseUp={e => {
+                if (loading) return;
                 (e.currentTarget as HTMLElement).style.transform = "translate(-2px,-2px)";
                 (e.currentTarget as HTMLElement).style.boxShadow = "8px 8px 0 #000";
               }}
             >
-              ▶ ENTER
+              {loading ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Attuning...
+                </span>
+              ) : (
+                "▶ ENTER"
+              )}
             </button>
 
-            <p className="text-white/30 text-xs tracking-widest uppercase">
-              Portal closes at midnight
-            </p>
+            {loading && (
+              <p className="text-white/40 text-xs tracking-widest uppercase animate-pulse">
+                Reading your journal · Preparing your path
+              </p>
+            )}
+
+            {!loading && (
+              <p className="text-white/30 text-xs tracking-widest uppercase">
+                Portal closes at midnight
+              </p>
+            )}
           </div>
         )}
 

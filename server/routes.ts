@@ -13,6 +13,30 @@ import {
   getStabilizationPrompt,
   STABILIZATION_PROMPTS,
 } from "./wellbeingChecker";
+import Anthropic from "@anthropic-ai/sdk";
+
+const GAME_PERSONALISATION_SYSTEM_PROMPT = `You are the Integration Compass personalisation engine.
+You read plant medicine integration journals and extract a personalisation 
+profile for a therapeutic game called THE RETURN.
+
+Return ONLY valid JSON, no other text:
+
+{
+  "friction_scenario": "one sentence, second person present tense — the specific real situation that triggered them most this week",
+  "friction_person_pronoun": "he/she/they or null",
+  "key_person_name": "first name of person mentioned most with emotional charge, or null",
+  "key_person_relation": "partner/parent/sibling/colleague/friend/ex or null",
+  "old_pattern_label": "3-5 word label for what they reach for when overwhelmed",
+  "old_pattern_desc": "one sentence, second person, the specific habitual behavior",
+  "dominant_domain": "body/mind/relationships/spirit",
+  "unresolved_thread": "one sentence, second person, something mentioned more than once without resolution",
+  "shadow_hint": "The Reactor/The Negotiator/The Mask-Wearer/The Mirror/The Retreater or null",
+  "friend_scene_person": "name of friend or social contact who appeared, or null"
+}
+
+Use null for any field that cannot be determined. Be specific and concrete — 
+use their actual situations, not psychological abstractions. Write in second 
+person (you/your).`;
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication middleware
@@ -2662,6 +2686,71 @@ ${promptText || 'No prompt responses available.'}`;
     } catch (error) {
       console.error("Error marking transition seen:", error);
       res.status(500).json({ message: "Failed to mark transition seen" });
+    }
+  });
+
+  // ─── Game Personalisation ─────────────────────────────────────────────────
+  // POST /api/personalise-game
+  // Reads last 7 days of journal entries, calls Claude, returns profile JSON.
+  // Journal text is never logged or stored — only the extracted profile is returned.
+  app.post('/api/personalise-game', isAuthenticated, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+
+    try {
+      // Accept either client-supplied journals array or auto-fetch from DB
+      let journals: string[] = req.body.journals;
+
+      if (!journals || !Array.isArray(journals) || journals.length === 0) {
+        // Auto-fetch the last 7 journal entries for this user
+        const entries = await storage.getUserJournalEntries(userId, 7);
+        journals = entries.map((e) => e.content).filter(Boolean);
+      }
+
+      if (journals.length === 0) {
+        return res.json({ user_id: userId, profile: null, generated_at: new Date().toISOString() });
+      }
+
+      const journalText = journals
+        .map((entry, i) => `Day ${i + 1}:\n${entry}`)
+        .join('\n\n');
+
+      const client = new Anthropic();
+
+      // 10-second timeout via AbortSignal
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10_000);
+
+      let profile: object | null = null;
+
+      try {
+        const response = await client.messages.create(
+          {
+            model: 'claude-opus-4-5',
+            max_tokens: 1000,
+            system: GAME_PERSONALISATION_SYSTEM_PROMPT,
+            messages: [{ role: 'user', content: `JOURNAL ENTRIES:\n\n${journalText}` }],
+          },
+          { signal: controller.signal }
+        );
+        clearTimeout(timeoutId);
+
+        const raw = response.content[0].type === 'text' ? response.content[0].text : '';
+        profile = JSON.parse(raw.replace(/```json|```/g, '').trim());
+      } catch (claudeError: any) {
+        clearTimeout(timeoutId);
+        // Malformed JSON, timeout, or API error — fall back gracefully
+        console.error('Game personalisation Claude error (non-fatal):', claudeError?.message ?? claudeError);
+        profile = null;
+      }
+
+      return res.json({
+        user_id: userId,
+        profile,
+        generated_at: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error('Error in /api/personalise-game:', error);
+      return res.status(500).json({ message: 'Failed to generate personalisation profile' });
     }
   });
 
