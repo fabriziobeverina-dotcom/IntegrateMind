@@ -24,10 +24,8 @@ export default function TheReturn() {
   const prevBlobUrl = useRef<string | null>(null);
 
   const journeyDay = getJourneyDay((user as any)?.journeyStartDate);
-  const isAvailable = journeyDay !== null && journeyDay >= 7 && journeyDay % 7 === 0;
-  const daysUntil = journeyDay !== null && !isAvailable
-    ? (journeyDay < 7 ? 7 - journeyDay : nextGameDay(journeyDay) - journeyDay)
-    : null;
+  const isAvailable = journeyDay !== null;
+  const daysUntil = null;
 
   // Clean up blob URL on unmount
   useEffect(() => {
