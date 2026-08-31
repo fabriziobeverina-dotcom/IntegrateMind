@@ -1,0 +1,1486 @@
+THE RETURN
+VOICE-OVER SCRIPT
+=================
+
+Notes
+-----
+This file follows the authored scene order. Choices are shuffled for the
+player during the game, but the text below keeps the original choice order.
+
+Text in [SQUARE BRACKETS] is personalized or conditional at runtime:
+
+[PLAYER DAYS]       Number of ceremony days
+[PLAYER OPENING]    Personalized opening line
+[PLAYER NAME]       Player's name
+[FRIEND NAME]       Personalized friend name
+[QUEUE SCENE]       Personalized queue location
+[TEMPTATION NAME]   Name of the old pattern
+[TEMPTATION PULL]   Description of the temptation
+[CLOCK]             Personalized clock time
+[SHAMAN TEXT]       Personalized shaman line
+[ANIMAL NAME]       Animal guide name
+[ANIMAL DESCRIPTION] Animal guide description
+[CHILD WORDS]       Personalized words spoken by the child
+
+The game also has short somatic prompts before some choices. They are
+included in the interstitial sections below.
+
+
+SCENE 00 — INTRO
+=================
+
+THE RETURN
+
+You have come back from the jungle.
+[PLAYER DAYS] days of ceremony. You are not the same.
+
+But the world does not know this yet.
+The world is still the world —
+and now it is full of spirits, energies, temptations, and tests.
+
+And a guide or two, if you have the eyes for it.
+
+Behind the mask, you may be honest.
+No self-judgement. Only what is true.
+
+BUTTON: Enter the Return
+
+
+SCENE 01 — THE AIRPORT OF SOULS
+================================
+DAY ONE · THE THRESHOLD
+
+You have returned from [PLAYER OPENING].
+
+The grey static around each person is visible now — coils of unprocessed
+grief, small figures on shoulders. The man ahead carries something on his
+left that you recognise. You saw it in ceremony.
+
+A woman sits beside you, crying softly into her phone.
+"Everything is fine," she says. "Everything is absolutely fine."
+
+Something in you wants to flee — back to the jungle, back to the maloca,
+back to where everything made sense.
+
+CHOICE 1
+Sit beside her in silence.
+
+RESPONSE
+You sit. You do not speak, do not offer comfort, do not perform presence.
+You simply remain. After a moment the quality of her crying changes —
+slightly slower, slightly less alone. She does not look at you. But
+something shifted.
+
+CHOICE 2
+Look away. You are still too raw.
+
+RESPONSE
+You turn toward the window. The woman's voice continues behind you.
+"Everything is fine. Everything is absolutely fine."
+
+You think: who is she saying that for.
+
+CHOICE 3
+Open your notebook. Write before the visions fade.
+
+RESPONSE
+Your hand moves. The pen barely keeps up. Behind you the airport
+continues and here, on the page, the jungle is still happening.
+
+CHOICE 4
+Close your eyes. Feel the longing to go back.
+
+RESPONSE
+Heavier than expected — a physical weight in the sternum. You do not
+fight it. You let it be there, this grief for a place that is already
+becoming memory.
+
+
+SCENE 02 — THIRTY THOUSAND FEET
+================================
+DAY ONE · THE IN-BETWEEN
+
+The plane climbs. Below, the Amazon shrinks into green geometry, then
+cloud. You watch it disappear with a strange grief, as if something alive
+is being slowly erased.
+
+IF THE PLAYER LOOKED AWAY AT THE AIRPORT:
+You think of the woman. Her grief is still somewhere in the world,
+unwitnessed.
+
+The man beside you — late forties, suit — glances at your jungle bracelet.
+"Holiday?" he asks.
+
+You see his soul: a bright young thing, maybe twelve, locked in a glass
+cage inside his ribcage. Pressing its hands against the walls.
+
+CHOICE 1
+"Something like that." Smile. Put your headphones in.
+
+RESPONSE
+He nods, satisfied, returns to his laptop. You watch the Amazon disappear.
+The music is wrong for this. You take the headphones out.
+
+Silence. Cloud. The feeling of having kept something you did not need to
+keep.
+
+CHOICE 2
+Tell him the truth. All of it.
+
+RESPONSE
+You begin. The ayahuasca. The nights in the maloca. The thing you saw on
+the third ceremony that you still cannot name. He listens with the focused
+expression of a man being told something he suspects might be important.
+
+When you finish he is quiet. Then:
+"My wife wants to do something like that."
+
+You look at him. He is already looking out the window. The boy in the cage
+is pressing his hands against the glass.
+
+CHOICE 3
+Ask him about his work. Listen differently — below the words.
+
+RESPONSE
+He talks for forty minutes. You follow it at two levels: the story he is
+telling, and the one beneath it. At the end he says:
+"I feel like I've been talking too much."
+
+"No," you say. "You haven't."
+
+CHOICE 4
+Say nothing. Press your forehead against the cold window.
+
+RESPONSE
+The cold enters through your forehead and spreads slowly. Cloud. Then,
+briefly, a dark-green geometry that could be anything.
+
+
+SCENE 03 — THE KITCHEN OF YOUR PARENTS
+=======================================
+DAY TWO · THE FAMILIAR WORLD
+
+Your mother has cooked. The familiar smell of home — and underneath it,
+the familiar anxiety that has lived in this kitchen for forty years.
+
+Your father asks if you ate well in Peru. He does not ask what you did
+there.
+
+Old family patterns move like smoke between the chairs. A spirit of
+unspoken grief anchors itself to the corner near the window. It has been
+there for decades.
+
+Your mother refills your glass before it is empty.
+"You look thin," she says.
+
+They will never understand. You have been to the edge of the world and
+back, and here you are, passing the bread.
+
+CHOICE 1
+Eat the food. Give it your full attention.
+
+RESPONSE
+You do not perform gratitude. You simply eat. The soup is too salty and
+slightly overcooked and you have not tasted anything this specific in
+seven days. Your mother watches you eat the way she has always watched you
+eat — as if the fact of your eating is itself a small triumph.
+
+"It's good," you say. You mean it.
+
+CHOICE 2
+Try to explain what happened.
+
+RESPONSE
+You begin. You can see, almost immediately, the moment their faces shift —
+not hostile, not unkind, just the particular closing that happens when the
+world is asked to expand faster than it can.
+
+Your father nods at appropriate intervals. When you stop, he says:
+"And the food? Did they feed you properly?"
+
+You look at them. You love them. You will try again. But not tonight.
+
+CHOICE 3
+Perform the familiar role.
+
+RESPONSE
+The mask goes on before you decide to wear it. You hear yourself asking
+about the neighbours, the garden, the car. You are excellent at this.
+
+Somewhere inside, very quietly, something that came back from the jungle
+observes this performance with an expression you cannot read.
+
+CHOICE 4
+Excuse yourself early. The floor of your old bedroom.
+
+RESPONSE
+Your childhood bed is too soft. You take the blanket to the floor and lie
+flat, arms open, feeling the house settle around you.
+
+You breathe. The ceremony breathes with you. This will have to be enough
+for tonight.
+
+
+SCENE 04 — THE QUEUE
+=====================
+DAY THREE · FIRST TEST
+TITLE: THE [QUEUE SCENE]
+
+The queue is long. You wait with six items. The person ahead has a
+complicated transaction that is completely stalled. The people behind you
+shift their weight.
+
+Something tightens in your jaw. You notice you are already somewhere else
+in your head — a story about your time, about this person you do not know.
+
+IF THE PLAYER PERFORMED THE FAMILIAR ROLE:
+At dinner you performed patience. Here, with strangers, the performance is
+not available. This is what you actually are.
+
+The person ahead is visibly mortified. The cashier's face is blank. Eight
+people wait.
+
+INTERSTITIAL — BEFORE YOU ACT
+Use one of the following variants:
+
+VARIANT 1
+Place your feet flat on the floor. Feel the weight of your body.
+Exhale for four slow counts.
+Now — from here — choose.
+
+VARIANT 2
+Before you act: one hand on your chest. Feel it moving.
+Breathe out until the breath is empty.
+From this place — choose.
+
+VARIANT 3
+Your jaw is carrying something. Let it soften slightly.
+Three slow breaths. Not to fix anything — just to arrive.
+Present — choose.
+
+VARIANT 4
+Notice where in your body the charge is sitting.
+Exhale through the mouth, long and quiet.
+Make the choice from here.
+
+IF A SOMATIC ANCHOR IS PERSONALIZED:
+You recognise this — the [SOMATIC ANCHOR]. Just notice it is there.
+[ONE OF THE BREATH PROMPTS ABOVE]
+
+BUTTON: continue
+
+CHOICE 1
+Stay with the breath. Wait.
+
+RESPONSE
+The tightening in your jaw does not disappear. But you stop feeding it.
+You stand there, a human being in a queue, breathing, while another human
+being tries to locate money in a bag that contains everything except money.
+
+The person behind you sighs. You feel the sigh land, and you do not join it.
+Eventually the queue moves.
+
+CHOICE 2
+Step forward. Offer to cover the difference.
+
+RESPONSE
+You hear yourself say it before you decide to:
+"I can cover it — please, it's fine."
+
+The cashier looks at you. The woman looks at you.
+
+She accepts. She cannot look at you while she accepts. In the car park she
+will try to find you to pay you back. She will not be able to. This is fine.
+
+CHOICE 3
+Move to another queue.
+
+RESPONSE
+You pick up your basket and move three metres to the left. The frustration
+goes nowhere in particular — it becomes part of the ambient texture of the
+afternoon.
+
+From here you can see the woman's shoulders. Still tight. Still mortified.
+You look away.
+
+CHOICE 4
+Sigh. Loudly enough.
+
+RESPONSE
+The sound escapes before you fully choose it. The woman hears it — her
+shoulders tighten fractionally.
+
+A half-second of satisfaction, clean and sharp. Then the shame: you have
+just used your exhale as a weapon against someone who was already having a
+bad day.
+
+You stare at the chewing gum display for the remaining minutes.
+
+
+SCENE 05 — THE FRICTION
+========================
+DAY THREE · SECOND TEST
+
+You are ten minutes from home. Something blocks the path — someone frozen,
+oblivious, in the way.
+
+The reaction is right there. And with it, the whole familiar architecture:
+the certainty that you are right, that they are wrong, that the anger is
+justified.
+
+IF THE PLAYER HAS REACTED BEFORE:
+It is the second time today the old circuitry has run. The jungle showed you
+this exact wiring. You are watching it.
+
+Behind the anger, if you look: you are tired. You want to be home. This
+person is simply the nearest available explanation for that.
+
+INTERSTITIAL — BEFORE YOU ACT
+Use one of the somatic prompts from Scene 04.
+
+CHOICE 1
+Wait. Notice what is underneath.
+
+RESPONSE
+You wait. In those seconds you find, beneath the irritation: you are tired,
+you have been carrying something heavy all week, and you want to be home in
+a way that has nothing to do with this person.
+
+The path clears. You go home.
+
+CHOICE 2
+Signal once. Just a notification.
+
+RESPONSE
+One brief signal. The person startles, looks up, moves. They wave a small
+apology at no one in particular.
+
+You move past them. You feel approximately nothing, which is itself a kind
+of progress.
+
+CHOICE 3
+React.
+
+RESPONSE
+The reaction comes out full — more than you intended. The person startles
+badly. You drive away feeling, for two seconds, justified. Then the two
+seconds end.
+
+For the rest of the drive you are explaining yourself to no one, in your
+head, in a car alone.
+
+CHOICE 4
+Take a different way home entirely.
+
+RESPONSE
+You turn off before the obstruction and take the longer road — past the
+canal, the way you used to go. It takes twelve extra minutes. The light on
+the canal is something. You had forgotten about the canal.
+
+
+SCENE 06 — THE CHILD AT THE CORNER
+===================================
+DAY THREE · THE ENCOUNTER
+
+You stop at the corner shop for something small. On the step outside, a
+child — maybe seven, maybe eight — is sitting alone, watching the street
+with an attention that seems too still for her age.
+
+IF THE PLAYER HAS REACTED TWICE OR MORE:
+You are still carrying the residue of today. You almost walk past her. But
+some small remaining thread of the ceremony slows your step.
+
+OTHERWISE:
+The day has been quiet inside you, mostly. Something about that quiet lets
+you actually see her. She is very still.
+
+As you pass, she looks directly up at you — without the usual social
+hesitation of children with strangers — and says:
+
+[CHILD WORDS]
+
+Then she looks back at the street, as if she said nothing unusual. The
+shopkeeper inside has not looked up. No one else seems to have heard.
+
+Something stops time for a half-second. You know this feeling — the sudden
+stillness of ceremony when something true is spoken into a room. The
+child's eyes, in that brief moment, held something very old.
+
+You are standing on a pavement outside a corner shop in ordinary daylight.
+And something just opened.
+
+CHOICE 1
+Stop. Crouch down to her level. Say:
+"You might be right. Thank you."
+
+RESPONSE
+She nods, completely unsurprised, as if she expected nothing less. Then she
+looks back at the street.
+
+You stand up. You go into the shop. You buy what you came for. On the way
+out she is gone — not dramatically, just gone, the way things go in
+ceremony when they are finished with you.
+
+CHOICE 2
+Smile, genuinely moved, and keep walking.
+
+RESPONSE
+The words stay with you the whole afternoon. You turn them like a stone
+you found on a path: smooth on one side, rough on the other, heavier than
+it looks.
+
+CHOICE 3
+Stop. Ask her name, her age, whether she is waiting for someone.
+
+RESPONSE
+She answers each question patiently, as if she has all the time there is.
+Something passed between you anyway, through the ordinary exchange. She
+does not explain herself further. Neither do you.
+
+CHOICE 4
+Laugh softly and go into the shop.
+
+RESPONSE
+"Kids, huh?" you say to no one in particular. The door closes. The moment
+closes with it.
+
+You buy what you came for. On the way out the step is empty.
+
+
+SCENE 07 — THE CREDIT
+======================
+DAY FIVE · THIRD TEST
+
+Thursday meeting. Your manager presents the proposal. The slides are yours
+— built over three evenings. Your colleague nods along as if he had some
+role in it. Afterward he is praised specifically. He accepts the praise
+without correction.
+
+IF THE PLAYER RECOGNISED THE GUIDE:
+The child asked if what you carry is yours. This anger — is it yours? Or is
+it the old story about not being seen, dressed in fresh clothes?
+
+OTHERWISE:
+The unfairness is real. And beneath it, something older: the fear that if
+you do not claim what is yours, it will be taken.
+
+After the meeting he finds you at the coffee machine and says, cheerfully:
+"Great proposal by the way."
+
+You see his energy. It is not malicious. He genuinely does not know what he
+did. This does not make it acceptable. But it changes something about what
+the correct response is.
+
+INTERSTITIAL — BEFORE YOU ACT
+Use one of the somatic prompts from Scene 04.
+
+CHOICE 1
+"I built that proposal. I'd appreciate it if you mentioned that to Sarah."
+
+RESPONSE
+Calm. Specific. He looks at you for a moment with an expression you cannot
+entirely read. Then:
+"Oh. Yeah. Of course. I didn't mean to — I'll talk to her."
+
+You do not know if he will. But you said the thing. The thing has been said.
+
+CHOICE 2
+Say nothing here. Book time with the manager directly.
+
+RESPONSE
+"Thanks," you say, and mean nothing by it. You take out your phone and
+send your manager a message asking for fifteen minutes.
+
+She responds immediately: tomorrow at 3. You put your phone away. The
+anger has somewhere to go now. It becomes something more like preparation.
+
+CHOICE 3
+"Thanks." Let it go.
+
+RESPONSE
+He smiles back, satisfied, and returns to the office. The anger does not
+leave. It has nowhere to go, so it finds a place to live — somewhere between
+your shoulder blades, low and persistent. It will be there at dinner. It
+will be there tomorrow.
+
+CHOICE 4
+"I know. I wrote it."
+
+RESPONSE
+He holds the air between you for a moment — a fraction longer than is
+comfortable — then nods once and walks back down the corridor.
+
+Nothing has been resolved. But something has been placed correctly, and you
+feel its weight settle into its proper position.
+
+
+SCENE 08 — THE MIRROR
+======================
+DAY FOUR · THE MIRROR
+TITLE: [FRIEND NAME]
+
+[FRIEND NAME] has known you since you were seventeen. Two drinks in,
+telling a story about work. [FRIEND NAME] asks what the jungle was like.
+"Intense?" they offer, smiling.
+
+IF THE PLAYER PERFORMED THE FAMILIAR ROLE:
+You did it again at dinner. You notice yourself checking: is it happening
+now too?
+
+IF THE PLAYER RECOGNISED THE GUIDE:
+The child's question is still somewhere in you. What are you carrying into
+this room, into this friendship?
+
+Two people: the friend you love, and a ghost version of you — the one you
+might have become. The ghost sits comfortably in the chair. It orders
+another round. It is not unhappy.
+
+"You seem different," [FRIEND NAME] says. Not a compliment, not a criticism.
+An observation, delivered with slight wariness.
+
+CHOICE 1
+"I am different. I don't fully know how yet."
+
+RESPONSE
+You meet their eyes. You do not explain further. [FRIEND NAME] seems to
+consider pressing — and then decides not to.
+"Well," they say. "You seem good."
+
+It is not quite right, but it is kind. You let it be kind.
+
+CHOICE 2
+Deflect. Become whoever the room needs.
+
+RESPONSE
+You pull their story toward you and inhabit it perfectly. [FRIEND NAME]
+relaxes into the conversation like a person taking off a coat.
+
+On the way home you will not be entirely sure what you said. The evening
+will feel both successful and slightly hollow.
+
+CHOICE 3
+Order water. Your body does not want the drink.
+
+RESPONSE
+You push the glass aside. [FRIEND NAME] raises an eyebrow.
+"Still detoxing?"
+
+"Something like that." At some point you notice you are more present than
+usual. [FRIEND NAME] does not comment. But they lean forward more than they
+usually do.
+
+CHOICE 4
+Excuse yourself. Breathe through it alone.
+
+RESPONSE
+The thing — grief, irritation, you cannot tell — moves through you in
+ninety seconds. Then it is gone. You rinse your face. You go back out.
+[FRIEND NAME] is looking at their phone and does not look up as you sit
+down, which is exactly what you needed.
+
+
+SCENE 09 — THE LAUNDROMAT OF THE SOUL
+======================================
+DAY FIVE · EVENING · THE LAUNDROMAT
+
+You needed to do laundry. This is not symbolic. The laundry genuinely
+needed doing.
+
+The laundromat is open until midnight. It is 10pm. You are the only one
+here.
+
+You load the machine. In go the clothes from the week. The drum begins to
+turn.
+
+You sit down on the plastic bench to wait. And then, without any particular
+warning, you notice what is in the machine.
+
+It is not the clothes.
+
+It is your heart. Turning slowly, pressed against the porthole glass,
+trailing its valves. Then your lungs — both of them, enormous and grey-pink,
+folding and unfolding in the warm water. Your liver, your kidneys, your
+intestines coiling in the suds. Your throat — the one that has never spoken
+as clearly as you needed it to — spiralling in the foam like something
+dredged from deep water.
+
+You look around. There is no one else here. The vending machine hums.
+
+The machine runs its full cycle. The water keeps changing colour.
+Eventually it runs clear. The machine beeps. The drum slows. You open the
+door.
+
+One of them is shining. The [SHINING ORGAN]:
+[ORGAN DESCRIPTION]
+
+[ORGAN REASON]
+
+You put everything back carefully, without haste. You move the load to the
+dryer. You sit back down.
+
+On your phone: a review for this laundromat.
+Four stars. "Changed my life." — M. Fontana, fourteen months ago.
+
+You type yours:
+Five stars. "The machines are reliable. I would say more but I am not sure
+I have the language yet."
+
+You post it.
+
+You wait for the dryer. The light in here is very steady and very ordinary
+and you are, for no reason you can fully defend, completely fine.
+
+ORGAN VARIANTS
+--------------
+
+THE EYES
+You hold them up under the fluorescent light. They are clear in a way eyes
+are not usually clear — the way glass is clear after rain. You see through
+them into the back of the room, into the parking lot, and further, further.
+You blink. The world blinks back.
+
+Why:
+You saw what was there to be seen. The guide, the child, the shape of
+things beneath the shape of things.
+
+THE THROAT
+It is warm and slightly luminous and smells of mapacho and river. You hold
+it up. Inside it, like a bell that has just been struck, something is still
+vibrating gently. The sound it never made is still in there, circling. Now
+it has been washed, maybe it can.
+
+Why:
+You spoke at least once when you could have swallowed it. The throat
+remembers.
+
+THE JAW
+You almost do not recognise it. You have held it so tight for so long —
+this week, and before this week, and the whole life before this week — that
+it barely knows what loose feels like. But here, clean, warm from the dryer,
+it is simply a jaw. It unclenches by itself in your hands.
+
+Why:
+You caught the tightening. More than once. You did not act from it.
+
+THE LUNGS
+They are larger than you expected and very light and when you hold them up
+they catch the fluorescent light in a way that suggests they have been
+waiting, for some time, to be given this much air. You breathe in. They
+expand. The ceremony is still in there, the icaros, the fire, the dark
+before the dark breaks.
+
+Why:
+You came back to the breath. Again and again this week, you came back.
+
+THE HEART
+It is exactly the size of a fist and it is doing what hearts do, steadily,
+without drama. But under the light it is different — brighter, or more
+specific, as if the washing has removed something that was dulling it. You
+hold it and feel it beat against your palm and you think: this.
+
+Why:
+You went back. The ceremony found you in the night and you went back.
+
+THE STOMACH
+You are not sure what you expected, but not this: warm, quiet, a little
+embarrassed, like something that has been working very hard without
+acknowledgement for a long time. You hold it and say, quietly:
+I know. I know.
+
+It seems like the right thing to say.
+
+Why:
+It held everything this week that had nowhere else to go. It held it
+without complaint.
+
+CHOICE 1
+Hold your heart carefully, like something that has survived a long
+crossing.
+
+RESPONSE
+It is warm. Heavier than expected. You hold it for a moment before placing
+it back. It slots in with a small definitive click, like a key finding its
+lock. You sit back down. The dryer turns. The city continues its business,
+entirely unaware that something just happened in here.
+
+CHOICE 2
+Hold your throat up to the light. Try to see through it.
+
+RESPONSE
+It is translucent in a way you did not expect. You can see the shape of
+things that passed through it and things that did not — words spoken clearly
+and ones that went back down. You study it for a long moment. Then you put
+it back gently, like a correction that has finally been made.
+
+CHOICE 3
+Laugh. Because this is genuinely funny.
+
+RESPONSE
+You start laughing — the involuntary kind, from behind the sternum, which
+has just been washed and is still slightly damp. The fluorescent light does
+not react. The vending machine does not react. You laugh until your eyes
+water, sitting alone in the laundromat at 10pm holding your own clean
+organs.
+
+When you stop, you feel lighter than you have in a week. You put everything
+back. The dryer turns.
+
+CHOICE 4
+Sit quietly and hold each one in turn.
+
+RESPONSE
+Heart, lungs, liver, throat, the stomach that has been clenching since
+Tuesday. You hold each one for a moment — not trying to fix anything, just
+letting it know you are paying attention. When they are all back in place,
+you feel different. Not healed. Not resolved. Just attended to. Which turns
+out to be something.
+
+
+SCENE 10 — THE SPIRIT OF THE OLD PATTERN
+=========================================
+DAY SIX · THE DESCENT
+
+11pm. Alone. The pull: [TEMPTATION NAME]. [TEMPTATION PULL]
+
+IF THE PLAYER HAS REACTED:
+The reactions this week were real. The pattern knows where the cracks are.
+It has been watching.
+
+IF THE PLAYER RECOGNISED THE GUIDE:
+The child asked what you are carrying. This pull — how long have you been
+carrying it? Did you choose it, or did it choose you?
+
+It stands in the corner. Not monstrous — beautiful, almost. Ancient,
+patient eyes. In ceremony you saw it, named it, wept with it. It has waited
+patiently for your return.
+
+"You cannot sustain this," it says quietly.
+"You know what you are. Come back."
+
+INTERSTITIAL — BEFORE YOU ACT
+Use one of the somatic prompts from Scene 04.
+
+CHOICE 1
+Say its name out loud. Sit with it.
+
+RESPONSE
+You say the name in the empty room. It sounds smaller than it feels. You
+sit with it the way you sat with things in ceremony: without trying to
+change them.
+
+The pull does not leave. But it loses a dimension. It becomes a thing you
+are watching. You sit there for a while. Then you make tea.
+
+CHOICE 2
+Write it. The pull, the shape, what it promises.
+
+RESPONSE
+You open the journal. You write: "it is here again." Then what it feels
+like, what it offers, what you know about its cost. The writing does not
+make it disappear. But it makes it legible.
+
+You write for twenty minutes. At the end you draw a thin line under the
+last sentence. For tonight, you do not act.
+
+CHOICE 3
+Give in. Partially. Enough to take the edge off.
+
+RESPONSE
+You tell yourself this is also integration. These are true things. They are
+also the things the pattern has learned to whisper to sound reasonable.
+
+Afterward, the edge is off. Something else has taken its place — a thin,
+familiar emptiness you know how to live with, because you have been living
+with it for years.
+
+CHOICE 4
+Call someone.
+
+RESPONSE
+A friend who picks up late, who does not ask why, who simply begins talking
+about their week. Their voice fills the room. The pull retreats to the edge
+where it waits, patient, for another opening.
+
+You talk for half an hour. You do not mention what you were about to do.
+You do not need to.
+
+
+SCENE 11 — WHAT THE DARK ASKS
+==============================
+DAY SIX · [CLOCK] · THE CEILING
+
+[CLOCK]. The room is dark. You are awake staring at the ceiling. This is
+the part nobody puts in the retreat brochures.
+
+IF THE PLAYER GAVE IN:
+The giving-in has not helped. The emptiness it left is louder than the
+craving was.
+
+IF THE PLAYER SAT WITH OR WROTE ABOUT THE PATTERN:
+You held last night. Something noticed. The room has a slightly different
+quality.
+
+The ceiling is not blank. You can still see — faintly — the serpent.
+Patient as water. It traces the same line across the plaster, and then it
+turns its head.
+
+A single eye, the colour of jungle canopy, finds yours. Something like an
+invitation moves through the dark of the room.
+
+IF THE PLAYER RECOGNISED THE GUIDE:
+The child. The ceremony. The serpent now. The same current, different forms.
+Something is trying to reach you through every available opening.
+
+CHOICE 1
+Close your eyes. Follow the serpent back.
+
+RESPONSE
+You close your eyes. You release the room — the ceiling, the clock, the
+weight of the week. The serpent moves. You move with it. The distance
+between here and the maloca folds, the way water folds around a stone, and —
+
+CHOICE 2
+Lie still. Let the dark ask.
+
+RESPONSE
+You lie there. The dark asks. You do not answer. This is its own kind of
+conversation — the kind where staying in the room together is the point.
+
+At some point the quality of the darkness changes. Dawn is arriving
+somewhere else first.
+
+CHOICE 3
+Get up. Make tea. Write until the light comes.
+
+RESPONSE
+The kitchen is cold. Standing in it in the dark at this hour feels —
+briefly, strangely — like exactly the right place to be.
+
+You write until the window begins to separate from the wall. Three pages.
+You do not know what they say yet. That is for later.
+
+CHOICE 4
+Body scan. Feet upward. Let sleep find you.
+
+RESPONSE
+Feet. Ankles. Calves. The knee that always carries more than it admits.
+The hips. The belly. The chest —
+
+You do not reach the chest.
+
+
+SCENE 12 — THE JUNGLE FINDS YOU IN YOUR BED
+============================================
+NIGHT · THE RETURN WITHIN THE RETURN
+
+The ceiling dissolves. The serpent folds the distance between your room and
+the maloca into nothing, the way water folds around a stone.
+
+You are in the ceremony. The fire is still burning. The icaros still move
+through the air. [SHAMAN TEXT]
+
+And then your animal guide steps from the darkness at the edge of the
+firelight.
+
+[ANIMAL DESCRIPTION]
+
+In the guide's gaze you see the week laid out — not as memory, but as
+landscape. You see the patterns from outside: where you contracted, where
+something moved through freely.
+
+Then the guide moves toward you and places something against your chest.
+Not a paw, not a wing. Something that has no shape in ordinary language.
+But you feel it land. And you recognise it — it is the thing you almost
+discarded this week. The guide gives it back as if it is the most important
+object in the room.
+
+IF THE PLAYER RECOGNISED THE GUIDE:
+The guide shows you one more thing: the child on the step. These openings
+come in every form. The question is only whether you are moving fast enough
+to miss them.
+
+OTHERWISE:
+The guide shows you other moments along the map of your week — possible
+openings. Not accusation. Just information.
+
+CHOICE 1
+Ask the guide what it placed in your chest.
+
+RESPONSE
+It looks at you for a long moment. Then it shows you: it is your own
+attention. The full, undefended kind. You had been rationing it all week.
+The guide returns the unrationed version. It is the only thing that was
+ever actually yours.
+
+CHOICE 2
+Sit in the firelight. Let the guide finish its work.
+
+RESPONSE
+When it is done, something in you is quieter than it has been in years. Not
+empty — settled.
+
+CHOICE 3
+Show the guide the week — the queue, the friction, the night.
+
+RESPONSE
+The guide looks at each one without flinching. Then it shows you what you
+did right. The list is longer than you thought.
+
+CHOICE 4
+Ask the guide what the ceremony is trying to do with your life.
+
+RESPONSE
+The fire leaps. The shaman smiles without looking up. The guide walks back
+into the darkness. But as it goes, you understand: the ceremony is not
+doing something to your life. It is asking you to do something with it.
+
+
+SCENE 13 — STILL
+=================
+NIGHT · CROSSING BACK
+TITLE: [CLOCK] — Still
+
+And then you are back. The ceiling is the ceiling. The clock reads [CLOCK].
+Not a minute has passed.
+
+The game selects one of these reflections based on the ceremony choice:
+
+REFLECTION 1
+Your attention. That was what the guide gave back. The full kind — the kind
+you give to something you love. You had been rationing it all week. The
+guide returned the unrationed version. It is the only thing that was ever
+actually yours.
+
+REFLECTION 2
+You were seen completely. Not assessed, not advised — witnessed. Nothing
+needed to change. You were simply, fully, looked at. It turns out this is
+what you had been hungry for beneath every other hunger.
+
+REFLECTION 3
+The queue, the traffic, the colleague — from outside they look like exactly
+what they are: patterns running themselves through available circumstances.
+You were not failing. You were inside the pattern. From here you can see it
+has edges.
+
+REFLECTION 4
+The ceremony is not doing something to your life. It is asking you to do
+something with it. The fire said it. The guide walked away rather than
+explain further, because explanation would have made it smaller.
+
+The room is different. You are different, again, in a different way.
+
+CHOICE 1
+Stay with it. Let the gift settle.
+
+RESPONSE
+You do not move, do not write. You let it settle like sediment. The room
+holds you. The night holds the room.
+
+CHOICE 2
+Reach for the journal. Write in the dark.
+
+RESPONSE
+The words are imperfect. They are as close as language can get to what just
+happened.
+
+CHOICE 3
+Place your hand on your heart. Make one silent promise.
+
+RESPONSE
+To the guide. To the jungle. To yourself. The promise is specific. The room
+witnesses it.
+
+CHOICE 4
+Fall asleep the way children sleep after they have cried.
+
+RESPONSE
+Deeply. Completely. Held.
+
+
+SCENE 14 — BEFORE THE WORLD WAKES
+==================================
+DAY SEVEN · DAWN
+
+Predawn grey. The city almost silent.
+
+IF THE SPIRIT DOMAIN IS HIGH:
+The presences are closest at this hour. You understand now that ceremony
+is not a place — it is a quality of attention. You can hold it here, if you
+choose.
+
+IF THE PLAYER RETURNED TO CEREMONY:
+Whatever the guide placed in you has not dissolved. You carry it into the
+dawn like a coal wrapped in cloth.
+
+IF THE PLAYER RECOGNISED THE GUIDE:
+The child's question is still there.
+"Are you sure it's yours?"
+
+Thirty minutes before the world resumes. The mat is there. The notebook is
+there. The window shows the first grey-gold of dawn.
+
+A presence nearby — quiet, benevolent. It does not offer advice. It
+witnesses.
+
+CHOICE 1
+Move. Let the body lead.
+
+RESPONSE
+You move slowly, without a plan — the body's own memory of how it wants to
+be. Your spine lengthens. Your breath deepens by itself. The ceremony
+continues here, in the joints and tendons.
+
+You stop when you stop. The mat holds the impression of where you were.
+
+CHOICE 2
+Sit. Watch the light change.
+
+RESPONSE
+You sit with your hands open and you do nothing. The light changes — first
+barely visible, then slowly undeniable. You do not try to hold it. You let
+it happen to you.
+
+CHOICE 3
+Write toward something not yet known.
+
+RESPONSE
+The hand knows something the mind does not yet, and the page is where they
+negotiate.
+
+Three paragraphs in, you stop and read back. You did not know you knew that.
+
+CHOICE 4
+Make tea. Stand at the window. Make one commitment.
+
+RESPONSE
+One person. One specific thing you will do or say today. You say it quietly
+into the room, as if the room is a witness.
+
+It is.
+
+
+SCENE 15 — THE MORNING AFTER THE WEEK
+======================================
+DAY SEVEN · THE ORDINARY SACRED
+
+You wake fully into the ordinary light.
+
+You take inventory. What has changed? What has slipped back? The visions are
+fading at the edges. But something has not faded. Something sits in the
+centre of your chest like a warm coal.
+
+IF THE PLAYER RETURNED TO CEREMONY:
+The ceremony found you in the dark. The [ANIMAL NAME] came. Whatever was
+placed in your hands is still present.
+
+IF THE PLAYER REACTED TWICE OR MORE WITHOUT RECOGNISING THE GUIDE:
+The patterns were strong this week. They got their tithe more than once.
+This is not failure. This is how long it takes.
+
+IF THE PLAYER RECOGNISED THE GUIDE:
+The child knew something you needed to know. You will spend years
+understanding it.
+
+IF THE SPIRIT DOMAIN IS HIGH:
+The room is alive. Each object holds the memory of the hands that made it.
+The dust motes in the first light are small planets. You let it be true
+while it is true.
+
+One week. The real integration has barely begun. But something has been
+planted. What is the first commitment you make?
+
+CHOICE 1
+Commit to the body.
+
+RESPONSE
+Movement. Breath. Cold water. Not spiritual — just the vessel, kept clean.
+You will do this tomorrow morning and the morning after until it is no
+longer a commitment but a fact about how you live.
+
+You write it down. One sentence. You fold the paper somewhere you will find
+it.
+
+CHOICE 2
+Commit to writing.
+
+RESPONSE
+You will write before you understand. The writing is the understanding —
+the place where experience becomes language and language becomes something
+you can stand on.
+
+You draw a small circle in your notebook. A placeholder for the thing still
+becoming.
+
+CHOICE 3
+Commit to one honest conversation.
+
+RESPONSE
+One conversation. Complete and unhurried. With someone who matters. You
+know who it is. You have known all week.
+
+You send a short message:
+"Can we talk properly soon? I have things I want to say."
+
+The reply comes faster than expected.
+
+CHOICE 4
+Commit to the invisible.
+
+RESPONSE
+Daily acknowledgement of what you cannot see. Not a practice that requires
+equipment. Just a quality of attention — the remembered ability to look at
+things as if they might be looking back.
+
+You look at the window. The window looks back. You are not sure this is not
+true.
+
+
+SCENE 16 — DAY EIGHT ENDINGS
+=============================
+
+The ending is selected by the ceremony and guide choices.
+
+
+ENDING: RETURNED
+----------------
+TITLE: Day Eight
+
+You wake before the alarm, which you have not done in years.
+
+Same ceiling, same light. But the quality of your waking is different —
+less like surfacing and more like arriving.
+
+The [ANIMAL NAME] is not in the room. But the quality of attention it
+carried has left something behind, the way a person leaves their warmth in
+a chair.
+
+You make coffee. A child on the street below turns and looks up at your
+window. You look back. A moment passes. They are gone.
+
+The coffee is very good. You think: I will make coffee this good every
+morning. You know you probably will not. But today it is exactly what it is.
+That is enough.
+
+CLOSING
+The jungle did not end when you left it.
+It moved — into the quality of your looking.
+
+
+ENDING: DEEP
+-------------
+TITLE: Day Eight
+
+You wake with the feeling of having dreamed in a language you do not speak.
+
+The week sits in your body like sediment. None of it resolved. All of it
+present.
+
+There is a voice that wants to call this failure. It called the ceremony a
+failure on night two as well.
+
+In the night the ceremony found you. The [ANIMAL NAME] came. Something was
+placed in you that you still cannot fully name. This is not nothing. This is
+exactly the kind of thing that takes years.
+
+You make coffee. You open the journal. You write one sentence and leave the
+rest blank.
+
+The work continues.
+
+CLOSING
+Integration is not a destination.
+It is a quality of attention, practised daily.
+
+
+ENDING: OPEN
+-------------
+TITLE: Day Eight
+
+Before you are fully awake, you think of the child.
+Are you sure it is yours?
+
+You do not arrive at an answer. But a question held is already a kind of
+beginning.
+
+You think about [FRIEND NAME]. You draft a message in your head — shorter
+than expected. You get up, make coffee, and send it.
+
+The reply comes faster than expected. The child would find all of this very
+ordinary. You think that is the point.
+
+CLOSING
+The guide comes in every form.
+The recognition is the practice.
+
+
+ENDING: AN HONEST ACCOUNT
+-------------------------
+TITLE: Day Eight — An Honest Account
+
+Here is what you know, without decoration:
+
+The patterns were faster than the witness this week. The queue, the drive,
+the colleague — the old circuitry ran before you could step in front of it.
+
+The medicine does not grade on a curve. But it also does not give up.
+
+You make coffee. Somewhere in the Amazon the fire is still burning. Nothing
+that opened in ceremony has closed. You can go back. Not today. But the
+option has not expired.
+
+CLOSING
+Nothing that was opened has closed.
+The jungle is patient.
+
+
+ENDING: SETTLING
+----------------
+TITLE: Day Eight
+
+The alarm at 7:15. Your hand reaches for the phone before you are awake.
+Seven days of ceremony and muscle memory is still faster.
+
+Something changed. You cannot locate it precisely. The most important
+changes never locate precisely.
+
+The neighbour's dog investigates something in the gutter with professional
+intensity. It finds what it was looking for.
+
+You are going to be late. You stay at the window for exactly one more minute.
+
+The minute passes. You go.
+
+CLOSING
+The ordinary world received you back.
+You are not entirely the same person it gave away.
+
+
+ENDING INSERT — ORGAN REFLECTION
+---------------------------------
+
+The laundromat showed you something too. The [SHINING ORGAN] came out
+shining.
+
+
+SCENE 17 — MYTHIC PORTRAIT
+============================
+
+YOUR ARCHETYPE
+
+The game selects a primary archetype from all qualifying archetypes. If a
+second archetype qualifies, it is shown as the ascendant.
+
+PRIMARY HEADER WITH ASCENDANT:
+The [PRIMARY ARCHETYPE]
+with a [ASCENDANT ARCHETYPE] ascendant
+
+PRIMARY HEADER WITHOUT ASCENDANT:
+The [PRIMARY ARCHETYPE]
+
+The portrait then reads the primary passage followed by the ascendant
+inflection, if one exists.
+
+
+PRIMARY ARCHETYPE — THE SOVEREIGN RETURNING
+--------------------------------------------
+You are The Sovereign Returning — you crossed the threshold without handing
+your authority to the experience. You received what came and brought it
+back into the body, where insight becomes a way of moving rather than a
+story you tell about yourself. The world may still be difficult, but you
+are no longer waiting for difficulty to tell you who you are. Your work now
+is to govern this gift with humility, attention, and ordinary acts of care.
+
+PRIMARY ARCHETYPE — THE JAGUAR-TOUCHED
+--------------------------------------
+You are The Jaguar-Touched — something in the dark recognized you, and you
+had the courage to go back when it called. The encounter did not make you
+special; it made you responsible for what you saw. You carry a charge that
+cannot be explained away by the return to ordinary life. Let the jaguar
+remain wild in you, but give its knowing a human rhythm: meals, messages,
+rest, and the next honest choice.
+
+PRIMARY ARCHETYPE — THE EMBODIED WITNESS
+----------------------------------------
+You are The Embodied Witness — you learned to let the invisible register
+as sensation, breath, weight, and action. Your mind can name what is
+happening, but your deeper gift is staying present while the body tells the
+truth. You do not need to force transformation when attention is already
+changing the shape of the moment. Keep returning from explanation to
+contact, where the medicine can become lived knowledge.
+
+PRIMARY ARCHETYPE — THE CARTOGRAPHER
+------------------------------------
+You are The Cartographer — you processed this crossing by mapping it,
+naming it, and building a language for what you saw. The mind was your
+instrument and, at times, your refuge; its patterns helped you find a route
+through uncertainty. A map is a form of devotion when it serves contact
+rather than replacing it. Keep drawing, but remember that the territory
+asks to be inhabited as much as understood.
+
+PRIMARY ARCHETYPE — THE OPEN GATE
+---------------------------------
+You are The Open Gate — you recognized that guidance rarely arrives wearing
+the costume you expected. A child, a stranger, or an ordinary sentence
+opened a space in your attention, and you chose not to rush past it. Your
+receptivity is not passivity; it is the willingness to let the world
+interrupt the plan. Stay close to the small doors, because the path keeps
+appearing in forms that do not announce themselves.
+
+PRIMARY ARCHETYPE — THE WOUNDED HEALER
+--------------------------------------
+You are The Wounded Healer — you met the places where your own tenderness
+and your own unfinished work touch. What you know is not abstract: it has a
+pulse, a history, and a body that has had to carry it. This gives you a
+particular kind of compassion, but it also asks you not to turn
+understanding into self-abandonment. Let care move in both directions,
+toward others and back toward the person doing the caring.
+
+PRIMARY ARCHETYPE — THE BRIDGE WALKER
+--------------------------------------
+You are The Bridge Walker — you can carry the enchanted and the ordinary
+without demanding that either one cancel the other. You know how strange a
+luminous insight can feel under fluorescent light, and you keep walking
+anyway. Your gift is translation: bringing what matters across without
+flattening it. The bridge is made from repeated crossings, not a single
+perfect arrival.
+
+PRIMARY ARCHETYPE — THE ONE STILL CROSSING
+------------------------------------------
+You are The One Still Crossing — the river has not narrowed into an answer,
+and you are honest enough not to pretend that it has. Much is moving
+beneath the surface even when the visible changes are small. This middle
+place is not a failure of integration; it is where integration is made.
+Keep your attention near the next step, because the crossing does not
+require you to see the far bank yet.
+
+
+ASCENDANT INFLECTIONS
+=====================
+
+The ascendant is not a separate reading. It is a question or tension
+colouring the primary archetype.
+
+SOVEREIGN + JAGUAR
+The Jaguar-Touched rises behind your sovereignty, reminding you that
+authority is not control but a willingness to answer what calls from the
+dark. It asks whether you can lead without taming the wild source of your
+knowing.
+
+SOVEREIGN + WITNESS
+The Embodied Witness rises behind your sovereignty, bringing power down from
+principle into breath, muscle, and the pace of a real day. It asks whether
+your authority can remain tender enough to listen to the body it governs.
+
+SOVEREIGN + CARTOGRAPHER
+The Cartographer rises behind your sovereignty, giving your command a map
+of every terrain it has crossed. It asks whether you will use that map to
+move freely or build a kingdom inside it.
+
+SOVEREIGN + OPEN GATE
+The Open Gate rises behind your sovereignty, keeping your certainty
+permeable to the guidance that arrives uninvited. It asks whether the one
+who leads can still be changed by what they meet.
+
+SOVEREIGN + HEALER
+The Wounded Healer rises behind your sovereignty, placing a visible scar
+beneath the crown. It asks whether strength can include receiving care
+rather than only providing it.
+
+SOVEREIGN + BRIDGE
+The Bridge Walker rises behind your sovereignty, making leadership a
+passage between worlds rather than a seat above them. It asks whether what
+you carry can cross into ordinary life without losing its warmth.
+
+JAGUAR + WITNESS
+The Embodied Witness rises behind your jaguar, giving the visitation a
+place to land in sensation and daily practice. It asks whether the mystery
+can be trusted enough to become ordinary.
+
+JAGUAR + CARTOGRAPHER
+The Cartographer rises behind your jaguar, wanting to record every
+footprint of the encounter. It asks whether naming the animal will bring
+you closer to it or keep it safely on the page.
+
+JAGUAR + OPEN GATE
+The Open Gate rises behind your jaguar, turning the visitation toward the
+small, human doorway you almost missed. It asks whether you can recognize
+the same medicine in a form that does not frighten you.
+
+JAGUAR + HEALER
+The Wounded Healer rises behind your jaguar, showing how the encounter
+touched the exact place that still hurts. It asks whether the charge will
+become compassion or another way to avoid the wound.
+
+JAGUAR + BRIDGE
+The Bridge Walker rises behind your jaguar, carrying its wildness across
+the border into the everyday. It asks how much of the jungle can remain
+alive under the conditions of a normal morning.
+
+WITNESS + CARTOGRAPHER
+The Cartographer rises behind your witness, giving language to every subtle
+signal the body has gathered. It asks whether the map will clarify contact
+or become one more layer between you and feeling.
+
+WITNESS + OPEN GATE
+The Open Gate rises behind your witness, directing your embodied attention
+toward the unexpected messenger. It asks whether you can notice guidance
+before you have translated it into certainty.
+
+WITNESS + HEALER
+The Wounded Healer rises behind your witness, making your compassion tactile
+and personal. It asks whether staying present with another will include
+staying present with your own need.
+
+WITNESS + BRIDGE
+The Bridge Walker rises behind your witness, helping sensation travel
+between the private body and the shared world. It asks whether what you feel
+can become a connection rather than a burden carried alone.
+
+CARTOGRAPHER + OPEN GATE
+The Open Gate rises behind your cartographer, placing an unplanned doorway
+in the middle of the map. It asks whether you can let the route be revised
+by a voice you did not expect.
+
+CARTOGRAPHER + HEALER
+The Wounded Healer rises behind your cartographer, marking the places where
+analysis became a way to care for what hurt. It asks whether understanding
+can soften into contact instead of becoming another safe distance.
+
+CARTOGRAPHER + BRIDGE
+The Bridge Walker rises behind your cartographer, asking the map to become a
+route others can walk with you. It asks whether your understanding will
+remain private architecture or become a shared passage.
+
+OPEN GATE + HEALER
+The Wounded Healer rises behind your open gate, showing that the guidance
+you welcomed is also pointing toward your own tenderness. It asks whether
+receiving a message means allowing it to change how you care for yourself.
+
+OPEN GATE + BRIDGE
+The Bridge Walker rises behind your open gate, turning receptivity into a
+practice of carrying what arrives across to another person. It asks whether
+the door will open inward only, or become an entrance for connection.
+
+HEALER + BRIDGE
+The Bridge Walker rises behind your wounded healer, asking your compassion
+to travel beyond the familiar shape of your own pain. It asks whether you
+can meet another person without making their wound a mirror of yours.
+
+GENERIC ASCENDANT FALLBACK
+There is a [ASCENDANT ARCHETYPE] rising in you, adding another current to
+this crossing. It asks a question your primary archetype cannot answer
+alone, and the tension is worth keeping open.
+
+
+PORTRAIT FOOTER
+===============
+
+The jungle does not end when you leave it.
+It moves with you — in the quality of your attention,
+in what you can no longer ignore,
+in the eyes you now use to see the world.
+
+The question is never: did the ceremony work?
+The question is always: are you doing the work the ceremony began?
+
+BUTTON: Walk the return again

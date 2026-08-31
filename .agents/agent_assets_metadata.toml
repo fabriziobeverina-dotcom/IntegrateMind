@@ -1,5 +1,4 @@
 uploads = []
-outputs = []
 
 [[generated]]
 id = "VmBYFTh4zohEMwv_KBFVQ"
@@ -144,3 +143,10 @@ id = "OHsbjDed_NdoHyLgrpPQX"
 uri = "file://client/src/assets/avatars/sun.png"
 type = "image"
 title = "sun avatar"
+
+[[outputs]]
+id = "1XvwST1dcG3gXn-_wnRqn"
+uri = "file://client/public/the-return-voiceover.txt"
+type = "text"
+title = "The Return — Voice-over Script"
+description = "Scene-by-scene text for narration, choices, responses, conditional variants, endings, and mythic portrait copy. Runtime placeholders are marked in square brackets."
