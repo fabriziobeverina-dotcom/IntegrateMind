@@ -2244,7 +2244,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/settings/complete-onboarding', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
       const { 
         reminderEnabled, morningReminderEnabled, morningReminderTime,
         eveningReminderEnabled, eveningReminderTime, reminderTimezone
@@ -2267,6 +2266,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Validate the value before passing it to Drizzle; an invalid Date causes
       // the timestamp serializer to throw "Invalid time value" and returns 500.
       const existingUser = await ensureUserFromClaims(req.user.claims);
+      if (!existingUser) {
+        return res.status(401).json({ message: "Authenticated user identity is missing" });
+      }
       const existingJourneyStartDate = existingUser?.journeyStartDate;
       const journeyStartDate = existingJourneyStartDate
         ? new Date(existingJourneyStartDate)
@@ -2274,7 +2276,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (Number.isNaN(journeyStartDate.getTime())) {
         journeyStartDate.setTime(Date.now());
       }
-      const updatedUser = await storage.updateUserReminderSettings(userId, {
+      const updatedUser = await storage.updateUserReminderSettings(existingUser.id, {
         reminderEnabled: reminderEnabled ?? false,
         reminderTimezone: timezone,
         morningReminderEnabled: morningReminderEnabled ?? false,

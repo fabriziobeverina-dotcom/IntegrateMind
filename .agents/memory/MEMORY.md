@@ -1,0 +1,1 @@
+- [Authenticated user provisioning](authenticated-user-provisioning.md) — valid auth sessions may lack a user row; provision and use the normalized database identity before writes.

@@ -87,10 +87,10 @@ async function upsertUser(claims: any) {
 }
 
 export async function ensureUserFromClaims(claims: any) {
-  const userId = claims?.sub;
-  if (!userId) {
+  if (claims?.sub === undefined || claims?.sub === null) {
     return undefined;
   }
+  const userId = String(claims.sub);
 
   const existingUser = await storage.getUser(userId);
   if (existingUser) {
