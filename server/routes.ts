@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import path from "path";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated, isAdmin } from "./replitAuth";
+import { setupAuth, isAuthenticated, isAdmin, ensureUserFromClaims } from "./replitAuth";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
 import { reminderScheduler } from "./reminderScheduler";
@@ -97,8 +97,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
+      const user = await ensureUserFromClaims(req.user.claims);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
@@ -2267,7 +2266,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Only set journeyStartDate when completing onboarding for the first time.
       // Validate the value before passing it to Drizzle; an invalid Date causes
       // the timestamp serializer to throw "Invalid time value" and returns 500.
-      const existingUser = await storage.getUser(userId);
+      const existingUser = await ensureUserFromClaims(req.user.claims);
       const existingJourneyStartDate = existingUser?.journeyStartDate;
       const journeyStartDate = existingJourneyStartDate
         ? new Date(existingJourneyStartDate)

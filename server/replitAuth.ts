@@ -86,6 +86,35 @@ async function upsertUser(claims: any) {
   });
 }
 
+export async function ensureUserFromClaims(claims: any) {
+  const userId = claims?.sub;
+  if (!userId) {
+    return undefined;
+  }
+
+  const existingUser = await storage.getUser(userId);
+  if (existingUser) {
+    return existingUser;
+  }
+
+  const firstName = claims["first_name"] || "";
+  const lastName = claims["last_name"] || "";
+  const email = claims["email"] || `${userId}@replit.user`;
+  const fullName = `${firstName} ${lastName}`.trim() || email || "Replit User";
+
+  return await storage.upsertUser({
+    id: userId,
+    email,
+    name: fullName,
+    avatar: claims["profile_image_url"] || null,
+    provider: "replit",
+    providerId: userId,
+    firstName: firstName || null,
+    lastName: lastName || null,
+    profileImageUrl: claims["profile_image_url"] || null,
+  });
+}
+
 export async function setupAuth(app: Express) {
   app.set("trust proxy", 1);
   app.use(getSession());
@@ -162,7 +191,7 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
   // Load admin status from DB (best-effort)
   const loadAdminStatus = async () => {
     try {
-      const dbUser = await storage.getUserById(user.claims?.sub);
+      const dbUser = await ensureUserFromClaims(user.claims);
       user.isAdmin = dbUser?.isAdmin || false;
     } catch {
       user.isAdmin = false;
