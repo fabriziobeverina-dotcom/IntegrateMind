@@ -1,0 +1,86 @@
+Here's the Replit instruction, ready to paste:
+
+---
+
+**REPLIT IMPLEMENTATION — ARCHETYPE SYSTEM UPDATE**
+
+The archetype logic currently assigns a single archetype based on domain totals and flags. This needs to be replaced with a two-tier system: primary archetype and ascendant archetype, following the logic of sun sign and rising sign in astrology.
+
+**STEP 1 — Score all archetypes**
+
+At end of game, evaluate every archetype condition against the player's final state and produce a scored list of all that qualify:
+
+```javascript
+const ARCHETYPES = [
+  { id: "sovereign",  label: "The Sovereign Returning",  condition: s => s.body >= 3 && s.spirit >= 4 },
+  { id: "jaguar",     label: "The Jaguar-Touched",        condition: s => s.flags.ceremony && s.spirit >= 3 },
+  { id: "opengate",   label: "The Open Gate",             condition: s => s.flags.guideRecognized && s.spirit >= 2 },
+  { id: "healer",     label: "The Wounded Healer",        condition: s => s.spirit >= 2 && s.relationships >= 2 },
+  { id: "witness",    label: "The Embodied Witness",      condition: s => s.body >= 3 && s.mind >= 2 },
+  { id: "bridge",     label: "The Bridge Walker",         condition: s => s.relationships >= 3 },
+  { id: "cartographer", label: "The Cartographer",        condition: s => s.mind >= 4 },
+  { id: "crossing",   label: "The One Still Crossing",    condition: s => true }, // fallback
+];
+
+const qualified = ARCHETYPES.filter(a => a.condition(S));
+```
+
+**STEP 2 — Assign primary and ascendant**
+
+Primary is the archetype with the strictest qualifying condition (most domains or highest thresholds required). Ascendant is the second qualifier. If only one qualifies, there is no ascendant — the portrait is singular. If none qualify except the fallback, the fallback is primary with no ascendant.
+
+Rank by strictness in this order (hardest to easiest):
+
+1. The Sovereign Returning
+2. The Jaguar-Touched
+3. The Embodied Witness
+4. The Cartographer
+5. The Open Gate
+6. The Wounded Healer
+7. The Bridge Walker
+8. The One Still Crossing
+
+```javascript
+const ranked = qualified.sort((a, b) =>
+  ARCHETYPE_RANK.indexOf(a.id) - ARCHETYPE_RANK.indexOf(b.id)
+);
+
+const primary   = ranked[0];
+const ascendant = ranked[1] || null;
+```
+
+**STEP 3 — Portrait header**
+
+If ascendant exists:
+
+```
+YOUR ARCHETYPE
+
+The Cartographer
+with a Bridge Walker ascendant
+```
+
+If no ascendant:
+
+```
+YOUR ARCHETYPE
+
+The Jaguar-Touched
+```
+
+**STEP 4 — Portrait body**
+
+The portrait body text is written in two blocks:
+
+— Block 1: the primary archetype reading (3-5 sentences about who this player is)
+— Block 2: the ascendant inflection (1-2 sentences on how the ascendant colors the primary — not a separate reading, a nuance of the first)
+
+Example structure:
+
+*"You are The Cartographer — you processed this week the way you process everything: by mapping it, naming it, building a language for what you saw. The mind was your instrument and your refuge. But there is a Bridge Walker rising in you — and it is asking whether the map will ever be shared, or whether understanding will remain something you do alone."*
+
+Block 2 is the ascendant's question to the primary. It should never resolve the tension, only name it.
+
+**STEP 5 — What still needs to be written**
+
+The portrait body texts for all 8 primary archetypes and a 2-sentence ascendant inflection for each possible pairing. That is 8 primary texts and up to 56 ascendant inflections (8×7). In practice, many pairings are unlikely given the condition logic — prioritize the most common combinations first.
