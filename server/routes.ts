@@ -2264,8 +2264,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? reminderTimezone
         : 'UTC';
 
-      // Only set journeyStartDate when completing onboarding for the first time
+      // Only set journeyStartDate when completing onboarding for the first time.
+      // Validate the value before passing it to Drizzle; an invalid Date causes
+      // the timestamp serializer to throw "Invalid time value" and returns 500.
       const existingUser = await storage.getUser(userId);
+      const existingJourneyStartDate = existingUser?.journeyStartDate;
+      const journeyStartDate = existingJourneyStartDate
+        ? new Date(existingJourneyStartDate)
+        : new Date();
+      if (Number.isNaN(journeyStartDate.getTime())) {
+        journeyStartDate.setTime(Date.now());
+      }
       const updatedUser = await storage.updateUserReminderSettings(userId, {
         reminderEnabled: reminderEnabled ?? false,
         reminderTimezone: timezone,
@@ -2274,7 +2283,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         eveningReminderEnabled: eveningReminderEnabled ?? false,
         eveningReminderTime: eveningReminderTime || "20:00",
         onboardingComplete: true,
-        journeyStartDate: existingUser?.journeyStartDate ?? new Date(),
+        journeyStartDate,
       });
 
       if (!updatedUser) {
