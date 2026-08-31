@@ -50,3 +50,7 @@ VAPID_EMAIL = "mailto:admin@integrationcompass.com"
 TWA_PACKAGE_NAME = "app.replit.integrate_mindbpody.twa"
 TWA_SHA256_FINGERPRINT = "31:15:EA:8C:5A:9E:63:9D:52:97:78:4D:50:13:B8:14:AD:6B:04:40:90:4B:7E:0F:73:29:3E:5F:21:87:EA:4F"
 CRON_SECRET = "1d9b1a3b4dc7af7996f638db9200f9278a9c21a22cdf0ccf9e3472dae05bfe63"
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 180000
