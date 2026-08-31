@@ -409,6 +409,14 @@ body::before {
 
 /* PORTRAIT */
 .portrait { animation: emerge .5s ease; }
+.parch-kicker {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.22em;
+  text-align: center;
+  color: rgba(200,149,42,0.55);
+  margin-bottom: 14px;
+}
 .ptitle {
   font-family: 'Cinzel', serif;
   font-size: clamp(1.6rem, 5vw, 2.4rem);
@@ -422,9 +430,24 @@ body::before {
 .parch-sub {
   font-style: italic;
   text-align: center;
-  color: rgba(240,230,200,0.38);
-  margin-bottom: 36px;
+  color: rgba(200,149,42,0.65);
+  margin-bottom: 28px;
   font-size: 0.95rem;
+}
+.parch-reading,
+.parch-inflection {
+  max-width: 680px;
+  margin: 0 auto 22px;
+  color: rgba(240,230,200,0.82);
+  font-size: 1.08rem;
+  line-height: 1.85;
+}
+.parch-inflection {
+  padding: 18px 20px;
+  border-left: 2px solid rgba(200,149,42,0.5);
+  color: rgba(240,230,200,0.62);
+  font-style: italic;
+  margin-bottom: 28px;
 }
 .dentry {
   padding: 16px 0;
@@ -1651,22 +1674,98 @@ const SDEFS={
   'The Swallower':'What is swallowed does not disappear — it finds another expression. The work is to speak before it calcifies.'
 };
 
-const ARCHS=[
-  {n:'The Sovereign Returning', s:'You crossed the threshold fully. The gifts were received and carried.', c:d=>d.body>=3&&d.spirit>=4},
-  {n:'The Jaguar-Touched', s:'The ceremony found you in the dark. You went back when called. This is rare.', c:()=>S.ceremony&&S.d.spirit>=3},
-  {n:'The Open Gate', s:'You recognized the guide in the child. The doors they offer are always ordinary. The recognition is everything.', c:()=>S.guideRecognized&&S.d.spirit>=2},
-  {n:'The Wounded Healer', s:'You know the wound because it is yours. This is not weakness — it is qualification.', c:d=>d.spirit>=2&&d.rel>=2},
-  {n:'The Embodied Witness', s:'You ground the invisible in flesh. This is a rare and necessary gift.', c:d=>d.body>=3&&d.mind>=2},
-  {n:'The Bridge Walker', s:'You move between worlds — the enchanted and the ordinary — without losing either.', c:d=>d.rel>=3},
-  {n:'The Cartographer', s:'You map what others cannot see. The map has value — but remember also to inhabit the territory.', c:d=>d.mind>=4},
-  {n:'The One Still Crossing', s:'The river is wide. You are in the middle. This is exactly where you should be.', c:()=>true}
+const ARCHETYPES=[
+  {id:'sovereign', label:'The Sovereign Returning', summary:'You crossed the threshold fully. The gifts were received and carried.', condition:s=>s.body>=3&&s.spirit>=4},
+  {id:'jaguar', label:'The Jaguar-Touched', summary:'The ceremony found you in the dark. You went back when called. This is rare.', condition:()=>S.ceremony&&S.d.spirit>=3},
+  {id:'opengate', label:'The Open Gate', summary:'You recognized the guide in the child. The doors they offer are always ordinary. The recognition is everything.', condition:()=>S.guideRecognized&&S.d.spirit>=2},
+  {id:'healer', label:'The Wounded Healer', summary:'You know the wound because it is yours. This is not weakness — it is qualification.', condition:s=>s.spirit>=2&&s.rel>=2},
+  {id:'witness', label:'The Embodied Witness', summary:'You ground the invisible in flesh. This is a rare and necessary gift.', condition:s=>s.body>=3&&s.mind>=2},
+  {id:'bridge', label:'The Bridge Walker', summary:'You move between worlds — the enchanted and the ordinary — without losing either.', condition:s=>s.rel>=3},
+  {id:'cartographer', label:'The Cartographer', summary:'You map what others cannot see. The map has value — but remember also to inhabit the territory.', condition:s=>s.mind>=4},
+  {id:'crossing', label:'The One Still Crossing', summary:'The river is wide. You are in the middle. This is exactly where you should be.', condition:()=>true}
 ];
 
-function getArch(){ return ARCHS.find(a=>a.c(S.d)); }
+// Earlier entries in this list are more demanding, so they become the
+// primary archetype when several parts of the player's final state qualify.
+const ARCHETYPE_RANK=['sovereign','jaguar','witness','cartographer','opengate','healer','bridge','crossing'];
+
+const ARCHETYPE_READINGS={
+  sovereign:'You are The Sovereign Returning — you crossed the threshold without handing your authority to the experience. You received what came and brought it back into the body, where insight becomes a way of moving rather than a story you tell about yourself. The world may still be difficult, but you are no longer waiting for difficulty to tell you who you are. Your work now is to govern this gift with humility, attention, and ordinary acts of care.',
+  jaguar:'You are The Jaguar-Touched — something in the dark recognized you, and you had the courage to go back when it called. The encounter did not make you special; it made you responsible for what you saw. You carry a charge that cannot be explained away by the return to ordinary life. Let the jaguar remain wild in you, but give its knowing a human rhythm: meals, messages, rest, and the next honest choice.',
+  witness:'You are The Embodied Witness — you learned to let the invisible register as sensation, breath, weight, and action. Your mind can name what is happening, but your deeper gift is staying present while the body tells the truth. You do not need to force transformation when attention is already changing the shape of the moment. Keep returning from explanation to contact, where the medicine can become lived knowledge.',
+  cartographer:'You are The Cartographer — you processed this crossing by mapping it, naming it, and building a language for what you saw. The mind was your instrument and, at times, your refuge; its patterns helped you find a route through uncertainty. A map is a form of devotion when it serves contact rather than replacing it. Keep drawing, but remember that the territory asks to be inhabited as much as understood.',
+  opengate:'You are The Open Gate — you recognized that guidance rarely arrives wearing the costume you expected. A child, a stranger, or an ordinary sentence opened a space in your attention, and you chose not to rush past it. Your receptivity is not passivity; it is the willingness to let the world interrupt the plan. Stay close to the small doors, because the path keeps appearing in forms that do not announce themselves.',
+  healer:'You are The Wounded Healer — you met the places where your own tenderness and your own unfinished work touch. What you know is not abstract: it has a pulse, a history, and a body that has had to carry it. This gives you a particular kind of compassion, but it also asks you not to turn understanding into self-abandonment. Let care move in both directions, toward others and back toward the person doing the caring.',
+  bridge:'You are The Bridge Walker — you can carry the enchanted and the ordinary without demanding that either one cancel the other. You know how strange a luminous insight can feel under fluorescent light, and you keep walking anyway. Your gift is translation: bringing what matters across without flattening it. The bridge is made from repeated crossings, not a single perfect arrival.',
+  crossing:'You are The One Still Crossing — the river has not narrowed into an answer, and you are honest enough not to pretend that it has. Much is moving beneath the surface even when the visible changes are small. This middle place is not a failure of integration; it is where integration is made. Keep your attention near the next step, because the crossing does not require you to see the far bank yet.'
+};
+
+const ASCENDANT_INFLECTIONS={
+  sovereign:{
+    jaguar:'The Jaguar-Touched rises behind your sovereignty, reminding you that authority is not control but a willingness to answer what calls from the dark. It asks whether you can lead without taming the wild source of your knowing.',
+    witness:'The Embodied Witness rises behind your sovereignty, bringing power down from principle into breath, muscle, and the pace of a real day. It asks whether your authority can remain tender enough to listen to the body it governs.',
+    cartographer:'The Cartographer rises behind your sovereignty, giving your command a map of every terrain it has crossed. It asks whether you will use that map to move freely or build a kingdom inside it.',
+    opengate:'The Open Gate rises behind your sovereignty, keeping your certainty permeable to the guidance that arrives uninvited. It asks whether the one who leads can still be changed by what they meet.',
+    healer:'The Wounded Healer rises behind your sovereignty, placing a visible scar beneath the crown. It asks whether strength can include receiving care rather than only providing it.',
+    bridge:'The Bridge Walker rises behind your sovereignty, making leadership a passage between worlds rather than a seat above them. It asks whether what you carry can cross into ordinary life without losing its warmth.',
+    crossing:'The One Still Crossing rises behind your sovereignty, placing a moving river beneath the ground you have claimed. It asks whether you can be powerful without pretending the journey is finished.'
+  },
+  jaguar:{
+    witness:'The Embodied Witness rises behind your jaguar, giving the visitation a place to land in sensation and daily practice. It asks whether the mystery can be trusted enough to become ordinary.',
+    cartographer:'The Cartographer rises behind your jaguar, wanting to record every footprint of the encounter. It asks whether naming the animal will bring you closer to it or keep it safely on the page.',
+    opengate:'The Open Gate rises behind your jaguar, turning the visitation toward the small, human doorway you almost missed. It asks whether you can recognize the same medicine in a form that does not frighten you.',
+    healer:'The Wounded Healer rises behind your jaguar, showing how the encounter touched the exact place that still hurts. It asks whether the charge will become compassion or another way to avoid the wound.',
+    bridge:'The Bridge Walker rises behind your jaguar, carrying its wildness across the border into the everyday. It asks how much of the jungle can remain alive under the conditions of a normal morning.',
+    crossing:'The One Still Crossing rises behind your jaguar, reminding you that a powerful encounter is a beginning, not a destination. It asks what you will do when the animal is no longer visible but the responsibility remains.'
+  },
+  witness:{
+    cartographer:'The Cartographer rises behind your witness, giving language to every subtle signal the body has gathered. It asks whether the map will clarify contact or become one more layer between you and feeling.',
+    opengate:'The Open Gate rises behind your witness, directing your embodied attention toward the unexpected messenger. It asks whether you can notice guidance before you have translated it into certainty.',
+    healer:'The Wounded Healer rises behind your witness, making your compassion tactile and personal. It asks whether staying present with another will include staying present with your own need.',
+    bridge:'The Bridge Walker rises behind your witness, helping sensation travel between the private body and the shared world. It asks whether what you feel can become a connection rather than a burden carried alone.',
+    crossing:'The One Still Crossing rises behind your witness, reminding you that awareness can be real before it is resolved. It asks whether you can remain in contact with the body while the answer is still forming.'
+  },
+  cartographer:{
+    opengate:'The Open Gate rises behind your cartographer, placing an unplanned doorway in the middle of the map. It asks whether you can let the route be revised by a voice you did not expect.',
+    healer:'The Wounded Healer rises behind your cartographer, marking the places where analysis became a way to care for what hurt. It asks whether understanding can soften into contact instead of becoming another safe distance.',
+    bridge:'The Bridge Walker rises behind your cartographer, asking the map to become a route others can walk with you. It asks whether your understanding will remain private architecture or become a shared passage.',
+    crossing:'The One Still Crossing rises behind your cartographer, leaving the final edge of the map deliberately blank. It asks whether not knowing can be held as faithfully as everything you have named.'
+  },
+  opengate:{
+    healer:'The Wounded Healer rises behind your open gate, showing that the guidance you welcomed is also pointing toward your own tenderness. It asks whether receiving a message means allowing it to change how you care for yourself.',
+    bridge:'The Bridge Walker rises behind your open gate, turning receptivity into a practice of carrying what arrives across to another person. It asks whether the door will open inward only, or become an entrance for connection.',
+    crossing:'The One Still Crossing rises behind your open gate, keeping the doorway open even though the destination is not visible. It asks whether you can trust the invitation without demanding a complete itinerary.'
+  },
+  healer:{
+    bridge:'The Bridge Walker rises behind your wounded healer, asking your compassion to travel beyond the familiar shape of your own pain. It asks whether you can meet another person without making their wound a mirror of yours.',
+    crossing:'The One Still Crossing rises behind your wounded healer, reminding you that healing is a moving relationship rather than a finished identity. It asks whether you can offer care while still admitting what remains unfinished.'
+  },
+  bridge:{
+    crossing:'The One Still Crossing rises behind your bridge walker, placing motion beneath your gift for connection. It asks whether you can keep crossing when neither shore offers the reassurance of arrival.'
+  }
+};
+
+function getArchetypeResult(){
+  const qualified=ARCHETYPES
+    .filter(a=>a.condition(S.d))
+    .sort((a,b)=>ARCHETYPE_RANK.indexOf(a.id)-ARCHETYPE_RANK.indexOf(b.id));
+  const nonFallback=qualified.filter(a=>a.id!=='crossing');
+  if(!nonFallback.length){
+    return {primary:ARCHETYPES.find(a=>a.id==='crossing'),ascendant:null};
+  }
+  return {primary:nonFallback[0],ascendant:nonFallback[1]||null};
+}
+
 function dlvl(v){ return v<=1?'low':v<=2?'mid':'high'; }
 
 function renderPortrait() {
-  const arch = getArch();
+  const result = getArchetypeResult();
+  const arch = result.primary;
+  const asc = result.ascendant;
+  const ascText = asc
+    ? (ASCENDANT_INFLECTIONS[arch.id]&&ASCENDANT_INFLECTIONS[arch.id][asc.id])
+      || 'There is a '+asc.label.toLowerCase()+' rising in you, adding another current to this crossing. It asks a question your primary archetype cannot answer alone, and the tension is worth keeping open.'
+    : '';
   const uSh = [...new Set(S.shadows)];
   const dLabels = {body:'the vessel',mind:'the witness',rel:'relating',spirit:'the thread'};
   const domHTML = Object.entries(S.d).map(([k,v])=>'<div class="dentry"><div class="dname">'+( dLabels[k]||k)+'</div><div class="dtext">'+DR[k][dlvl(v)]+'</div></div>').join('');
@@ -1677,8 +1776,11 @@ function renderPortrait() {
     ? '<div class="srep"><h3>shadows that walked with you</h3>'+uSh.map(s=>'<p><strong style="color:rgba(200,149,42,0.7);font-style:normal;">'+s+'</strong><br>'+(SDEFS[s]||'')+'</p>').join('')+'</div>'
     : '<div class="srep"><h3>shadow field</h3><p>No dominant shadow figures surfaced this crossing. The shadow is patient. It will find another door. Stay curious.</p></div>';
   return '<div class="portrait">'
-    + '<div class="ptitle">'+arch.n+'</div>'
-    + '<div class="parch-sub">'+arch.s+'</div>'
+    + '<div class="parch-kicker">YOUR ARCHETYPE</div>'
+    + '<div class="ptitle">'+arch.label+'</div>'
+    + (asc ? '<div class="parch-sub">with a '+asc.label.replace(/^The /,'')+' ascendant</div>' : '')
+    + '<div class="parch-reading">'+ARCHETYPE_READINGS[arch.id]+'</div>'
+    + (asc ? '<div class="parch-inflection">'+ascText+'</div>' : '')
     + gNote + cNote + rNote
     + '<div style="margin-bottom:28px;">'+domHTML+'</div>'
     + shadowHTML
