@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Lock, X, Loader2 } from "lucide-react";
 
@@ -20,19 +20,13 @@ export default function TheReturn() {
   const { user } = useAuth();
   const [playing, setPlaying] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [blobUrl, setBlobUrl] = useState<string | null>(null);
-  const prevBlobUrl = useRef<string | null>(null);
+  const [gameDocument, setGameDocument] = useState<
+    { type: "srcDoc"; html: string } | { type: "url"; url: string } | null
+  >(null);
 
   const journeyDay = getJourneyDay((user as any)?.journeyStartDate);
   const isAvailable = journeyDay !== null;
   const daysUntil = null;
-
-  // Clean up blob URL on unmount
-  useEffect(() => {
-    return () => {
-      if (prevBlobUrl.current) URL.revokeObjectURL(prevBlobUrl.current);
-    };
-  }, []);
 
   // Prevent body scroll while playing
   useEffect(() => {
@@ -68,23 +62,27 @@ export default function TheReturn() {
       const gameResp = await fetch("/the-return.html");
       const baseHtml = await gameResp.text();
 
+      // Use an explicit base URL so images and audio resolve correctly inside
+      // the embedded document in both preview and published environments.
+      const htmlWithBase = baseHtml.replace(
+        /<head>/i,
+        `<head><base href="${window.location.origin}/">`,
+      );
+
       // Inject profile as window.JOURNAL_PROFILE — prepended into the first <script> block
       // so S can read it immediately on initialisation
-      const injected = baseHtml.replace(
+      const injected = htmlWithBase.replace(
         '<script>',
         `<script>window.JOURNAL_PROFILE = ${JSON.stringify(profile)};\n`
       );
 
-      // Create a blob URL so the iframe can load it same-origin-ish
-      if (prevBlobUrl.current) URL.revokeObjectURL(prevBlobUrl.current);
-      const blob = new Blob([injected], { type: "text/html" });
-      const url = URL.createObjectURL(blob);
-      prevBlobUrl.current = url;
-      setBlobUrl(url);
+      // srcDoc keeps the game on the app's document origin, which allows its
+      // public images and audio files to load normally.
+      setGameDocument({ type: "srcDoc", html: injected });
       setPlaying(true);
     } catch {
       // Absolute last resort — just open the static file
-      setBlobUrl("/the-return.html");
+      setGameDocument({ type: "url", url: "/the-return.html" });
       setPlaying(true);
     } finally {
       setLoading(false);
@@ -93,10 +91,10 @@ export default function TheReturn() {
 
   function handleExit() {
     setPlaying(false);
-    setBlobUrl(null);
+    setGameDocument(null);
   }
 
-  if (playing && blobUrl) {
+  if (playing && gameDocument) {
     return (
       <div className="fixed inset-0 z-[200] bg-black flex flex-col">
         <button
@@ -108,7 +106,9 @@ export default function TheReturn() {
           Exit
         </button>
         <iframe
-          src={blobUrl}
+          {...(gameDocument.type === "srcDoc"
+            ? { srcDoc: gameDocument.html }
+            : { src: gameDocument.url })}
           title="The Return"
           className="flex-1 w-full border-0"
           allow="autoplay"
